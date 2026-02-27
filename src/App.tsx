@@ -13,7 +13,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOverview from "./pages/admin/AdminOverview";
-import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import AdminDoctors from "./pages/admin/AdminDoctors";
+import AdminTokens from "./pages/admin/AdminTokens";
+import AdminPatients from "./pages/admin/AdminPatients";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminPatientCards from "./pages/admin/AdminPatientCards";
+import AdminLocation from "./pages/admin/AdminLocation";
+import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +31,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public pages with shared layout */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/tokens" element={<LiveTokens />} />
@@ -34,20 +39,18 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
           </Route>
 
-          {/* Auth pages (no shared layout) */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Admin dashboard */}
           <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<AdminOverview />} />
-            <Route path="doctors" element={<AdminPlaceholder title="Manage Doctors" />} />
-            <Route path="tokens" element={<AdminPlaceholder title="Token Management" />} />
-            <Route path="patients" element={<AdminPlaceholder title="Patient List" />} />
-            <Route path="notifications" element={<AdminPlaceholder title="Manage Notifications" />} />
-            <Route path="cards" element={<AdminPlaceholder title="Patient Card Designer" />} />
-            <Route path="location" element={<AdminPlaceholder title="Location & Contact" />} />
-            <Route path="settings" element={<AdminPlaceholder title="Clinic Settings" />} />
+            <Route path="doctors" element={<AdminDoctors />} />
+            <Route path="tokens" element={<AdminTokens />} />
+            <Route path="patients" element={<AdminPatients />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="cards" element={<AdminPatientCards />} />
+            <Route path="location" element={<AdminLocation />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
