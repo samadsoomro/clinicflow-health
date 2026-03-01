@@ -1,9 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Menu, X } from "lucide-react";
+import { Activity, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { useToast } from "@/hooks/use-toast";
 const navLinks = [
   { label: "Home", path: "/" },
   { label: "Live Tokens", path: "/tokens" },
@@ -15,7 +15,19 @@ const navLinks = [
 
 const PublicNavbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const role = localStorage.getItem("clinictoken_role");
+  const isLoggedIn = !!role;
+
+  const handleLogout = () => {
+    localStorage.removeItem("clinictoken_role");
+    localStorage.removeItem("clinictoken_patient_id");
+    setMobileOpen(false);
+    toast({ title: "Logged out", description: "You have been signed out." });
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
@@ -44,12 +56,28 @@ const PublicNavbar = () => {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Log in</Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="hero" size="sm">Register</Button>
-          </Link>
+          {isLoggedIn ? (
+            <>
+              {role === "admin" && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="sm">Dashboard</Button>
+                </Link>
+              )}
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-1 h-4 w-4" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Log in</Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="hero" size="sm">Register</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <Button
@@ -82,12 +110,28 @@ const PublicNavbar = () => {
                 </Link>
               ))}
               <div className="flex gap-2 pt-2 border-t border-border">
-                <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full">Log in</Button>
-                </Link>
-                <Link to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button variant="hero" className="w-full">Register</Button>
-                </Link>
+                {isLoggedIn ? (
+                  <>
+                    {role === "admin" && (
+                      <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full">Dashboard</Button>
+                      </Link>
+                    )}
+                    <Button variant="destructive" className="flex-1" onClick={handleLogout}>
+                      <LogOut className="mr-1 h-4 w-4" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full">Log in</Button>
+                    </Link>
+                    <Link to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
+                      <Button variant="hero" className="w-full">Register</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
