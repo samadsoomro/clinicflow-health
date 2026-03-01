@@ -10,6 +10,7 @@ const navLinks = [
   { label: "Notifications", path: "/notifications" },
   { label: "Location", path: "/location" },
   { label: "Contact", path: "/contact" },
+  { label: "Patient Card", path: "/patient-card" },
 ];
 
 const PublicNavbar = () => {
