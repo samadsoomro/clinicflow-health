@@ -10,6 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 const ADMIN_EMAIL = "admin@clinictoken.com";
 const ADMIN_PASSWORD = "admin123";
 
+// Demo patient credentials (any mock patient can log in with password "patient123")
+const PATIENT_CREDENTIALS: Record<string, string> = {
+  "ahmad@email.com": "p1",
+  "fatima@email.com": "p2",
+  "usman@email.com": "p3",
+  "ayesha@email.com": "p4",
+  "bilal@email.com": "p5",
+};
+const PATIENT_PASSWORD = "patient123";
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +32,11 @@ const Login = () => {
       localStorage.setItem("clinictoken_role", "admin");
       toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
       navigate("/admin");
+    } else if (PATIENT_CREDENTIALS[email] && password === PATIENT_PASSWORD) {
+      localStorage.setItem("clinictoken_role", "patient");
+      localStorage.setItem("clinictoken_patient_id", PATIENT_CREDENTIALS[email]);
+      toast({ title: "Welcome!", description: "Redirecting to your patient card..." });
+      navigate("/patient-card");
     } else {
       toast({ title: "Invalid credentials", description: "Please check your email and password.", variant: "destructive" });
     }

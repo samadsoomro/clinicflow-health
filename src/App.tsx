@@ -9,6 +9,7 @@ import LiveTokens from "./pages/LiveTokens";
 import Notifications from "./pages/Notifications";
 import Location from "./pages/Location";
 import Contact from "./pages/Contact";
+import PatientCard from "./pages/PatientCard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/location" element={<Location />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/patient-card" element={<PatientCard />} />
           </Route>
 
           <Route path="/login" element={<Login />} />
