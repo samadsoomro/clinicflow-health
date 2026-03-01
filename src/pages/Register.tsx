@@ -10,9 +10,9 @@ const Register = () => (
   <div className="flex min-h-screen">
     <div className="hidden w-1/2 gradient-hero lg:flex lg:items-center lg:justify-center">
       <div className="max-w-md text-center px-8">
-        <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
+        <Link to="/" className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
           <Activity className="h-8 w-8 text-primary-foreground" />
-        </div>
+        </Link>
         <h2 className="mb-3 font-display text-3xl font-bold text-primary-foreground">Join ClinicToken</h2>
         <p className="text-primary-foreground/70">Register as a patient and get your unique health ID card instantly.</p>
       </div>
