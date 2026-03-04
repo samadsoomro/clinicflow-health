@@ -4,6 +4,7 @@ import { Activity, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import ThemeToggle from "@/components/ThemeToggle";
 const navLinks = [
   { label: "Home", path: "/" },
   { label: "Live Tokens", path: "/tokens" },
@@ -55,7 +56,8 @@ const PublicNavbar = () => {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
+          <ThemeToggle />
           {isLoggedIn ? (
             <>
               {role === "admin" && (

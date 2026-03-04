@@ -6,6 +6,7 @@ import {
   Bell, Settings, MapPin, LogOut, Menu, X, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
@@ -78,6 +79,9 @@ const AdminDashboard = () => {
           <h2 className="font-display font-semibold text-foreground">
             {sidebarLinks.find((l) => l.path === location.pathname)?.label || "Admin"}
           </h2>
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
         <div className="p-6">
           <Outlet />
