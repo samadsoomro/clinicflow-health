@@ -28,18 +28,36 @@ const Login = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       localStorage.setItem("clinictoken_role", "admin");
       toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
       navigate("/admin");
-    } else if (PATIENT_CREDENTIALS[email] && password === PATIENT_PASSWORD) {
+      return;
+    }
+
+    // Check mock patient credentials
+    if (PATIENT_CREDENTIALS[trimmedEmail] && password === PATIENT_PASSWORD) {
       localStorage.setItem("clinictoken_role", "patient");
-      localStorage.setItem("clinictoken_patient_id", PATIENT_CREDENTIALS[email]);
+      localStorage.setItem("clinictoken_patient_id", PATIENT_CREDENTIALS[trimmedEmail]);
       toast({ title: "Welcome!", description: "Redirecting to your patient card..." });
       navigate("/patient-card");
-    } else {
-      toast({ title: "Invalid credentials", description: "Please check your email and password.", variant: "destructive" });
+      return;
     }
+
+    // Check registered patients from localStorage
+    const registered = JSON.parse(localStorage.getItem("clinictoken_registered_patients") || "[]");
+    const found = registered.find((p: any) => p.email === trimmedEmail && p.password === password);
+    if (found) {
+      localStorage.setItem("clinictoken_role", "patient");
+      localStorage.setItem("clinictoken_patient_id", found.id);
+      toast({ title: `Welcome, ${found.fullName}!`, description: "Redirecting to your patient card..." });
+      navigate("/patient-card");
+      return;
+    }
+
+    toast({ title: "Invalid credentials", description: "Please check your email and password.", variant: "destructive" });
   };
 
   return (
