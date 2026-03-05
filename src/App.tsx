@@ -22,6 +22,7 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminPatientCards from "./pages/admin/AdminPatientCards";
 import AdminLocation from "./pages/admin/AdminLocation";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminRoute from "./components/AdminRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,7 +47,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route path="/admin" element={<AdminDashboard />}>
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
             <Route index element={<AdminOverview />} />
             <Route path="doctors" element={<AdminDoctors />} />
             <Route path="tokens" element={<AdminTokens />} />
