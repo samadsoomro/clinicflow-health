@@ -14,6 +14,25 @@ const navLinks = [
   { label: "Patient Card", path: "/patient-card" },
 ];
 
+const getPatientName = (): string | null => {
+  const role = localStorage.getItem("clinictoken_role");
+  if (role !== "patient") return null;
+  const patientId = localStorage.getItem("clinictoken_patient_id");
+  if (!patientId) return null;
+
+  // Check mock patients
+  const mockNames: Record<string, string> = {
+    p1: "Ahmad Raza", p2: "Fatima Bibi", p3: "Usman Ali",
+    p4: "Ayesha Siddiqui", p5: "Bilal Khan",
+  };
+  if (mockNames[patientId]) return mockNames[patientId];
+
+  // Check registered patients
+  const registered = JSON.parse(localStorage.getItem("clinictoken_registered_patients") || "[]");
+  const found = registered.find((p: any) => p.id === patientId);
+  return found?.fullName || null;
+};
+
 const PublicNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,6 +40,7 @@ const PublicNavbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = localStorage.getItem("clinictoken_role");
   const isLoggedIn = !!role;
+  const patientName = getPatientName();
 
   const handleLogout = () => {
     localStorage.removeItem("clinictoken_role");
@@ -64,6 +84,9 @@ const PublicNavbar = () => {
                 <Link to="/admin">
                   <Button variant="ghost" size="sm">Dashboard</Button>
                 </Link>
+              )}
+              {patientName && (
+                <span className="text-sm font-medium text-foreground px-2">{patientName}</span>
               )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-1 h-4 w-4" />
@@ -111,18 +134,23 @@ const PublicNavbar = () => {
                   </Button>
                 </Link>
               ))}
-              <div className="flex gap-2 pt-2 border-t border-border">
+              <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {isLoggedIn ? (
                   <>
-                    {role === "admin" && (
-                      <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
-                        <Button variant="outline" className="w-full">Dashboard</Button>
-                      </Link>
+                    {patientName && (
+                      <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {patientName}</p>
                     )}
-                    <Button variant="destructive" className="flex-1" onClick={handleLogout}>
-                      <LogOut className="mr-1 h-4 w-4" />
-                      Logout
-                    </Button>
+                    <div className="flex gap-2">
+                      {role === "admin" && (
+                        <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
+                          <Button variant="outline" className="w-full">Dashboard</Button>
+                        </Link>
+                      )}
+                      <Button variant="destructive" className="flex-1" onClick={handleLogout}>
+                        <LogOut className="mr-1 h-4 w-4" />
+                        Logout
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <>
