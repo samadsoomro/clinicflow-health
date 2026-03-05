@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, LogIn } from "lucide-react";
+import { Activity, LogIn, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,10 +82,16 @@ const Login = () => {
               Sign In
             </Button>
           </form>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="font-medium text-primary hover:underline">Register</Link>
-          </p>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/register" className="font-medium text-primary hover:underline">Register</Link>
+            </p>
+            <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to Home
+            </Link>
+          </div>
         </motion.div>
       </div>
     </div>
