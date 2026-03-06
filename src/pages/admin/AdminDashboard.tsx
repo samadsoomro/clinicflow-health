@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
@@ -22,10 +23,10 @@ const sidebarLinks = [
 const AdminDashboard = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { signOut, profile } = useAuth();
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex-col gradient-hero transition-transform duration-300 lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} flex`}>
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/20">
@@ -55,22 +56,26 @@ const AdminDashboard = () => {
           })}
         </nav>
 
-        <div className="border-t border-sidebar-border p-3">
+        <div className="border-t border-sidebar-border p-3 space-y-1">
           <Link to="/">
             <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors">
               <LogOut className="h-4 w-4" />
               Back to Website
             </div>
           </Link>
+          <button onClick={signOut} className="w-full">
+            <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </div>
+          </button>
         </div>
       </aside>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Main content */}
       <div className="flex-1">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 backdrop-blur-xl px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
@@ -79,7 +84,8 @@ const AdminDashboard = () => {
           <h2 className="font-display font-semibold text-foreground">
             {sidebarLinks.find((l) => l.path === location.pathname)?.label || "Admin"}
           </h2>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {profile && <span className="text-sm text-muted-foreground hidden sm:inline">{profile.full_name}</span>}
             <ThemeToggle />
           </div>
         </header>

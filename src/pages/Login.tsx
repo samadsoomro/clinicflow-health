@@ -6,58 +6,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-const ADMIN_EMAIL = "admin@clinictoken.com";
-const ADMIN_PASSWORD = "admin123";
-
-// Demo patient credentials (any mock patient can log in with password "patient123")
-const PATIENT_CREDENTIALS: Record<string, string> = {
-  "ahmad@email.com": "p1",
-  "fatima@email.com": "p2",
-  "usman@email.com": "p3",
-  "ayesha@email.com": "p4",
-  "bilal@email.com": "p5",
-};
-const PATIENT_PASSWORD = "patient123";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedEmail = email.trim().toLowerCase();
-
-    if (trimmedEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      localStorage.setItem("clinictoken_role", "admin");
-      toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
-      navigate("/admin");
+    if (!email.trim() || !password) {
+      toast({ title: "Missing fields", description: "Please enter email and password.", variant: "destructive" });
       return;
     }
 
-    // Check mock patient credentials
-    if (PATIENT_CREDENTIALS[trimmedEmail] && password === PATIENT_PASSWORD) {
-      localStorage.setItem("clinictoken_role", "patient");
-      localStorage.setItem("clinictoken_patient_id", PATIENT_CREDENTIALS[trimmedEmail]);
-      toast({ title: "Welcome!", description: "Redirecting to your patient card..." });
-      navigate("/patient-card");
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       return;
     }
 
-    // Check registered patients from localStorage
-    const registered = JSON.parse(localStorage.getItem("clinictoken_registered_patients") || "[]");
-    const found = registered.find((p: any) => p.email === trimmedEmail && p.password === password);
-    if (found) {
-      localStorage.setItem("clinictoken_role", "patient");
-      localStorage.setItem("clinictoken_patient_id", found.id);
-      toast({ title: `Welcome, ${found.fullName}!`, description: "Redirecting to your patient card..." });
-      navigate("/patient-card");
-      return;
-    }
+    if (data.user) {
+      // Check roles to determine redirect
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
 
-    toast({ title: "Invalid credentials", description: "Please check your email and password.", variant: "destructive" });
+      const roleList = roles?.map((r) => r.role) || [];
+
+      if (roleList.includes("super_admin") || roleList.includes("clinic_admin")) {
+        toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
+        navigate("/admin");
+      } else {
+        toast({ title: "Welcome!", description: "Redirecting to your patient card..." });
+        navigate("/patient-card");
+      }
+    }
   };
 
   return (
@@ -91,13 +84,12 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button type="button" className="text-xs text-primary hover:underline">Forgot password?</button>
               </div>
               <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button variant="hero" className="w-full" type="submit">
+            <Button variant="hero" className="w-full" type="submit" disabled={loading}>
               <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
           <div className="mt-6 flex flex-col items-center gap-2">

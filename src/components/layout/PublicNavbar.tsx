@@ -5,6 +5,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+
 const navLinks = [
   { label: "Home", path: "/" },
   { label: "Live Tokens", path: "/tokens" },
@@ -14,37 +16,18 @@ const navLinks = [
   { label: "Patient Card", path: "/patient-card" },
 ];
 
-const getPatientName = (): string | null => {
-  const role = localStorage.getItem("clinictoken_role");
-  if (role !== "patient") return null;
-  const patientId = localStorage.getItem("clinictoken_patient_id");
-  if (!patientId) return null;
-
-  // Check mock patients
-  const mockNames: Record<string, string> = {
-    p1: "Ahmad Raza", p2: "Fatima Bibi", p3: "Usman Ali",
-    p4: "Ayesha Siddiqui", p5: "Bilal Khan",
-  };
-  if (mockNames[patientId]) return mockNames[patientId];
-
-  // Check registered patients
-  const registered = JSON.parse(localStorage.getItem("clinictoken_registered_patients") || "[]");
-  const found = registered.find((p: any) => p.id === patientId);
-  return found?.fullName || null;
-};
-
 const PublicNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const role = localStorage.getItem("clinictoken_role");
-  const isLoggedIn = !!role;
-  const patientName = getPatientName();
+  const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("clinictoken_role");
-    localStorage.removeItem("clinictoken_patient_id");
+  const isAdmin = isSuperAdmin || isClinicAdmin();
+  const displayName = profile?.full_name || user?.email || null;
+
+  const handleLogout = async () => {
+    await signOut();
     setMobileOpen(false);
     toast({ title: "Logged out", description: "You have been signed out." });
     navigate("/");
@@ -78,15 +61,15 @@ const PublicNavbar = () => {
 
         <div className="hidden items-center gap-1 md:flex">
           <ThemeToggle />
-          {isLoggedIn ? (
+          {user ? (
             <>
-              {role === "admin" && (
+              {isAdmin && (
                 <Link to="/admin">
                   <Button variant="ghost" size="sm">Dashboard</Button>
                 </Link>
               )}
-              {patientName && (
-                <span className="text-sm font-medium text-foreground px-2">{patientName}</span>
+              {displayName && (
+                <span className="text-sm font-medium text-foreground px-2">{displayName}</span>
               )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-1 h-4 w-4" />
@@ -135,13 +118,13 @@ const PublicNavbar = () => {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                {isLoggedIn ? (
+                {user ? (
                   <>
-                    {patientName && (
-                      <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {patientName}</p>
+                    {displayName && (
+                      <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {displayName}</p>
                     )}
                     <div className="flex gap-2">
-                      {role === "admin" && (
+                      {isAdmin && (
                         <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
                           <Button variant="outline" className="w-full">Dashboard</Button>
                         </Link>
