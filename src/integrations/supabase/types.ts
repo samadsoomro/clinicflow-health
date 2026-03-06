@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      certifications: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          image_url: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+          sort_order?: number | null
+          title?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certifications_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinics: {
         Row: {
           address: string | null
@@ -22,12 +57,19 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string | null
+          domain_name: string | null
           emergency_contact: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
           id: string
+          is_active: boolean | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          og_image_url: string | null
           qr_base_url: string | null
+          seo_description: string | null
+          seo_title: string | null
           subdomain: string
           terms_conditions: string | null
           theme_color: string | null
@@ -40,12 +82,19 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          domain_name?: string | null
           emergency_contact?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
+          is_active?: boolean | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          og_image_url?: string | null
           qr_base_url?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           subdomain: string
           terms_conditions?: string | null
           theme_color?: string | null
@@ -58,12 +107,19 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          domain_name?: string | null
           emergency_contact?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
+          is_active?: boolean | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          og_image_url?: string | null
           qr_base_url?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
           subdomain?: string
           terms_conditions?: string | null
           theme_color?: string | null
@@ -108,6 +164,118 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          priority: string | null
+          title: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          priority?: string | null
+          title: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          priority?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          age: number
+          clinic_id: string
+          created_at: string | null
+          email: string | null
+          formatted_patient_id: string
+          full_name: string
+          gender: string
+          id: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          age?: number
+          clinic_id: string
+          created_at?: string | null
+          email?: string | null
+          formatted_patient_id: string
+          full_name: string
+          gender?: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          age?: number
+          clinic_id?: string
+          created_at?: string | null
+          email?: string | null
+          formatted_patient_id?: string
+          full_name?: string
+          gender?: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id: string
+          phone?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
       }
       tokens: {
         Row: {
@@ -154,15 +322,59 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          clinic_id: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          clinic_id?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          clinic_id?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       extract_date: { Args: { ts: string }; Returns: string }
+      has_clinic_role: {
+        Args: {
+          _clinic_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "clinic_admin" | "patient"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -289,6 +501,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "clinic_admin", "patient"],
+    },
   },
 } as const
