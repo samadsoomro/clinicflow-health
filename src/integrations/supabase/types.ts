@@ -14,13 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clinics: {
+        Row: {
+          address: string | null
+          card_background_color: string | null
+          clinic_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          emergency_contact: string | null
+          id: string
+          latitude: number | null
+          logo_url: string | null
+          longitude: number | null
+          qr_base_url: string | null
+          subdomain: string
+          terms_conditions: string | null
+          theme_color: string | null
+          working_hours: string | null
+        }
+        Insert: {
+          address?: string | null
+          card_background_color?: string | null
+          clinic_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          emergency_contact?: string | null
+          id?: string
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          qr_base_url?: string | null
+          subdomain: string
+          terms_conditions?: string | null
+          theme_color?: string | null
+          working_hours?: string | null
+        }
+        Update: {
+          address?: string | null
+          card_background_color?: string | null
+          clinic_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          emergency_contact?: string | null
+          id?: string
+          latitude?: number | null
+          logo_url?: string | null
+          longitude?: number | null
+          qr_base_url?: string | null
+          subdomain?: string
+          terms_conditions?: string | null
+          theme_color?: string | null
+          working_hours?: string | null
+        }
+        Relationships: []
+      }
+      doctors: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          specialization: string
+          status: string | null
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          specialization: string
+          status?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          specialization?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctors_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tokens: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          doctor_id: string
+          id: string
+          patient_name: string
+          status: string | null
+          token_number: number
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          doctor_id: string
+          id?: string
+          patient_name: string
+          status?: string | null
+          token_number: number
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          doctor_id?: string
+          id?: string
+          patient_name?: string
+          status?: string | null
+          token_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tokens_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tokens_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      extract_date: { Args: { ts: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
