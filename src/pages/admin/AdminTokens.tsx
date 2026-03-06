@@ -1,177 +1,248 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Clock, User, Search } from "lucide-react";
+import { Ticket, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockTokens as initialTokens, mockDoctors } from "@/data/mockData";
-import type { Token } from "@/types/clinic";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { useClinicDoctors, getClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
 const AdminTokens = () => {
-  const [tokens, setTokens] = useState<Token[]>(initialTokens);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ doctorId: "", patientName: "" });
+  const { doctors, loading: doctorsLoading, clinicId } = useClinicDoctors();
+  const [issueForm, setIssueForm] = useState({ doctorId: "", patientName: "" });
+  const [activateNumber, setActivateNumber] = useState("");
+  const [todayTokens, setTodayTokens] = useState<any[]>([]);
+  const [issuing, setIssuing] = useState(false);
+  const [activating, setActivating] = useState(false);
 
-  const activeDoctors = mockDoctors.filter((d) => d.status === "active");
+  const today = new Date().toISOString().split("T")[0];
 
-  const getNextTokenNumber = (doctorId: string) => {
-    const doctorTokens = tokens.filter((t) => t.doctorId === doctorId);
-    return doctorTokens.length > 0 ? Math.max(...doctorTokens.map((t) => t.tokenNumber)) + 1 : 1;
+  const fetchTodayTokens = async () => {
+    const { data } = await supabase
+      .from("tokens")
+      .select("*, doctors:doctor_id(name, specialization)")
+      .eq("clinic_id", clinicId)
+      .gte("created_at", today + "T00:00:00")
+      .lte("created_at", today + "T23:59:59")
+      .order("token_number", { ascending: true });
+    setTodayTokens((data as any[]) || []);
   };
 
-  const handleGenerate = () => {
-    if (!form.doctorId || !form.patientName) {
-      toast.error("Please fill in all fields");
+  useEffect(() => {
+    fetchTodayTokens();
+    // Realtime subscription
+    const channel = supabase
+      .channel("admin-tokens")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
+        fetchTodayTokens();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [clinicId]);
+
+  const getNextTokenNumber = () => {
+    if (todayTokens.length === 0) return 1;
+    return Math.max(...todayTokens.map((t) => t.token_number)) + 1;
+  };
+
+  const handleIssueToken = async () => {
+    if (!issueForm.doctorId || !issueForm.patientName.trim()) {
+      toast.error("Please select a doctor and enter patient name");
       return;
     }
-    const doctor = mockDoctors.find((d) => d.id === form.doctorId);
-    const newToken: Token = {
-      id: crypto.randomUUID(),
-      doctorId: form.doctorId,
-      doctorName: doctor?.name || "",
-      tokenNumber: getNextTokenNumber(form.doctorId),
-      patientName: form.patientName,
-      isWalkin: true,
-      status: "active",
-      createdAt: new Date().toISOString(),
-    };
-    setTokens((prev) => [...prev, newToken]);
-    toast.success(`Token #${newToken.tokenNumber} generated for ${doctor?.name}`);
-    setDialogOpen(false);
-    setForm({ doctorId: "", patientName: "" });
+    setIssuing(true);
+    const tokenNumber = getNextTokenNumber();
+    const { error } = await supabase.from("tokens").insert({
+      clinic_id: clinicId,
+      doctor_id: issueForm.doctorId,
+      token_number: tokenNumber,
+      patient_name: issueForm.patientName.trim(),
+      status: "waiting",
+    } as any);
+
+    if (error) {
+      toast.error("Failed to issue token: " + error.message);
+    } else {
+      toast.success(`Token #${tokenNumber} issued successfully`);
+      setIssueForm({ doctorId: "", patientName: "" });
+      fetchTodayTokens();
+    }
+    setIssuing(false);
   };
 
-  const handleStatusChange = (id: string, status: Token["status"]) => {
-    setTokens((prev) => prev.map((t) => t.id === id ? { ...t, status } : t));
-    toast.success(`Token marked as ${status}`);
+  const handleActivateToken = async () => {
+    const num = parseInt(activateNumber);
+    if (!num) {
+      toast.error("Enter a valid token number");
+      return;
+    }
+    setActivating(true);
+
+    // Find the token
+    const target = todayTokens.find((t) => t.token_number === num);
+    if (!target) {
+      toast.error(`Token #${num} not found for today`);
+      setActivating(false);
+      return;
+    }
+
+    // Set all current 'live' tokens to 'completed'
+    const liveTokens = todayTokens.filter((t) => t.status === "live");
+    for (const lt of liveTokens) {
+      await supabase.from("tokens").update({ status: "completed" } as any).eq("id", lt.id);
+    }
+
+    // Set target to 'live'
+    const { error } = await supabase.from("tokens").update({ status: "live" } as any).eq("id", target.id);
+    if (error) {
+      toast.error("Failed to activate: " + error.message);
+    } else {
+      toast.success(`Token #${num} is now LIVE`);
+      setActivateNumber("");
+      fetchTodayTokens();
+    }
+    setActivating(false);
   };
+
+  const liveToken = todayTokens.find((t) => t.status === "live");
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
-          <p className="text-sm text-muted-foreground">{tokens.filter((t) => t.status === "active").length} active tokens today</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero">
-              <Plus className="mr-2 h-4 w-4" /> Walk-In Token
+      <div>
+        <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
+        <p className="text-sm text-muted-foreground">
+          {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
+        </p>
+      </div>
+
+      {/* Two action cards */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* CARD 1: Issue Token */}
+        <Card className="border-border shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Ticket className="h-5 w-5 text-primary" />
+              Issue Token
+            </CardTitle>
+            <CardDescription>Issue a new token for a walk-in patient</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Doctor</Label>
+              <Select value={issueForm.doctorId} onValueChange={(v) => setIssueForm({ ...issueForm, doctorId: v })}>
+                <SelectTrigger><SelectValue placeholder="Select doctor" /></SelectTrigger>
+                <SelectContent>
+                  {doctors.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name} — {d.specialization}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Patient Name</Label>
+              <Input
+                value={issueForm.patientName}
+                onChange={(e) => setIssueForm({ ...issueForm, patientName: e.target.value })}
+                placeholder="Enter patient name"
+              />
+            </div>
+            <div className="rounded-xl bg-secondary p-4 text-center">
+              <p className="text-xs text-muted-foreground">Next Token</p>
+              <p className="font-display text-4xl font-bold text-primary">{getNextTokenNumber()}</p>
+            </div>
+            <Button variant="hero" className="w-full" onClick={handleIssueToken} disabled={issuing}>
+              {issuing ? "Issuing..." : "Issue Token"}
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="font-display">Generate Walk-In Token</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Select Doctor</Label>
-                <Select value={form.doctorId} onValueChange={(val) => setForm({ ...form, doctorId: val })}>
-                  <SelectTrigger><SelectValue placeholder="Choose a doctor" /></SelectTrigger>
-                  <SelectContent>
-                    {activeDoctors.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name} — {d.specialization}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          </CardContent>
+        </Card>
+
+        {/* CARD 2: Activate Token */}
+        <Card className="border-border shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Zap className="h-5 w-5 text-primary" />
+              Activate Token
+            </CardTitle>
+            <CardDescription>Set the currently serving token number</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {liveToken && (
+              <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 text-center">
+                <p className="text-xs text-muted-foreground">Currently Live</p>
+                <p className="font-display text-4xl font-bold text-primary">{liveToken.token_number}</p>
+                <p className="text-sm text-muted-foreground mt-1">{liveToken.patient_name}</p>
               </div>
-              <div className="space-y-2">
-                <Label>Patient Name</Label>
-                <Input value={form.patientName} onChange={(e) => setForm({ ...form, patientName: e.target.value })} placeholder="Enter patient name" />
-              </div>
-              {form.doctorId && (
-                <div className="rounded-xl bg-secondary p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Next token number</p>
-                  <p className="font-display text-4xl font-bold text-primary">{getNextTokenNumber(form.doctorId)}</p>
-                </div>
-              )}
+            )}
+            <div className="space-y-2">
+              <Label>Token Number</Label>
+              <Input
+                type="number"
+                value={activateNumber}
+                onChange={(e) => setActivateNumber(e.target.value)}
+                placeholder="Enter token number to activate"
+              />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button variant="hero" onClick={handleGenerate}>Generate Token</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <Button variant="hero" className="w-full" onClick={handleActivateToken} disabled={activating}>
+              {activating ? "Activating..." : "Make Live"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Current Tokens Summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {activeDoctors.map((doctor) => {
-          const doctorTokens = tokens.filter((t) => t.doctorId === doctor.id && t.status === "active");
-          const currentToken = doctorTokens.length > 0 ? Math.max(...doctorTokens.map((t) => t.tokenNumber)) : 0;
-          return (
-            <div key={doctor.id} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl gradient-primary font-display text-xl font-bold text-primary-foreground">
-                {currentToken || "—"}
-              </div>
-              <div>
-                <p className="font-display font-semibold text-foreground">{doctor.name}</p>
-                <p className="text-xs text-muted-foreground">{doctor.specialization}</p>
-                <p className="mt-1 text-xs text-primary">{doctorTokens.length} active</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Token Table */}
-      <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Token #</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Doctor</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tokens.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((token) => (
-              <TableRow key={token.id}>
-                <TableCell>
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-secondary font-display font-bold text-primary">
-                    {token.tokenNumber}
-                  </span>
-                </TableCell>
-                <TableCell className="font-medium">{token.patientName}</TableCell>
-                <TableCell className="text-muted-foreground">{token.doctorName}</TableCell>
-                <TableCell>
-                  <Badge variant={token.isWalkin ? "outline" : "secondary"}>
-                    {token.isWalkin ? "Walk-in" : "Registered"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={
-                    token.status === "active" ? "default" :
-                    token.status === "completed" ? "secondary" : "outline"
-                  }>
-                    {token.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {token.status === "active" && (
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleStatusChange(token.id, "completed")}>
-                        Complete
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleStatusChange(token.id, "closed")}>
-                        Close
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
+      {/* Today's Tokens Table */}
+      <Card className="border-border shadow-soft overflow-hidden">
+        <CardHeader>
+          <CardTitle className="font-display text-lg">Today's Tokens</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Token #</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Doctor</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {todayTokens.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
+                </TableRow>
+              ) : (
+                todayTokens.map((token) => (
+                  <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : ""}>
+                    <TableCell>
+                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
+                        token.status === "live" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"
+                      }`}>
+                        {token.token_number}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">{token.patient_name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {token.doctors?.name || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        token.status === "live" ? "default" :
+                        token.status === "waiting" ? "secondary" : "outline"
+                      }>
+                        {token.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };
