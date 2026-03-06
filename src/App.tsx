@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/hooks/useAuth";
 import PublicLayout from "./components/layout/PublicLayout";
 import Index from "./pages/Index";
 import LiveTokens from "./pages/LiveTokens";
@@ -35,33 +36,35 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-        <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/tokens" element={<LiveTokens />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/location" element={<Location />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/patient-card" element={<PatientCard />} />
-          </Route>
+          <AuthProvider>
+            <Routes>
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/tokens" element={<LiveTokens />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/location" element={<Location />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/patient-card" element={<PatientCard />} />
+              </Route>
 
-          <Route path="/token" element={<TokenDisplay />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+              <Route path="/token" element={<TokenDisplay />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
-            <Route index element={<AdminOverview />} />
-            <Route path="doctors" element={<AdminDoctors />} />
-            <Route path="tokens" element={<AdminTokens />} />
-            <Route path="patients" element={<AdminPatients />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="cards" element={<AdminPatientCards />} />
-            <Route path="location" element={<AdminLocation />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
+              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
+                <Route index element={<AdminOverview />} />
+                <Route path="doctors" element={<AdminDoctors />} />
+                <Route path="tokens" element={<AdminTokens />} />
+                <Route path="patients" element={<AdminPatients />} />
+                <Route path="notifications" element={<AdminNotifications />} />
+                <Route path="cards" element={<AdminPatientCards />} />
+                <Route path="location" element={<AdminLocation />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

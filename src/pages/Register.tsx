@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { getClinicId } from "@/hooks/useClinic";
 
 const Register = () => {
   const [fullName, setFullName] = useState("");
@@ -15,10 +17,11 @@ const Register = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!fullName.trim() || !age || !gender || !phone.trim() || !email.trim() || !password) {
@@ -31,35 +34,59 @@ const Register = () => {
       return;
     }
 
-    // Get existing registered patients from localStorage
-    const existing = JSON.parse(localStorage.getItem("clinictoken_registered_patients") || "[]");
+    setLoading(true);
 
-    // Check for duplicate email
-    if (existing.some((p: any) => p.email === email.trim().toLowerCase())) {
-      toast({ title: "Email already registered", description: "Please use a different email or sign in.", variant: "destructive" });
+    // 1. Sign up via Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { full_name: fullName.trim() },
+      },
+    });
+
+    if (authError) {
+      setLoading(false);
+      toast({ title: "Registration failed", description: authError.message, variant: "destructive" });
       return;
     }
 
-    const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
-    const newId = `reg-${Date.now()}`;
-    const patientNum = existing.length + 6; // offset from mock patients
+    if (authData.user) {
+      const clinicId = getClinicId();
+      const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
 
-    const newPatient = {
-      id: newId,
-      fullName: fullName.trim(),
-      age: parseInt(age),
-      gender,
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
-      password,
-      formattedPatientId: `${genderPrefix}-${String(patientNum).padStart(3, "0")}`,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+      // Get next patient number for this clinic
+      const { count } = await supabase
+        .from("patients")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId);
 
-    existing.push(newPatient);
-    localStorage.setItem("clinictoken_registered_patients", JSON.stringify(existing));
+      const patientNum = (count || 0) + 1;
+      const formattedId = `${genderPrefix}-${patientNum}`;
 
-    toast({ title: "Registration successful!", description: "You can now sign in with your credentials." });
+      // 2. Insert patient record
+      await supabase.from("patients").insert({
+        clinic_id: clinicId,
+        user_id: authData.user.id,
+        full_name: fullName.trim(),
+        age: parseInt(age),
+        gender,
+        phone: phone.trim(),
+        email: email.trim().toLowerCase(),
+        formatted_patient_id: formattedId,
+      });
+
+      // 3. Assign patient role
+      await supabase.from("user_roles").insert({
+        user_id: authData.user.id,
+        role: "patient" as const,
+        clinic_id: clinicId,
+      });
+    }
+
+    setLoading(false);
+    toast({ title: "Registration successful!", description: "Please check your email to verify your account, then sign in." });
     navigate("/login");
   };
 
@@ -120,9 +147,9 @@ const Register = () => {
               <Label htmlFor="regPassword">Password</Label>
               <Input id="regPassword" type="password" placeholder="••••••••" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button variant="hero" className="w-full" type="submit">
+            <Button variant="hero" className="w-full" type="submit" disabled={loading}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Register
+              {loading ? "Registering..." : "Register"}
             </Button>
           </form>
           <div className="mt-6 flex flex-col items-center gap-2">
