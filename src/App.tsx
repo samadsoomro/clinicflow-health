@@ -17,6 +17,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminTokens from "./pages/admin/AdminTokens";
+import TokenDisplay from "./pages/TokenDisplay";
 import AdminPatients from "./pages/admin/AdminPatients";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminPatientCards from "./pages/admin/AdminPatientCards";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/patient-card" element={<PatientCard />} />
           </Route>
 
+          <Route path="/token" element={<TokenDisplay />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
