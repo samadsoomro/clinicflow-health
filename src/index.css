@@ -155,31 +155,60 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+
+  html,
+  body {
+    width: 80mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
   }
 
-  .receipt-printable,
-  .receipt-printable * {
-    visibility: visible;
+  * {
+    visibility: hidden !important;
+    background: transparent !important;
   }
 
   .receipt-printable {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    margin: 0;
-    padding: 10px;
-    background: white;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    height: auto !important;
+    padding: 4mm !important;
+    font-size: 11px !important;
+    background: white !important;
+    color: black !important;
+    z-index: 999999 !important;
+    overflow: visible !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  @page {
-    size: 80mm auto;
-    margin: 0;
+  .receipt-printable * {
+    visibility: visible !important;
+    color: black !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
   }
 
   .receipt-no-print {
     display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Hide shadcn dialog backdrop */
+  [data-radix-dialog-overlay],
+  [data-radix-popper-content-wrapper],
+  [role="dialog"]>*:not(.receipt-printable) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0mm;
   }
 }

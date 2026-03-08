@@ -73,8 +73,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
   }, [open, token, clinicId]);
 
 
-
-  const handlePrint = () => {
+  const handleDownload = () => {
     if (!data) return;
     const clinic = data.clinicName || "";
     const token = data.tokenNumber || "";
@@ -174,7 +173,11 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     }, 500);
   };
 
-  const handleDownload = handlePrint;
+  const handlePrint = () => {
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
 
   if (!data && !loading) return null;
 
@@ -186,12 +189,12 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
         {loading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div>
         ) : data ? (
-          <div className="flex flex-col max-h-[90vh]">
+          <div className="flex flex-col h-auto">
             <div className="flex-1 overflow-y-auto p-4 bg-muted/30">
               <div
                 id="token-receipt"
                 className="receipt-printable bg-white text-black p-6 font-mono text-[11px] leading-tight mx-auto shadow-sm"
-                style={{ width: "80mm", minHeight: "100mm" }}
+                style={{ width: "80mm", height: "auto", overflow: "visible" }}
               >
                 {/* Header */}
                 <div className="text-center">
