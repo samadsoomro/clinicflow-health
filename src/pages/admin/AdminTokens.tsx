@@ -222,23 +222,43 @@ const AdminTokens = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
-          <p className="text-sm text-muted-foreground">
-            {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
-          </p>
+      {/* Website URL + Export bar */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-1 items-center gap-2">
+            <Label className="shrink-0 text-xs text-muted-foreground">Website URL</Label>
+            <Input
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="e.g. zahidaclinic.health.vercel.app"
+              className="max-w-xs text-sm"
+            />
+            <Button size="sm" variant="outline" onClick={handleSaveUrl} disabled={savingUrl}>
+              {savingUrl ? "…" : "Save"}
+            </Button>
+            {urlSaveMsg && <span className={`text-xs ${urlSaveMsg.startsWith("✓") ? "text-green-600" : "text-destructive"}`}>{urlSaveMsg}</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={todayTokens.length === 0}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={todayTokens.length === 0}>
+              <FileText className="mr-1.5 h-4 w-4" /> PDF
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || todayTokens.length === 0}>
+              <RotateCcw className="mr-1.5 h-4 w-4" /> {resetting ? "Resetting..." : "Reset Today"}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={todayTokens.length === 0}>
-            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={todayTokens.length === 0}>
-            <FileText className="mr-1.5 h-4 w-4" /> PDF
-          </Button>
-          <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || todayTokens.length === 0}>
-            <RotateCcw className="mr-1.5 h-4 w-4" /> {resetting ? "Resetting..." : "Reset Today"}
-          </Button>
+        <p className="text-[10px] text-muted-foreground -mt-1">This URL appears on token receipts so patients can check live token status</p>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
+            <p className="text-sm text-muted-foreground">
+              {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
+            </p>
+          </div>
         </div>
       </div>
 

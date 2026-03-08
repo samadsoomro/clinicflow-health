@@ -153,6 +153,8 @@
     left: 0;
     top: 0;
     width: 80mm;
+    padding: 4px;
+    font-size: 11px;
   }
   .receipt-no-print {
     display: none !important;
