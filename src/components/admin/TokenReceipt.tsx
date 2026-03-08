@@ -20,21 +20,17 @@ interface ReceiptData {
   tokenNumber: number;
   patientName: string;
   status: string;
-  date: string;
-  time: string;
+  dateTime: string;
   phone: string;
   address: string;
   hours: string;
 }
 
-const formatDate = (iso: string) => {
+const formatDateTime = (iso: string) => {
   const d = new Date(iso);
-  return `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getFullYear()}`;
-};
-
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const date = `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getFullYear()}`;
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return `${date}  ${time}`;
 };
 
 const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps) => {
@@ -45,7 +41,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     if (!open || !token) return;
     setLoading(true);
 
-    const fetch = async () => {
+    const fetchData = async () => {
       const [clinicRes, doctorRes, contactRes] = await Promise.all([
         supabase.from("clinics").select("clinic_name, logo_url, qr_base_url, contact_phone, address, working_hours").eq("id", clinicId).single(),
         supabase.from("doctors").select("name, specialization").eq("id", token.doctor_id).single(),
@@ -65,8 +61,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
         tokenNumber: token.token_number,
         patientName: token.patient_name || "—",
         status: token.status || "waiting",
-        date: formatDate(token.created_at),
-        time: formatTime(token.created_at),
+        dateTime: formatDateTime(token.created_at),
         phone: cj.phone || clinic?.contact_phone || "Not provided",
         address: cj.address || clinic?.address || "Not provided",
         hours: cj.working_hours || clinic?.working_hours || "",
@@ -74,7 +69,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
       setLoading(false);
     };
 
-    fetch();
+    fetchData();
   }, [open, token, clinicId]);
 
   const handlePrint = () => window.print();
@@ -84,9 +79,10 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     if (!el) return;
     const printContents = el.innerHTML;
     const patientSlug = (data?.patientName || "Patient").replace(/\s+/g, "");
-    const win = window.open("", "", "width=400,height=700");
+    const dateStr = data?.dateTime?.split("  ")[0] || "";
+    const win = window.open("", "", "width=400,height=600");
     if (!win) return;
-    win.document.write(`<html><head><title>Token-${data?.tokenNumber}-${patientSlug}-${data?.date}</title><style>body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:10px;color:#000}*{box-sizing:border-box}.divider{border-top:2px dashed #000;margin:8px 0}.center{text-align:center}.bold{font-weight:bold}.big{font-size:28px}.row{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}.label{color:#555}.footer{font-size:10px;text-align:center;margin-top:8px;color:#888}</style></head><body>${printContents}</body></html>`);
+    win.document.write(`<html><head><title>Token-${data?.tokenNumber}-${patientSlug}-${dateStr}</title><style>body{font-family:'Courier New',monospace;width:300px;margin:0 auto;padding:6px;color:#000;font-size:11px}*{box-sizing:border-box}img{max-height:32px;margin:0 auto;display:block}</style></head><body>${printContents}</body></html>`);
     win.document.close();
     win.print();
   };
@@ -103,42 +99,54 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
         ) : data ? (
           <>
             {/* Receipt — printable area */}
-            <div id="token-receipt" className="receipt-printable bg-white text-black p-6 font-mono text-xs mx-auto" style={{ maxWidth: 300 }}>
-              <div className="divider border-t-2 border-dashed border-black my-2" />
+            <div id="token-receipt" className="receipt-printable bg-white text-black p-1.5 font-mono text-[11px] leading-tight mx-auto" style={{ width: 300 }}>
+              {/* Header */}
+              <div className="border-t border-dashed border-black my-1" />
               <div className="text-center">
                 {data.clinicLogo && (
-                  <img src={data.clinicLogo} alt="" className="mx-auto mb-2 h-10 object-contain" />
+                  <img src={data.clinicLogo} alt="" className="mx-auto mb-1 h-8 object-contain" />
                 )}
                 <p className="font-bold text-sm uppercase">{data.clinicName}</p>
-                {data.clinicUrl && <p className="text-[10px] text-gray-500">{data.clinicUrl}</p>}
+                {data.clinicUrl && <p className="text-[9px] text-gray-500">{data.clinicUrl}</p>}
               </div>
-              <div className="border-t-2 border-dashed border-black my-3" />
-              <p className="text-center font-bold text-xs tracking-widest">TOKEN RECEIPT</p>
-              <div className="border-t-2 border-dashed border-black my-3" />
+              <div className="border-t border-dashed border-black my-1" />
+              <p className="text-center font-bold text-[10px] tracking-widest">TOKEN RECEIPT</p>
+              <div className="border-t border-dashed border-black my-1" />
 
-              <p className="text-center font-bold text-3xl my-3">#{data.tokenNumber}</p>
+              {/* Token number */}
+              <p className="text-center font-bold text-3xl my-1">#{data.tokenNumber}</p>
 
-              <div className="space-y-1">
+              {/* Details */}
+              <div className="space-y-0">
                 <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold text-right max-w-[55%] truncate">{data.patientName}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-semibold">{data.doctorName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Specialization</span><span>{data.specialization}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Date</span><span>{data.date}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Time</span><span>{data.time}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Spec</span><span>{data.specialization}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Date</span><span>{data.dateTime}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Status</span><span className="capitalize">{data.status}</span></div>
               </div>
 
-              <div className="border-t-2 border-dashed border-black my-3" />
-              <p className="text-center text-[11px] font-medium">Please wait for your token<br/>number to be called.</p>
-              <div className="border-t-2 border-dashed border-black my-3" />
+              <div className="border-t border-dashed border-black my-1" />
+              <div className="text-center text-[10px]">
+                <p>Please wait for your token</p>
+                <p>number to be called.</p>
+                {data.clinicUrl && (
+                  <>
+                    <p className="mt-0.5">Check live token status at:</p>
+                    <p className="font-semibold">{data.clinicUrl}</p>
+                  </>
+                )}
+              </div>
+              <div className="border-t border-dashed border-black my-1" />
 
-              <div className="space-y-1 text-[10px]">
+              {/* Contact */}
+              <div className="space-y-0 text-[9px]">
                 <div className="flex justify-between"><span className="text-gray-500">Contact</span><span>{data.phone}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Address</span><span className="text-right max-w-[60%]">{data.address}</span></div>
                 {data.hours && <div className="flex justify-between"><span className="text-gray-500">Hours</span><span>{data.hours}</span></div>}
               </div>
 
-              <div className="border-t-2 border-dashed border-black my-3" />
-              <p className="text-center text-[9px] text-gray-400">Powered by ClinicToken CMS</p>
+              <div className="border-t border-dashed border-black my-1" />
+              <p className="text-center text-[8px] text-gray-400">Powered by ClinicToken CMS</p>
             </div>
 
             {/* Action buttons — hidden in print */}
