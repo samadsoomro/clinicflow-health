@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
+  { label: "Homepage", path: "/admin/home", icon: Layout },
   { label: "Doctors", path: "/admin/doctors", icon: Stethoscope },
   { label: "Tokens", path: "/admin/tokens", icon: Clock },
   { label: "Patients", path: "/admin/patients", icon: Users },
