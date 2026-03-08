@@ -248,7 +248,7 @@ const Index = () => {
               </p>
             </div>
             <div className="mx-auto max-w-2xl space-y-4">
-              {notifs.map((n, i) => (
+              {displayNotifs.map((n, i) => (
                 <motion.div
                   key={n.id}
                   initial={{ opacity: 0, x: -20 }}
