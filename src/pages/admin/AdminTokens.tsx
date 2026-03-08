@@ -78,7 +78,10 @@ const AdminTokens = () => {
     if (error) {
       toast.error("Failed to issue token: " + error.message);
     } else {
-      toast.success(`Token #${tokenNumber} issued successfully`);
+      const issuedToken = { token_number: tokenNumber, patient_name: issueForm.patientName.trim() || "", doctor_id: issueForm.doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
+      toast.success(`Token #${tokenNumber} issued successfully`, {
+        action: { label: "Print Token", onClick: () => { setReceiptToken(issuedToken); setReceiptOpen(true); } },
+      });
       setIssueForm({ doctorId: "", patientName: "" });
       fetchTodayTokens();
     }
