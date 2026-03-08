@@ -1,10 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getClinicId } from "@/hooks/useClinic";
+import { useClinicId } from "@/hooks/useClinic";
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperAdmin, isClinicAdmin } = useAuth();
-  const clinicId = getClinicId();
+  const { clinicId } = useClinicId();
 
   if (loading) {
     return (
@@ -18,6 +18,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Clinic admins trying /superadmin are handled by SuperAdminLayout
+  // Super admins can access /admin too
   if (!isSuperAdmin && !isClinicAdmin(clinicId)) {
     return <Navigate to="/" replace />;
   }
