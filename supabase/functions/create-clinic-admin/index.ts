@@ -21,16 +21,21 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Extract user from JWT using admin client
-    const token = authHeader.replace("Bearer ", "");
-    console.log("Verifying token for caller...");
-    const { data: { user: caller }, error: userError } = await adminClient.auth.getUser(token);
-    console.log("User result:", caller?.id, "Error:", userError?.message);
-    
+    // Create admin client (service role, bypasses RLS)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Verify caller's JWT by creating a client with their auth header
+    const userClient = createClient(supabaseUrl, serviceRoleKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: { user: caller }, error: userError } = await userClient.auth.getUser();
+
     if (userError || !caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
