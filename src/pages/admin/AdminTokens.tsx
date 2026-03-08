@@ -289,10 +289,11 @@ const AdminTokens = () => {
                 </TableRow>
               ) : (
                 todayTokens.map((token) => (
-                  <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : ""}>
+                    <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : token.status === "unavailable" ? "bg-destructive/5" : ""}>
                     <TableCell>
                       <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
-                        token.status === "live" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"
+                        token.status === "live" ? "bg-primary text-primary-foreground" :
+                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" : "bg-secondary text-primary"
                       }`}>
                         {token.token_number}
                       </span>
