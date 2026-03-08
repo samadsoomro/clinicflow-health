@@ -130,9 +130,17 @@ const SuperAdminClinics = () => {
                 <div className="space-y-2">
                   <Label>Subdomain</Label>
                   <div className="flex items-center gap-2">
-                    <Input value={form.subdomain} onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="myclinic" />
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">.clinic.health</span>
+                    <Input value={form.subdomain} onChange={(e) => {
+                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
+                      setForm({ ...form, subdomain: val });
+                    }} placeholder="myclinic" />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">.health.vercel.app</span>
                   </div>
+                  {form.subdomain && (
+                    <p className="text-xs text-muted-foreground">
+                      Your clinic URL will be: <span className="font-medium text-foreground">{form.subdomain}.health.vercel.app</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Custom Domain (optional)</Label>

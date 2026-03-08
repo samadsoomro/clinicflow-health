@@ -135,7 +135,7 @@ const Index = () => {
                 <Button variant="accent" size="lg" className="px-8">{heroBtnText}</Button>
               </Link>
               <Link to="/tokens">
-                <Button variant="outline" size="lg" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8">
+                <Button size="lg" className="bg-card text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 px-8">
                   See Live Tokens
                 </Button>
               </Link>
