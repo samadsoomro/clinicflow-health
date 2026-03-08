@@ -13,7 +13,7 @@ const PublicFooter = () => {
     const fetchData = async () => {
       const [footerRes, clinicRes] = await Promise.all([
         supabase.from("homepage_sections").select("content_json, is_enabled").eq("clinic_id", clinicId).eq("section_name", "footer").single(),
-        supabase.from("clinics").select("clinic_name, logo_url, contact_phone, contact_email").eq("id", clinicId).single(),
+        supabase.from("clinics").select("clinic_name, logo_url, contact_phone, contact_email, short_name").eq("id", clinicId).single(),
       ]);
       if (footerRes.data?.is_enabled) setFooter(footerRes.data.content_json);
       setClinic(clinicRes.data);
