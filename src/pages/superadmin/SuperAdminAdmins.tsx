@@ -190,8 +190,8 @@ const SuperAdminAdmins = () => {
                       <Users className="h-4 w-4" />
                     </div>
                     <div>
-                      <p>{(admin as any).profiles?.full_name || "Unknown"}</p>
-                      <p className="text-xs text-muted-foreground">{(admin as any).profiles?.email || ""}</p>
+                      <p>{admin.profile?.full_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">{admin.profile?.email || ""}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -201,7 +201,7 @@ const SuperAdminAdmins = () => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {(admin as any).clinics?.clinic_name || "—"}
+                  {admin.clinic?.clinic_name || "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => handleRemove(admin.id)} className="text-destructive hover:text-destructive">
