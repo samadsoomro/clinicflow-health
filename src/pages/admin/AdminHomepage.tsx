@@ -13,6 +13,7 @@ import { DoctorsEditor } from "@/components/admin/homepage/DoctorsEditor";
 import { CertificationsEditor } from "@/components/admin/homepage/CertificationsEditor";
 import { NotificationsPreview } from "@/components/admin/homepage/NotificationsPreview";
 import { ContactPreview } from "@/components/admin/homepage/ContactPreview";
+import { FooterEditor } from "@/components/admin/homepage/FooterEditor";
 
 export interface SectionData {
   id?: string;
