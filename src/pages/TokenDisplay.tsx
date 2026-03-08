@@ -240,11 +240,13 @@ const TokenDisplay = () => {
                           {token.token_number}
                         </span>
                       </div>
-                      <p className={`font-display text-lg font-semibold lg:text-2xl xl:text-3xl ${
-                        token.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
-                      }`}>
-                        {token.patient_name}
-                      </p>
+                      {token.patient_name && (
+                        <p className={`font-display text-lg font-semibold lg:text-2xl xl:text-3xl ${
+                          token.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                        }`}>
+                          {token.patient_name}
+                        </p>
+                      )}
                       <p className={`mt-1 text-sm font-bold uppercase tracking-wider lg:text-base ${styles!.labelClass}`}>
                         {styles!.label}
                       </p>
