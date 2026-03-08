@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, LayoutDashboard, Users, Stethoscope, Clock,
-  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard
+  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useClinicId } from "@/hooks/useClinic";
+import { supabase } from "@/integrations/supabase/client";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
