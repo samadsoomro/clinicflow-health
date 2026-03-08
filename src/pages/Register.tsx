@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { usePublicClinicId } from "@/hooks/useClinic";
 
 const Register = () => {
   const [fullName, setFullName] = useState("");
