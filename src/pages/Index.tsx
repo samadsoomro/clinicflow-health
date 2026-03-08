@@ -91,9 +91,21 @@ const Index = () => {
   const statsItems = statsSection?.content_json?.items || [];
 
   const featuredDoctorIds = doctorsSection?.content_json?.featured_ids || [];
-  const featuredDoctors = featuredDoctorIds.length > 0
+  const doctorsMaxDisplay = doctorsSection?.content_json?.max_display;
+  let featuredDoctors = featuredDoctorIds.length > 0
     ? doctors.filter((d) => featuredDoctorIds.includes(d.id))
     : doctors;
+  if (doctorsMaxDisplay) featuredDoctors = featuredDoctors.slice(0, doctorsMaxDisplay);
+
+  const notifsMaxDisplay = notifsSection?.content_json?.max_display || 3;
+  const displayNotifs = notifs.slice(0, notifsMaxDisplay);
+
+  const contactContent = contactSection?.content_json || {};
+  const contactPhone = contactContent.phone || clinic?.contact_phone;
+  const contactEmail = contactContent.email || clinic?.contact_email;
+  const contactAddress = contactContent.address || clinic?.address;
+  const contactHours = contactContent.working_hours || clinic?.working_hours;
+  const mapsEmbedUrl = contactContent.maps_embed_url;
 
   return (
     <>
