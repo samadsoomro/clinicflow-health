@@ -25,13 +25,31 @@ const AdminTokens = () => {
   const [receiptToken, setReceiptToken] = useState<any>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [clinicShortName, setClinicShortName] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [urlSaveMsg, setUrlSaveMsg] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    supabase.from("clinics").select("short_name, clinic_name").eq("id", clinicId).single()
-      .then(({ data }) => setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic"));
+    supabase.from("clinics").select("short_name, clinic_name, qr_base_url").eq("id", clinicId).single()
+      .then(({ data }) => {
+        setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
+        setWebsiteUrl((data as any)?.qr_base_url || "");
+      });
   }, [clinicId]);
+
+  const handleSaveUrl = async () => {
+    setSavingUrl(true);
+    const { error } = await supabase.from("clinics").update({ qr_base_url: websiteUrl.trim() } as any).eq("id", clinicId);
+    if (error) {
+      setUrlSaveMsg("✗ Failed to save");
+    } else {
+      setUrlSaveMsg("✓ Saved");
+    }
+    setSavingUrl(false);
+    setTimeout(() => setUrlSaveMsg(null), 2000);
+  };
 
   const fetchTodayTokens = async () => {
     const { data } = await supabase
