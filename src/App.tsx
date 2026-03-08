@@ -25,6 +25,11 @@ import AdminPatientCards from "./pages/admin/AdminPatientCards";
 import AdminLocation from "./pages/admin/AdminLocation";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminRoute from "./components/AdminRoute";
+import SuperAdminLayout from "./pages/superadmin/SuperAdminLayout";
+import SuperAdminOverview from "./pages/superadmin/SuperAdminOverview";
+import SuperAdminClinics from "./pages/superadmin/SuperAdminClinics";
+import SuperAdminAdmins from "./pages/superadmin/SuperAdminAdmins";
+import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +65,13 @@ const App = () => (
                 <Route path="cards" element={<AdminPatientCards />} />
                 <Route path="location" element={<AdminLocation />} />
                 <Route path="settings" element={<AdminSettings />} />
+              </Route>
+
+              <Route path="/superadmin" element={<SuperAdminLayout />}>
+                <Route index element={<SuperAdminOverview />} />
+                <Route path="clinics" element={<SuperAdminClinics />} />
+                <Route path="admins" element={<SuperAdminAdmins />} />
+                <Route path="settings" element={<SuperAdminSettings />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

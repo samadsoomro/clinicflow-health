@@ -1,32 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Save, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { getClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
+  const clinicId = getClinicId();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    clinicName: "ClinicToken Demo Clinic",
-    subdomain: "democlinic",
+    clinicName: "",
+    subdomain: "",
     themeColor: "#0d7a5f",
     logoUrl: "",
-    termsConditions: "1. This card must be presented at every visit.\n2. Patient ID is non-transferable.\n3. Clinic reserves the right to update terms.\n4. Appointments are subject to doctor availability.\n5. Emergency services available 24/7 at emergency contact.",
-    cardBackgroundColor: "#0d3d2e",
-    qrBaseUrl: "https://clinictoken.health",
+    termsConditions: "",
+    cardBackgroundColor: "#1e293b",
+    qrBaseUrl: "",
+    heroTitle: "",
+    heroSubtitle: "",
+    seoTitle: "",
+    seoDescription: "",
   });
 
-  const handleSave = () => {
-    toast.success("Clinic settings saved!");
+  useEffect(() => {
+    const fetchClinic = async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("*")
+        .eq("id", clinicId)
+        .single();
+      if (data) {
+        setForm({
+          clinicName: data.clinic_name || "",
+          subdomain: data.subdomain || "",
+          themeColor: data.theme_color || "#0d7a5f",
+          logoUrl: data.logo_url || "",
+          termsConditions: data.terms_conditions || "",
+          cardBackgroundColor: data.card_background_color || "#1e293b",
+          qrBaseUrl: data.qr_base_url || "",
+          heroTitle: data.hero_title || "",
+          heroSubtitle: data.hero_subtitle || "",
+          seoTitle: data.seo_title || "",
+          seoDescription: data.seo_description || "",
+        });
+      }
+      setLoading(false);
+    };
+    fetchClinic();
+  }, [clinicId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("clinics")
+      .update({
+        clinic_name: form.clinicName,
+        subdomain: form.subdomain,
+        theme_color: form.themeColor,
+        logo_url: form.logoUrl,
+        terms_conditions: form.termsConditions,
+        card_background_color: form.cardBackgroundColor,
+        qr_base_url: form.qrBaseUrl,
+        hero_title: form.heroTitle,
+        hero_subtitle: form.heroSubtitle,
+        seo_title: form.seoTitle,
+        seo_description: form.seoDescription,
+      })
+      .eq("id", clinicId);
+
+    if (error) toast.error("Failed to save: " + error.message);
+    else toast.success("Clinic settings saved!");
+    setSaving(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Clinic Settings</h2>
-        <p className="text-sm text-muted-foreground">Customize your clinic profile and appearance</p>
+        <p className="text-sm text-muted-foreground">Customize your clinic profile, branding, and SEO</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -75,13 +139,37 @@ const AdminSettings = () => {
           </div>
           <div className="space-y-2">
             <Label>Terms & Conditions</Label>
-            <Textarea value={form.termsConditions} onChange={(e) => setForm({ ...form, termsConditions: e.target.value })} rows={6} />
+            <Textarea value={form.termsConditions} onChange={(e) => setForm({ ...form, termsConditions: e.target.value })} rows={4} />
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h3 className="font-display font-semibold text-foreground">Homepage Content</h3>
+          <div className="space-y-2">
+            <Label>Hero Title</Label>
+            <Input value={form.heroTitle} onChange={(e) => setForm({ ...form, heroTitle: e.target.value })} placeholder="Welcome to Our Clinic" />
+          </div>
+          <div className="space-y-2">
+            <Label>Hero Subtitle</Label>
+            <Textarea value={form.heroSubtitle} onChange={(e) => setForm({ ...form, heroSubtitle: e.target.value })} rows={2} placeholder="Your trusted healthcare partner" />
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h3 className="font-display font-semibold text-foreground">SEO & Meta</h3>
+          <div className="space-y-2">
+            <Label>SEO Title</Label>
+            <Input value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} placeholder="Clinic Name - Healthcare" />
+          </div>
+          <div className="space-y-2">
+            <Label>SEO Description</Label>
+            <Textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} rows={2} placeholder="Description for search engines" />
           </div>
         </div>
       </div>
 
-      <Button variant="hero" onClick={handleSave}>
-        <Save className="mr-2 h-4 w-4" /> Save Settings
+      <Button variant="hero" onClick={handleSave} disabled={saving}>
+        <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Settings"}
       </Button>
     </motion.div>
   );
