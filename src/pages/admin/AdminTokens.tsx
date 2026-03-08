@@ -303,10 +303,27 @@ const AdminTokens = () => {
                     <TableCell>
                       <Badge variant={
                         token.status === "live" ? "default" :
-                        token.status === "waiting" ? "secondary" : "outline"
+                        token.status === "waiting" ? "secondary" :
+                        token.status === "unavailable" ? "destructive" : "outline"
                       }>
-                        {token.status}
+                        {token.status === "unavailable" ? "Unavailable" : token.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {token.status === "waiting" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={async () => {
+                            await supabase.from("tokens").update({ status: "unavailable" } as any).eq("id", token.id);
+                            fetchTodayTokens();
+                            toast.info(`Token #${token.token_number} marked as unavailable`);
+                          }}
+                        >
+                          Mark Unavailable
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
