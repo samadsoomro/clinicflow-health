@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 
 const Register = () => {
+  const clinicId = usePublicClinicId();
   const [fullName, setFullName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
