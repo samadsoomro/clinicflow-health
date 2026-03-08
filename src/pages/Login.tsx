@@ -54,10 +54,10 @@ const Login = () => {
         navigate("/superadmin");
       } else if (roleList.includes("clinic_admin")) {
         toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
-        navigate(`/admin${suffix}`);
+        navigate("/admin");
       } else {
-        toast({ title: "Welcome!", description: "Redirecting to your patient card..." });
-        navigate(`/patient-card${suffix}`);
+        toast({ title: "Welcome!", description: "Redirecting to your home page..." });
+        navigate(clinic ? `/?clinic=${clinic}` : "/");
       }
     }
   };
