@@ -167,6 +167,13 @@ const TokenDisplay = () => {
               Now Serving
             </span>
           </div>
+          <button
+            onClick={toggleFullscreen}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+          </button>
         </div>
       </header>
 
