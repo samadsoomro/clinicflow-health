@@ -292,39 +292,44 @@ const Index = () => {
                 {contactSection.content_json?.subtitle || "Get in touch with our team"}
               </p>
             </div>
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-xl space-y-6">
               <div className="rounded-2xl border border-border bg-card p-8 shadow-soft space-y-4">
-                {clinic.address && (
+                {contactAddress && (
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-foreground">{clinic.address}</p>
+                    <p className="text-foreground">{contactAddress}</p>
                   </div>
                 )}
-                {clinic.contact_phone && (
+                {contactPhone && (
                   <div className="flex items-center gap-3">
                     <Phone className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{clinic.contact_phone}</p>
+                    <p className="text-foreground">{contactPhone}</p>
                   </div>
                 )}
-                {clinic.contact_email && (
+                {contactEmail && (
                   <div className="flex items-center gap-3">
                     <Mail className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{clinic.contact_email}</p>
+                    <p className="text-foreground">{contactEmail}</p>
                   </div>
                 )}
-                {clinic.working_hours && (
+                {contactHours && (
                   <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{clinic.working_hours}</p>
+                    <p className="text-foreground">{contactHours}</p>
                   </div>
                 )}
-                {clinic.emergency_contact && (
+                {clinic?.emergency_contact && (
                   <div className="flex items-center gap-3">
                     <Bell className="h-5 w-5 text-destructive flex-shrink-0" />
                     <p className="text-foreground">Emergency: {clinic.emergency_contact}</p>
                   </div>
                 )}
               </div>
+              {mapsEmbedUrl && (
+                <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
+                  <iframe src={mapsEmbedUrl} width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Clinic Location" />
+                </div>
+              )}
             </div>
           </div>
         </section>

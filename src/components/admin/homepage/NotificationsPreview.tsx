@@ -45,6 +45,10 @@ export const NotificationsPreview = ({ content, onChange, clinicId }: Notificati
           <Input value={content.subtitle} onChange={(e) => onChange({ ...content, subtitle: e.target.value })} placeholder="Stay informed" />
         </div>
       </div>
+      <div className="space-y-2">
+        <Label>Max Notifications to Display</Label>
+        <Input type="number" min={1} max={10} value={content.max_display || ""} onChange={(e) => onChange({ ...content, max_display: e.target.value ? Number(e.target.value) : undefined })} placeholder="3 (default)" />
+      </div>
 
       <div>
         <Label className="mb-2 block">Preview (Latest 3 Active Notifications)</Label>

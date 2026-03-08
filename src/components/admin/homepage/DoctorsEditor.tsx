@@ -62,6 +62,11 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
           <Input value={content.subtitle} onChange={(e) => onChange({ ...content, subtitle: e.target.value })} placeholder="Our expert team" />
         </div>
       </div>
+      <div className="space-y-2">
+        <Label>Max Doctors to Display</Label>
+        <Input type="number" min={1} max={20} value={content.max_display || ""} onChange={(e) => onChange({ ...content, max_display: e.target.value ? Number(e.target.value) : undefined })} placeholder="All (leave empty for no limit)" />
+        <p className="text-xs text-muted-foreground">Limit how many featured doctors appear on the homepage.</p>
+      </div>
 
       <div>
         <Label className="mb-2 block">Show on Homepage</Label>

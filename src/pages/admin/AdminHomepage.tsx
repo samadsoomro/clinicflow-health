@@ -218,6 +218,13 @@ const AdminHomepage = () => {
                   clinicId={clinicId}
                 />
               )}
+              {activeSection === "footer" && (
+                <FooterEditor
+                  content={currentSection.content_json}
+                  onChange={(c) => updateContent("footer", c)}
+                  clinicId={clinicId}
+                />
+              )}
             </>
           )}
         </div>
