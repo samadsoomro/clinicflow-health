@@ -172,8 +172,7 @@ const Index = () => {
                 {doctorsSection?.content_json?.subtitle || "Our team of experienced professionals"}
               </p>
             </div>
-            <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl w-full">
+            <div className={`mx-auto max-w-4xl ${featuredDoctors.length < 3 ? 'flex flex-wrap justify-center gap-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
               {featuredDoctors.map((doc, i) => (
                 <motion.div
                   key={doc.id}
@@ -182,7 +181,7 @@ const Index = () => {
                   whileInView="visible"
                   viewport={{ once: true, margin: "-50px" }}
                   variants={fadeUp}
-                  className="group flex flex-col items-center text-center rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card hover:-translate-y-1"
+                  className="group flex flex-col items-center text-center rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card hover:-translate-y-1 w-full sm:w-72"
                 >
                   {doc.image_url ? (
                     <img src={doc.image_url} alt={doc.name} className="mx-auto mb-4 h-24 w-24 rounded-full object-cover border-4 border-secondary" />
@@ -197,7 +196,6 @@ const Index = () => {
               ))}
             </div>
             </div>
-          </div>
         </section>
       )}
 
