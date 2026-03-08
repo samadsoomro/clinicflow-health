@@ -279,34 +279,53 @@ const AdminTokens = () => {
                 <TableHead>Patient</TableHead>
                 <TableHead>Doctor</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {todayTokens.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
                 </TableRow>
               ) : (
                 todayTokens.map((token) => (
-                  <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : ""}>
+                    <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : token.status === "unavailable" ? "bg-destructive/5" : ""}>
                     <TableCell>
                       <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
-                        token.status === "live" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"
+                        token.status === "live" ? "bg-primary text-primary-foreground" :
+                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" : "bg-secondary text-primary"
                       }`}>
                         {token.token_number}
                       </span>
                     </TableCell>
-                    <TableCell className="font-medium">{token.patient_name}</TableCell>
+                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {token.doctors?.name || "—"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={
                         token.status === "live" ? "default" :
-                        token.status === "waiting" ? "secondary" : "outline"
+                        token.status === "waiting" ? "secondary" :
+                        token.status === "unavailable" ? "destructive" : "outline"
                       }>
-                        {token.status}
+                        {token.status === "unavailable" ? "Unavailable" : token.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {token.status === "waiting" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={async () => {
+                            await supabase.from("tokens").update({ status: "unavailable" } as any).eq("id", token.id);
+                            fetchTodayTokens();
+                            toast.info(`Token #${token.token_number} marked as unavailable`);
+                          }}
+                        >
+                          Mark Unavailable
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
