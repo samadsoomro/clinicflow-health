@@ -15,7 +15,7 @@ const PublicFooter = () => {
         .select("content_json, is_enabled")
         .eq("clinic_id", clinicId)
         .eq("section_name", "footer")
-        .single();
+        .maybeSingle();
       if (data?.is_enabled) setFooter(data.content_json);
     };
     fetchFooter();
