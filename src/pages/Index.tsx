@@ -211,26 +211,48 @@ const Index = () => {
                 {certsSection.content_json?.subtitle || "Recognized excellence in healthcare"}
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2">
-              {certs.map((cert, i) => (
-                <motion.div
-                  key={cert.id}
-                  custom={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeUp}
-                  className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
-                >
-                  <div className="aspect-[3/4] overflow-hidden">
-                    <img src={cert.image_url} alt={cert.title} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="p-4 text-center">
-                    <h3 className="font-display font-semibold text-foreground">{cert.title}</h3>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            {certs.length === 1 ? (
+              <div className="flex justify-center">
+                <div className="w-full sm:w-1/2 max-w-sm">
+                  <motion.div
+                    custom={0}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={fadeUp}
+                    className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
+                  >
+                    <div className="aspect-[210/297] overflow-hidden">
+                      <img src={certs[0].image_url} alt={certs[0].title} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="p-4 text-center">
+                      <h3 className="font-display font-semibold text-foreground">{certs[0].title}</h3>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {certs.map((cert, i) => (
+                  <motion.div
+                    key={cert.id}
+                    custom={i}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={fadeUp}
+                    className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
+                  >
+                    <div className="aspect-[210/297] overflow-hidden">
+                      <img src={cert.image_url} alt={cert.title} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="p-4 text-center">
+                      <h3 className="font-display font-semibold text-foreground">{cert.title}</h3>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
