@@ -41,7 +41,7 @@ const LiveTokens = () => {
     fetchData();
     const channel = supabase
       .channel("public-live-tokens")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [clinicId]);
