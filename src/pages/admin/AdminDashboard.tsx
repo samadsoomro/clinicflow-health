@@ -30,14 +30,35 @@ const AdminDashboard = () => {
   const { signOut, profile } = useAuth();
   const { clinicId } = useClinicId();
   const [clinicName, setClinicName] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnread = useCallback(async () => {
+    const { count } = await supabase
+      .from("contact_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("is_read", false);
+    setUnreadCount(count || 0);
+  }, [clinicId]);
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase.from("clinics").select("clinic_name").eq("id", clinicId).single();
       if (data) setClinicName(data.clinic_name);
     };
-    if (clinicId) fetch();
-  }, [clinicId]);
+    if (clinicId) {
+      fetch();
+      fetchUnread();
+    }
+  }, [clinicId, fetchUnread]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-contact-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "contact_messages", filter: `clinic_id=eq.${clinicId}` }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [clinicId, fetchUnread]);
 
   return (
     <div className="flex min-h-screen bg-background">
