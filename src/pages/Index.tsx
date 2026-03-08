@@ -214,8 +214,7 @@ const Index = () => {
               </p>
             </div>
             {certs.length === 1 ? (
-              <div className="flex justify-center">
-                <div className="w-full sm:w-1/2 max-w-sm">
+              <div className="mx-auto max-w-sm">
                   <motion.div
                     custom={0}
                     initial="hidden"
