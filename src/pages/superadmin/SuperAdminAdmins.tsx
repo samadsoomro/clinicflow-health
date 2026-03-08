@@ -30,7 +30,7 @@ const SuperAdminAdmins = () => {
   const [clinics, setClinics] = useState<ClinicOption[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", role: "clinic_admin" as string, clinic_id: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", clinic_id: "" });
   const [saving, setSaving] = useState(false);
 
   const fetchAdmins = async () => {
@@ -54,31 +54,36 @@ const SuperAdminAdmins = () => {
     return name.toLowerCase().includes(search.toLowerCase()) || email.toLowerCase().includes(search.toLowerCase());
   });
 
-  const handleAssign = async () => {
-    if (!form.email) { toast.error("Email is required"); return; }
-    if (form.role === "clinic_admin" && !form.clinic_id) { toast.error("Select a clinic"); return; }
-
-    setSaving(true);
-    // Find user by email in profiles
-    const { data: profileData } = await supabase.from("profiles").select("id").eq("email", form.email).single();
-    if (!profileData) {
-      toast.error("No user found with that email. They must register first.");
-      setSaving(false);
+  const handleCreate = async () => {
+    if (!form.full_name || !form.email || !form.password) {
+      toast.error("Name, email and password are required");
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (!form.clinic_id) {
+      toast.error("Please select a clinic");
       return;
     }
 
-    const { error } = await supabase.from("user_roles").insert({
-      user_id: profileData.id,
-      role: form.role as any,
-      clinic_id: form.role === "clinic_admin" ? form.clinic_id : null,
+    setSaving(true);
+    const { data, error } = await supabase.functions.invoke("create-clinic-admin", {
+      body: {
+        full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        clinic_id: form.clinic_id,
+      },
     });
 
-    if (error) {
-      if (error.message.includes("duplicate")) toast.error("This user already has this role");
-      else toast.error(error.message);
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Failed to create admin");
     } else {
-      toast.success("Role assigned successfully");
+      toast.success("Clinic admin created successfully");
       setDialogOpen(false);
+      setForm({ full_name: "", email: "", password: "", clinic_id: "" });
       fetchAdmins();
     }
     setSaving(false);
@@ -105,45 +110,40 @@ const SuperAdminAdmins = () => {
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="hero"><Plus className="mr-2 h-4 w-4" /> Assign Role</Button>
+              <Button variant="hero"><Plus className="mr-2 h-4 w-4" /> Create Admin</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="font-display">Assign Admin Role</DialogTitle>
+                <DialogTitle className="font-display">Create Clinic Admin</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>User Email</Label>
-                  <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" />
-                  <p className="text-xs text-muted-foreground">User must have registered first</p>
+                  <Label>Admin Name</Label>
+                  <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Dr. Ahmed Khan" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Label>Email</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="admin@clinic.com" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 6 characters" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Assign to Clinic</Label>
+                  <Select value={form.clinic_id} onValueChange={(v) => setForm({ ...form, clinic_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select clinic" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                      <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
+                      {clinics.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.clinic_name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {form.role === "clinic_admin" && (
-                  <div className="space-y-2">
-                    <Label>Clinic</Label>
-                    <Select value={form.clinic_id} onValueChange={(v) => setForm({ ...form, clinic_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Select clinic" /></SelectTrigger>
-                      <SelectContent>
-                        {clinics.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.clinic_name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button variant="hero" onClick={handleAssign} disabled={saving}>{saving ? "Assigning..." : "Assign Role"}</Button>
+                <Button variant="hero" onClick={handleCreate} disabled={saving}>{saving ? "Creating..." : "Create Admin"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

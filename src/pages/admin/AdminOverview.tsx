@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Stethoscope, Clock, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { useClinicId } from "@/hooks/useClinic";
 
 const AdminOverview = () => {
-  const clinicId = getClinicId();
+  const { clinicId } = useClinicId();
   const [stats, setStats] = useState({ patients: 0, doctors: 0, tokens: 0, notifications: 0 });
   const [recentTokens, setRecentTokens] = useState<any[]>([]);
 

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useClinicDoctors, getClinicId } from "@/hooks/useClinic";
+import { useClinicDoctors } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
 const AdminTokens = () => {

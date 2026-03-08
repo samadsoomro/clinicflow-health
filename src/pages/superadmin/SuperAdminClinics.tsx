@@ -25,13 +25,13 @@ const SuperAdminClinics = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClinicRow | null>(null);
-  const [form, setForm] = useState({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "" });
+  const [form, setForm] = useState({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
   const [saving, setSaving] = useState(false);
 
   const fetchClinics = async () => {
     const { data } = await supabase
       .from("clinics")
-      .select("id, clinic_name, subdomain, domain_name, is_active, contact_email, created_at")
+      .select("id, clinic_name, subdomain, domain_name, is_active, contact_email, contact_phone, address, created_at")
       .order("created_at", { ascending: false });
     setClinics((data as ClinicRow[]) || []);
   };
@@ -45,13 +45,13 @@ const SuperAdminClinics = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "" });
+    setForm({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
     setDialogOpen(true);
   };
 
   const openEdit = (c: ClinicRow) => {
     setEditing(c);
-    setForm({ clinic_name: c.clinic_name, subdomain: c.subdomain, domain_name: c.domain_name || "", contact_email: c.contact_email || "" });
+    setForm({ clinic_name: c.clinic_name, subdomain: c.subdomain, domain_name: c.domain_name || "", contact_email: c.contact_email || "", address: (c as any).address || "", contact_phone: (c as any).contact_phone || "" });
     setDialogOpen(true);
   };
 
@@ -67,6 +67,8 @@ const SuperAdminClinics = () => {
         subdomain: form.subdomain,
         domain_name: form.domain_name || null,
         contact_email: form.contact_email || null,
+        address: form.address || null,
+        contact_phone: form.contact_phone || null,
       }).eq("id", editing.id);
       if (error) toast.error(error.message);
       else toast.success("Clinic updated");
@@ -76,6 +78,8 @@ const SuperAdminClinics = () => {
         subdomain: form.subdomain,
         domain_name: form.domain_name || null,
         contact_email: form.contact_email || null,
+        address: form.address || null,
+        contact_phone: form.contact_phone || null,
       });
       if (error) toast.error(error.message);
       else toast.success("Clinic created");
@@ -133,6 +137,14 @@ const SuperAdminClinics = () => {
                 <div className="space-y-2">
                   <Label>Custom Domain (optional)</Label>
                   <Input value={form.domain_name} onChange={(e) => setForm({ ...form, domain_name: e.target.value })} placeholder="myclinic.com" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Address</Label>
+                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St, City" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="+92 300 1234567" />
                 </div>
                 <div className="space-y-2">
                   <Label>Contact Email</Label>

@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
-  const clinicId = getClinicId();
+  const { clinicId } = useClinicId();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
