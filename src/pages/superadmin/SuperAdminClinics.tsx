@@ -67,6 +67,8 @@ const SuperAdminClinics = () => {
         subdomain: form.subdomain,
         domain_name: form.domain_name || null,
         contact_email: form.contact_email || null,
+        address: form.address || null,
+        contact_phone: form.contact_phone || null,
       }).eq("id", editing.id);
       if (error) toast.error(error.message);
       else toast.success("Clinic updated");
