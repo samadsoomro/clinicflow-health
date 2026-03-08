@@ -84,35 +84,29 @@ const AdminTokens = () => {
     setIssuing(false);
   };
 
-  const handleActivateToken = async () => {
-    const num = parseInt(activateNumber);
-    if (!num) {
-      toast.error("Enter a valid token number");
-      return;
+  const handleMarkServing = async (token: any) => {
+    // Complete any currently serving token for the same doctor
+    const servingForDoc = todayTokens.filter((t) => t.doctor_id === token.doctor_id && t.status === "serving");
+    for (const st of servingForDoc) {
+      await supabase.from("tokens").update({ status: "completed" } as any).eq("id", st.id);
     }
-    setActivating(true);
-
-    const target = todayTokens.find((t) => t.token_number === num);
-    if (!target) {
-      toast.error(`Token #${num} not found for today`);
-      setActivating(false);
-      return;
-    }
-
-    const liveTokens = todayTokens.filter((t) => t.status === "live");
-    for (const lt of liveTokens) {
-      await supabase.from("tokens").update({ status: "completed" } as any).eq("id", lt.id);
-    }
-
-    const { error } = await supabase.from("tokens").update({ status: "live" } as any).eq("id", target.id);
+    const { error } = await supabase.from("tokens").update({ status: "serving" } as any).eq("id", token.id);
     if (error) {
-      toast.error("Failed to activate: " + error.message);
+      toast.error("Failed: " + error.message);
     } else {
-      toast.success(`Token #${num} is now LIVE`);
-      setActivateNumber("");
+      toast.success(`Token #${token.token_number} is now Serving`);
       fetchTodayTokens();
     }
-    setActivating(false);
+  };
+
+  const handleMarkUnavailable = async (token: any) => {
+    const { error } = await supabase.from("tokens").update({ status: "unavailable" } as any).eq("id", token.id);
+    if (error) {
+      toast.error("Failed: " + error.message);
+    } else {
+      toast.info(`Token #${token.token_number} marked as unavailable`);
+      fetchTodayTokens();
+    }
   };
 
   const handleResetToday = async () => {
