@@ -68,6 +68,7 @@ export type Database = {
           longitude: number | null
           og_image_url: string | null
           qr_base_url: string | null
+          secondary_theme_color: string | null
           seo_description: string | null
           seo_title: string | null
           short_name: string | null
@@ -94,6 +95,7 @@ export type Database = {
           longitude?: number | null
           og_image_url?: string | null
           qr_base_url?: string | null
+          secondary_theme_color?: string | null
           seo_description?: string | null
           seo_title?: string | null
           short_name?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           longitude?: number | null
           og_image_url?: string | null
           qr_base_url?: string | null
+          secondary_theme_color?: string | null
           seo_description?: string | null
           seo_title?: string | null
           short_name?: string | null

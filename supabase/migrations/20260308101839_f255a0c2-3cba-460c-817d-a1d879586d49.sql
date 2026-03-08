@@ -1,0 +1,1 @@
+ALTER TABLE public.clinics ADD COLUMN IF NOT EXISTS secondary_theme_color text DEFAULT '#1e293b';
