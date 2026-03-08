@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, Eye, Palette, Save } from "lucide-react";
+import { CreditCard, Eye, Palette, Save, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 
 interface PatientPreview {
   id: string;
@@ -19,15 +20,23 @@ interface PatientPreview {
   created_at: string | null;
 }
 
+const DEFAULT_LAYOUT = {
+  tagline: "Health Identity Card",
+  backgroundColor: "#1e293b",
+  accentColor: "#4ade80",
+};
+
 const AdminPatientCards = () => {
   const { clinicId } = useClinicId();
   const [patients, setPatients] = useState<PatientPreview[]>([]);
   const [previewPatientId, setPreviewPatientId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [clinic, setClinic] = useState<any>(null);
 
   const [layout, setLayout] = useState({
     clinicName: "",
+    shortName: "",
     tagline: "Health Identity Card",
     backgroundColor: "#1e293b",
     accentColor: "#4ade80",
@@ -37,27 +46,33 @@ const AdminPatientCards = () => {
     email: "",
     workingHours: "",
     emergencyContact: "",
+    qrBaseUrl: "",
+    logoUrl: "",
   });
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: clinic }, { data: pts }] = await Promise.all([
-        supabase.from("clinics").select("clinic_name, card_background_color, terms_conditions, address, contact_phone, contact_email, working_hours, emergency_contact, theme_color").eq("id", clinicId).single(),
+      const [{ data: clinicData }, { data: pts }] = await Promise.all([
+        supabase.from("clinics").select("*").eq("id", clinicId).single(),
         supabase.from("patients").select("id, full_name, formatted_patient_id, age, gender, created_at").eq("clinic_id", clinicId).order("created_at", { ascending: false }).limit(20),
       ]);
 
-      if (clinic) {
+      if (clinicData) {
+        setClinic(clinicData);
         setLayout({
-          clinicName: clinic.clinic_name || "",
+          clinicName: clinicData.clinic_name || "",
+          shortName: (clinicData as any).short_name || "",
           tagline: "Health Identity Card",
-          backgroundColor: clinic.card_background_color || "#1e293b",
-          accentColor: clinic.theme_color || "#4ade80",
-          termsConditions: clinic.terms_conditions || "",
-          address: clinic.address || "",
-          phone: clinic.contact_phone || "",
-          email: clinic.contact_email || "",
-          workingHours: clinic.working_hours || "",
-          emergencyContact: clinic.emergency_contact || "",
+          backgroundColor: clinicData.card_background_color || "#1e293b",
+          accentColor: clinicData.theme_color || "#4ade80",
+          termsConditions: clinicData.terms_conditions || "",
+          address: clinicData.address || "",
+          phone: clinicData.contact_phone || "",
+          email: clinicData.contact_email || "",
+          workingHours: clinicData.working_hours || "",
+          emergencyContact: clinicData.emergency_contact || "",
+          qrBaseUrl: clinicData.qr_base_url || window.location.origin,
+          logoUrl: clinicData.logo_url || "",
         });
       }
 
@@ -69,17 +84,41 @@ const AdminPatientCards = () => {
   }, [clinicId]);
 
   const previewPatient = patients.find((p) => p.id === previewPatientId);
+  const displayName = layout.shortName || layout.clinicName;
+  const qrUrl = previewPatient
+    ? `${layout.qrBaseUrl}/patient/${previewPatient.formatted_patient_id}`
+    : "";
 
   const handleSave = async () => {
     setSaving(true);
     const { error } = await supabase.from("clinics").update({
       card_background_color: layout.backgroundColor,
-      theme_color: layout.accentColor,
       terms_conditions: layout.termsConditions,
-    }).eq("id", clinicId);
+    } as any).eq("id", clinicId);
 
     if (error) toast.error(error.message);
     else toast.success("Card layout saved!");
+    setSaving(false);
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Reset card layout to defaults? This won't affect patient records.")) return;
+    setSaving(true);
+    const { error } = await supabase.from("clinics").update({
+      card_background_color: DEFAULT_LAYOUT.backgroundColor,
+    } as any).eq("id", clinicId);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setLayout((prev) => ({
+        ...prev,
+        backgroundColor: DEFAULT_LAYOUT.backgroundColor,
+        accentColor: DEFAULT_LAYOUT.accentColor,
+        tagline: DEFAULT_LAYOUT.tagline,
+      }));
+      toast.success("Card layout reset to defaults!");
+    }
     setSaving(false);
   };
 
@@ -126,9 +165,14 @@ const AdminPatientCards = () => {
             </div>
           </div>
 
-          <Button variant="hero" onClick={handleSave} className="w-full" disabled={saving}>
-            <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Card Layout"}
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="hero" onClick={handleSave} className="flex-1" disabled={saving}>
+              <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Card Layout"}
+            </Button>
+            <Button variant="outline" onClick={handleReset} disabled={saving}>
+              <RotateCcw className="mr-2 h-4 w-4" /> Reset
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -153,14 +197,25 @@ const AdminPatientCards = () => {
           {previewPatient ? (
             <div className="sticky top-20">
               <div className="rounded-t-2xl border border-border p-6 text-white" style={{ backgroundColor: layout.backgroundColor }}>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-                    <CreditCard className="h-6 w-6" />
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {layout.logoUrl ? (
+                      <img src={layout.logoUrl} alt="Logo" className="h-12 w-12 rounded-xl object-cover" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                        <CreditCard className="h-6 w-6" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-display text-lg font-bold">{displayName}</h3>
+                      <p className="text-xs opacity-60">{layout.tagline}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-display text-lg font-bold">{layout.clinicName}</h3>
-                    <p className="text-xs opacity-60">{layout.tagline}</p>
-                  </div>
+                  {qrUrl && (
+                    <div className="rounded-lg bg-white p-1.5">
+                      <QRCodeSVG value={qrUrl} size={64} level="M" />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">

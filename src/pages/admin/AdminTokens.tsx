@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Zap } from "lucide-react";
+import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicDoctors } from "@/hooks/useClinic";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const AdminTokens = () => {
   const { doctors, loading: doctorsLoading, clinicId } = useClinicDoctors();
@@ -19,8 +22,15 @@ const AdminTokens = () => {
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [clinicShortName, setClinicShortName] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    supabase.from("clinics").select("short_name, clinic_name").eq("id", clinicId).single()
+      .then(({ data }) => setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic"));
+  }, [clinicId]);
 
   const fetchTodayTokens = async () => {
     const { data } = await supabase
@@ -35,7 +45,6 @@ const AdminTokens = () => {
 
   useEffect(() => {
     fetchTodayTokens();
-    // Realtime subscription
     const channel = supabase
       .channel("admin-tokens")
       .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
@@ -83,7 +92,6 @@ const AdminTokens = () => {
     }
     setActivating(true);
 
-    // Find the token
     const target = todayTokens.find((t) => t.token_number === num);
     if (!target) {
       toast.error(`Token #${num} not found for today`);
@@ -91,13 +99,11 @@ const AdminTokens = () => {
       return;
     }
 
-    // Set all current 'live' tokens to 'completed'
     const liveTokens = todayTokens.filter((t) => t.status === "live");
     for (const lt of liveTokens) {
       await supabase.from("tokens").update({ status: "completed" } as any).eq("id", lt.id);
     }
 
-    // Set target to 'live'
     const { error } = await supabase.from("tokens").update({ status: "live" } as any).eq("id", target.id);
     if (error) {
       toast.error("Failed to activate: " + error.message);
@@ -109,20 +115,88 @@ const AdminTokens = () => {
     setActivating(false);
   };
 
+  const handleResetToday = async () => {
+    if (!confirm("Reset all of today's tokens? This action cannot be undone.")) return;
+    setResetting(true);
+
+    const ids = todayTokens.map((t) => t.id);
+    if (ids.length > 0) {
+      const { error } = await supabase.from("tokens").delete().in("id", ids);
+      if (error) {
+        toast.error("Failed to reset: " + error.message);
+      } else {
+        setTodayTokens([]);
+        setIssueForm({ doctorId: "", patientName: "" });
+        setActivateNumber("");
+        toast.success("Today's tokens have been reset!");
+      }
+    } else {
+      toast.info("No tokens to reset");
+    }
+    setResetting(false);
+  };
+
+  const getTimestamp = () => {
+    const now = new Date();
+    return `${now.getDate().toString().padStart(2, "0")}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getFullYear()} ${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+  };
+
+  const exportRows = todayTokens.map((t) => ({
+    "Token #": t.token_number,
+    "Patient Name": t.patient_name,
+    "Doctor Name": t.doctors?.name || "—",
+    Status: t.status,
+    Time: t.created_at ? new Date(t.created_at).toLocaleTimeString() : "—",
+  }));
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tokens");
+    XLSX.writeFile(wb, `Today's Tokens - ${clinicShortName} - ${getTimestamp()}.xlsx`);
+  };
+
+  const handleExportPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Today's Tokens - ${clinicShortName}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Exported: ${getTimestamp()}`, 14, 22);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["Token #", "Patient Name", "Doctor Name", "Status", "Time"]],
+      body: exportRows.map((r) => [r["Token #"], r["Patient Name"], r["Doctor Name"], r.Status, r.Time]),
+    });
+
+    doc.save(`Today's Tokens - ${clinicShortName} - ${getTimestamp()}.pdf`);
+  };
+
   const liveToken = todayTokens.find((t) => t.status === "live");
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
-        <p className="text-sm text-muted-foreground">
-          {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
+          <p className="text-sm text-muted-foreground">
+            {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={todayTokens.length === 0}>
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={todayTokens.length === 0}>
+            <FileText className="mr-1.5 h-4 w-4" /> PDF
+          </Button>
+          <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || todayTokens.length === 0}>
+            <RotateCcw className="mr-1.5 h-4 w-4" /> {resetting ? "Resetting..." : "Reset Today"}
+          </Button>
+        </div>
       </div>
 
-      {/* Two action cards */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* CARD 1: Issue Token */}
         <Card className="border-border shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
@@ -161,7 +235,6 @@ const AdminTokens = () => {
           </CardContent>
         </Card>
 
-        {/* CARD 2: Activate Token */}
         <Card className="border-border shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
@@ -194,7 +267,6 @@ const AdminTokens = () => {
         </Card>
       </div>
 
-      {/* Today's Tokens Table */}
       <Card className="border-border shadow-soft overflow-hidden">
         <CardHeader>
           <CardTitle className="font-display text-lg">Today's Tokens</CardTitle>

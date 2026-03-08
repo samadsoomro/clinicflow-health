@@ -3,9 +3,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Upload, Image } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import heroPattern from "@/assets/hero-pattern.jpg";
 
 interface HeroContent {
   title: string;
@@ -44,6 +45,23 @@ export const HeroEditor = ({ content, onChange, clinicId }: HeroEditorProps) => 
     setUploading(false);
   };
 
+  const handleRemoveImage = async () => {
+    if (!content.background_image) return;
+    // Try to delete from storage
+    try {
+      const url = new URL(content.background_image);
+      const pathMatch = url.pathname.match(/clinic-assets\/(.+)/);
+      if (pathMatch) {
+        await supabase.storage.from("clinic-assets").remove([pathMatch[1]]);
+      }
+    } catch {}
+    onChange({ ...content, background_image: "" });
+    toast.success("Hero image removed");
+  };
+
+  const displayImage = content.background_image || heroPattern;
+  const hasCustomImage = !!content.background_image;
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -76,12 +94,22 @@ export const HeroEditor = ({ content, onChange, clinicId }: HeroEditorProps) => 
             {uploading ? "Uploading..." : "Upload Image"}
             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
           </label>
-          {content.background_image && (
-            <div className="relative h-16 w-28 overflow-hidden rounded-lg border border-border">
-              <img src={content.background_image} alt="Hero bg" className="h-full w-full object-cover" />
-            </div>
-          )}
+          <div className="relative h-16 w-28 overflow-hidden rounded-lg border border-border">
+            <img src={displayImage} alt="Hero bg" className="h-full w-full object-cover" />
+            {hasCustomImage && (
+              <button
+                onClick={handleRemoveImage}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/80 transition-colors"
+                title="Remove image"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
+        {!hasCustomImage && (
+          <p className="text-xs text-muted-foreground">Using default healthcare image. Upload a custom image to replace it.</p>
+        )}
       </div>
     </div>
   );
