@@ -31,6 +31,7 @@ import SuperAdminOverview from "./pages/superadmin/SuperAdminOverview";
 import SuperAdminClinics from "./pages/superadmin/SuperAdminClinics";
 import SuperAdminAdmins from "./pages/superadmin/SuperAdminAdmins";
 import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
+import AdminHomepage from "./pages/admin/AdminHomepage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
 
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
                 <Route index element={<AdminOverview />} />
+                <Route path="home" element={<AdminHomepage />} />
                 <Route path="doctors" element={<AdminDoctors />} />
                 <Route path="tokens" element={<AdminTokens />} />
                 <Route path="patients" element={<AdminPatients />} />

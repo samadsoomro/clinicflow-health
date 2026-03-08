@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, LayoutDashboard, Users, Stethoscope, Clock,
-  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2
+  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
+  { label: "Homepage", path: "/admin/home", icon: Layout },
   { label: "Doctors", path: "/admin/doctors", icon: Stethoscope },
   { label: "Tokens", path: "/admin/tokens", icon: Clock },
   { label: "Patients", path: "/admin/patients", icon: Users },
