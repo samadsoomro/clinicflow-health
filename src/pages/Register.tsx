@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Activity, UserPlus, ArrowLeft } from "lucide-react";
+import { Activity, UserPlus, ArrowLeft, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,85 +10,119 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 
+const validateEmail = (email: string) => {
+  if (!email) return "Email is required";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
+  return null;
+};
+
+const getPasswordStrength = (pw: string): { label: string; color: string } => {
+  if (!pw || pw.length < 8) return { label: "Weak", color: "bg-destructive" };
+  if (/[0-9]/.test(pw) && /[^a-zA-Z0-9]/.test(pw)) return { label: "Strong", color: "bg-green-500" };
+  return { label: "Fair", color: "bg-yellow-500" };
+};
+
 const Register = () => {
   const clinicId = usePublicClinicId();
-  const [fullName, setFullName] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [form, setForm] = useState({ fullName: "", age: "", gender: "", phone: "", email: "", password: "", confirmPassword: "" });
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const set = (field: string, value: string) => {
+    setForm((p) => ({ ...p, [field]: value }));
+    if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
+  };
+
+  // Debounced email check
+  const checkEmail = useCallback(async (email: string) => {
+    const normalized = email.toLowerCase().trim();
+    const err = validateEmail(normalized);
+    if (err) { setEmailStatus("idle"); return; }
+    setEmailStatus("checking");
+    const { data } = await supabase.from("patients").select("id").eq("email", normalized).eq("clinic_id", clinicId).maybeSingle();
+    setEmailStatus(data ? "taken" : "available");
+  }, [clinicId]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!form.email) { setEmailStatus("idle"); return; }
+    debounceRef.current = setTimeout(() => checkEmail(form.email), 600);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [form.email, checkEmail]);
+
+  const validateField = (field: string): string | null => {
+    const v = form[field as keyof typeof form];
+    switch (field) {
+      case "fullName": return !v.trim() ? "Full name is required" : v.trim().length < 3 ? "Full name must be at least 3 characters" : null;
+      case "age": { const n = parseInt(v); return !v ? "Age is required" : (isNaN(n) || n < 1 || n > 120) ? "Please enter a valid age between 1 and 120" : null; }
+      case "gender": return !v ? "Please select a gender" : null;
+      case "phone": return !v.trim() ? "Phone is required" : v.replace(/\D/g, "").length < 10 ? "Please enter a valid phone number" : null;
+      case "email": return validateEmail(v);
+      case "password": return !v ? "Password is required" : v.length < 8 ? "Password must be at least 8 characters" : null;
+      case "confirmPassword": return !v ? "Please confirm your password" : v !== form.password ? "Passwords do not match" : null;
+      default: return null;
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setErrors((p) => ({ ...p, [field]: validateField(field) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!fullName.trim() || !age || !gender || !phone.trim() || !email.trim() || !password) {
-      toast({ title: "Missing fields", description: "Please fill in all fields.", variant: "destructive" });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({ title: "Weak password", description: "Password must be at least 6 characters.", variant: "destructive" });
-      return;
-    }
+    const fields = ["fullName", "age", "gender", "phone", "email", "password", "confirmPassword"];
+    const newErrors: Record<string, string | null> = {};
+    fields.forEach((f) => { newErrors[f] = validateField(f); });
+    setErrors(newErrors);
+    if (Object.values(newErrors).some(Boolean)) return;
+    if (emailStatus === "taken") { setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." })); return; }
 
     setLoading(true);
+    const normalizedEmail = form.email.toLowerCase().trim();
 
-    // 1. Sign up via Supabase Auth
+    // Final duplicate check
+    const { data: existing } = await supabase.from("patients").select("id").eq("email", normalizedEmail).eq("clinic_id", clinicId).maybeSingle();
+    if (existing) { setLoading(false); setErrors((p) => ({ ...p, email: "This email is already registered with this clinic. Please login or use a different email." })); return; }
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName.trim() },
-      },
+      email: normalizedEmail, password: form.password,
+      options: { emailRedirectTo: window.location.origin, data: { full_name: form.fullName.trim() } },
     });
 
     if (authError) {
       setLoading(false);
-      toast({ title: "Registration failed", description: authError.message, variant: "destructive" });
+      const msg = authError.message.toLowerCase().includes("already registered") ? "This email is already registered. Please login instead." : authError.message;
+      toast({ title: "Registration failed", description: msg, variant: "destructive" });
       return;
     }
 
     if (authData.user) {
-      const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
+      const genderPrefix = form.gender === "male" ? "M" : form.gender === "female" ? "F" : "O";
+      const { count } = await supabase.from("patients").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId);
+      const formattedId = `${genderPrefix}-${(count || 0) + 1}`;
 
-      // Get next patient number for this clinic
-      const { count } = await supabase
-        .from("patients")
-        .select("id", { count: "exact", head: true })
-        .eq("clinic_id", clinicId);
-
-      const patientNum = (count || 0) + 1;
-      const formattedId = `${genderPrefix}-${patientNum}`;
-
-      // 2. Insert patient record
       await supabase.from("patients").insert({
-        clinic_id: clinicId,
-        user_id: authData.user.id,
-        full_name: fullName.trim(),
-        age: parseInt(age),
-        gender,
-        phone: phone.trim(),
-        email: email.trim().toLowerCase(),
-        formatted_patient_id: formattedId,
+        clinic_id: clinicId, user_id: authData.user.id, full_name: form.fullName.trim(),
+        age: parseInt(form.age), gender: form.gender, phone: form.phone.trim(),
+        email: normalizedEmail, formatted_patient_id: formattedId,
       });
+      await supabase.from("user_roles").insert({ user_id: authData.user.id, role: "patient" as const, clinic_id: clinicId });
 
-      // 3. Assign patient role
-      await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: "patient" as const,
-        clinic_id: clinicId,
-      });
+      setLoading(false);
+      toast({ title: "✓ Registration successful!", description: `Your Patient ID is: ${formattedId}. Please check your email to verify, then sign in.` });
+      setTimeout(() => navigate("/login"), 3000);
+      return;
     }
-
     setLoading(false);
-    toast({ title: "Registration successful!", description: "Please check your email to verify your account, then sign in." });
-    navigate("/login");
   };
+
+  const pwStrength = getPasswordStrength(form.password);
+  const hasEmailError = !!errors.email || emailStatus === "taken";
 
   return (
     <div className="flex min-h-screen">
@@ -113,19 +147,24 @@ const Register = () => {
             <h1 className="mb-2 font-display text-2xl font-bold text-foreground">Create Account</h1>
             <p className="text-sm text-muted-foreground">Register as a new patient</p>
           </div>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
+          <form className="space-y-3" onSubmit={handleSubmit} noValidate>
+            {/* Full Name */}
+            <div className="space-y-1">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" placeholder="Your full name" maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              <Input id="fullName" placeholder="Your full name" maxLength={100} value={form.fullName} onChange={(e) => set("fullName", e.target.value)} onBlur={() => handleBlur("fullName")} />
+              {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
             </div>
+
+            {/* Age & Gender */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="age">Age</Label>
-                <Input id="age" type="number" placeholder="Age" min={1} max={150} value={age} onChange={(e) => setAge(e.target.value)} />
+                <Input id="age" type="number" placeholder="Age" min={1} max={120} value={form.age} onChange={(e) => set("age", e.target.value)} onBlur={() => handleBlur("age")} />
+                {errors.age && <p className="text-xs text-destructive">{errors.age}</p>}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Gender</Label>
-                <Select value={gender} onValueChange={setGender}>
+                <Select value={form.gender} onValueChange={(v) => { set("gender", v); setErrors((p) => ({ ...p, gender: null })); }}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
@@ -133,21 +172,61 @@ const Register = () => {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.gender && <p className="text-xs text-destructive">{errors.gender}</p>}
               </div>
             </div>
-            <div className="space-y-2">
+
+            {/* Phone */}
+            <div className="space-y-1">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" placeholder="+92 300 1234567" maxLength={20} value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input id="phone" placeholder="+92 300 1234567" maxLength={20} value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={() => handleBlur("phone")} />
+              {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
             </div>
-            <div className="space-y-2">
+
+            {/* Email */}
+            <div className="space-y-1">
               <Label htmlFor="regEmail">Email</Label>
-              <Input id="regEmail" type="email" placeholder="you@example.com" maxLength={255} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="regEmail" type="email" placeholder="you@example.com" maxLength={255} value={form.email}
+                onChange={(e) => { set("email", e.target.value); setEmailStatus("idle"); }}
+                onBlur={() => handleBlur("email")}
+                className={hasEmailError ? "border-destructive" : emailStatus === "available" ? "border-green-500" : ""}
+              />
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              {!errors.email && emailStatus === "checking" && (
+                <p className="flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Checking availability...</p>
+              )}
+              {!errors.email && emailStatus === "available" && (
+                <p className="flex items-center gap-1 text-xs text-green-600"><Check className="h-3 w-3" /> Email is available</p>
+              )}
+              {!errors.email && emailStatus === "taken" && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <X className="h-3 w-3" /> This email is already registered.{" "}
+                  <Link to="/login" className="font-medium underline text-primary">Login here →</Link>
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
+
+            {/* Password */}
+            <div className="space-y-1">
               <Label htmlFor="regPassword">Password</Label>
-              <Input id="regPassword" type="password" placeholder="••••••••" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="regPassword" type="password" placeholder="••••••••" maxLength={128} value={form.password} onChange={(e) => set("password", e.target.value)} onBlur={() => handleBlur("password")} />
+              {form.password && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className={`h-1.5 flex-1 rounded-full ${pwStrength.color}`} />
+                  <span className="text-[10px] text-muted-foreground">{pwStrength.label}</span>
+                </div>
+              )}
+              {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
             </div>
-            <Button variant="hero" className="w-full" type="submit" disabled={loading}>
+
+            {/* Confirm Password */}
+            <div className="space-y-1">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input id="confirmPassword" type="password" placeholder="••••••••" maxLength={128} value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} onBlur={() => handleBlur("confirmPassword")} />
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
+            </div>
+
+            <Button variant="hero" className="w-full" type="submit" disabled={loading || emailStatus === "taken"}>
               <UserPlus className="mr-2 h-4 w-4" />
               {loading ? "Registering..." : "Register"}
             </Button>
