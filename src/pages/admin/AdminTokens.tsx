@@ -398,6 +398,15 @@ const AdminTokens = () => {
                         {token.status === "completed" && (
                           <span className="text-xs text-muted-foreground">Done</span>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => { setReceiptToken(token); setReceiptOpen(true); }}
+                        >
+                          <Printer className="mr-1 h-3.5 w-3.5" />
+                          Print
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
