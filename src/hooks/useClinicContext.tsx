@@ -41,13 +41,31 @@ const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
 
 function extractSubdomain(): string | null {
   const hostname = window.location.hostname;
+
+  // Local development — no subdomain detection
   if (hostname === "localhost" || hostname === "127.0.0.1" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
     return null;
   }
+
+  // Lovable preview — no subdomain detection
   if (hostname.includes("lovable.app") || hostname.includes("lovableproject.com")) {
     return null;
   }
+
   const parts = hostname.split(".");
+
+  // Handle *.health.vercel.app pattern (4 parts)
+  // e.g. zahidaclinic.health.vercel.app → ["zahidaclinic", "health", "vercel", "app"]
+  if (parts.length === 4 && parts[2] === "vercel" && parts[3] === "app") {
+    const subdomain = parts[0];
+    // If the subdomain IS the project name (e.g. "health"), it's the root — no clinic subdomain
+    if (subdomain === parts[1] || subdomain === "www") {
+      return null;
+    }
+    return subdomain;
+  }
+
+  // Handle custom domains: e.g. zahidaclinic.clinic.health or subdomain.example.com
   if (parts.length >= 2) {
     const subdomain = parts[0];
     if (subdomain === "www" && parts.length >= 3) {
@@ -55,6 +73,7 @@ function extractSubdomain(): string | null {
     }
     return subdomain;
   }
+
   return null;
 }
 
