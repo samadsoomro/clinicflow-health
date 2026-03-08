@@ -166,7 +166,7 @@ const AdminTokens = () => {
     doc.save(`Today's Tokens - ${clinicShortName} - ${getTimestamp()}.pdf`);
   };
 
-  const liveToken = todayTokens.find((t) => t.status === "live");
+  const servingToken = todayTokens.find((t) => t.status === "serving");
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
