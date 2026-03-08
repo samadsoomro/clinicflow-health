@@ -82,7 +82,7 @@ const SuperAdminClinics = () => {
         contact_phone: form.contact_phone || null,
       });
       if (error) toast.error(error.message);
-      else toast.success("Clinic created");
+      else toast.success(`Clinic created! URL: ${form.subdomain}.health.vercel.app`);
     }
     setSaving(false);
     setDialogOpen(false);
