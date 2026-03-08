@@ -23,6 +23,7 @@ const PublicFooter = () => {
 
   const f = footer || {};
   const name = clinic?.clinic_name || "ClinicToken";
+  const shortName = (clinic as any)?.short_name || "";
   const logo = f.logo_override || clinic?.logo_url;
   const phone = f.phone || clinic?.contact_phone;
   const email = f.email || clinic?.contact_email;
