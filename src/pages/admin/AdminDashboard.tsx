@@ -26,6 +26,16 @@ const AdminDashboard = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut, profile } = useAuth();
+  const { clinicId } = useClinicId();
+  const [clinicName, setClinicName] = useState("");
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from("clinics").select("clinic_name").eq("id", clinicId).single();
+      if (data) setClinicName(data.clinic_name);
+    };
+    if (clinicId) fetch();
+  }, [clinicId]);
 
   return (
     <div className="flex min-h-screen bg-background">
