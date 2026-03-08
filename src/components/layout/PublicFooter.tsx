@@ -2,23 +2,23 @@ import { useEffect, useState } from "react";
 import { Activity, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { usePublicClinicId } from "@/hooks/useClinic";
+import { useClinicContext } from "@/hooks/useClinicContext";
 
 const PublicFooter = () => {
-  const clinicId = usePublicClinicId();
+  const { clinic, clinicId } = useClinicContext();
   const [footer, setFooter] = useState<any>(null);
-  const [clinic, setClinic] = useState<any>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [footerRes, clinicRes] = await Promise.all([
-        supabase.from("homepage_sections").select("content_json, is_enabled").eq("clinic_id", clinicId).eq("section_name", "footer").single(),
-        supabase.from("clinics").select("clinic_name, logo_url, contact_phone, contact_email, short_name").eq("id", clinicId).single(),
-      ]);
-      if (footerRes.data?.is_enabled) setFooter(footerRes.data.content_json);
-      setClinic(clinicRes.data);
+    const fetchFooter = async () => {
+      const { data } = await supabase
+        .from("homepage_sections")
+        .select("content_json, is_enabled")
+        .eq("clinic_id", clinicId)
+        .eq("section_name", "footer")
+        .single();
+      if (data?.is_enabled) setFooter(data.content_json);
     };
-    fetchData();
+    fetchFooter();
   }, [clinicId]);
 
   const f = footer || {};
