@@ -45,6 +45,11 @@ const AdminDashboard = () => {
             <Activity className="h-4 w-4 text-sidebar-primary" />
           </div>
           <span className="font-display text-lg font-bold text-sidebar-foreground">Admin Panel</span>
+          {clinicName && (
+            <span className="ml-auto mr-2 text-[10px] font-medium text-sidebar-foreground/50 hidden lg:inline truncate max-w-[100px]" title={clinicName}>
+              {clinicName}
+            </span>
+          )}
           <Button variant="ghost" size="icon" className="ml-auto text-sidebar-foreground lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </Button>
