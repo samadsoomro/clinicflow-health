@@ -72,8 +72,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     fetchData();
   }, [open, token, clinicId]);
 
-
-  const handleDownload = () => {
+  const handlePrint = () => {
     if (!data) return;
     const clinic = data.clinicName || "";
     const token = data.tokenNumber || "";
@@ -101,14 +100,16 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
         <title>Token-${token}-${patient}-${date}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body {
+            width: 80mm;
+            height: auto;
+            background: #fff;
+          }
           body {
             font-family: 'Courier New', Courier, monospace;
             font-size: 11px;
-            width: 80mm;
-            margin: 0 auto;
-            padding: 20px 10px;
+            padding: 10px;
             color: #000;
-            background: #fff;
           }
           .center { text-align: center; }
           .divider { border-top: 1px dashed #000; margin: 8px 0; }
@@ -122,12 +123,19 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
           .wait-msg { text-align: center; font-size: 10px; margin: 6px 0; line-height: 1.4; }
           img { display: block; margin: 0 auto 6px auto; }
           @media print {
-            body { width: 100%; margin: 0; padding: 10px; }
-            @page { size: 80mm auto; margin: 0; }
+            body { 
+              padding: 0; 
+              margin: 0;
+              height: auto !important;
+            }
+            @page { 
+              size: 80mm auto; 
+              margin: 0; 
+            }
           }
         </style>
       </head>
-      <body>
+      <body onload="setTimeout(() => { window.print(); window.close(); }, 500)">
         <div class="center">
           ${logoHtml}
           <div class="clinic-name">${clinic.toUpperCase()}</div>
@@ -166,18 +174,9 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     if (!win) return;
     win.document.write(html);
     win.document.close();
-    win.focus();
-    setTimeout(() => {
-      win.print();
-      win.close();
-    }, 500);
   };
 
-  const handlePrint = () => {
-    setTimeout(() => {
-      window.print();
-    }, 300);
-  };
+  const handleDownload = handlePrint;
 
   if (!data && !loading) return null;
 
@@ -193,7 +192,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
             <div className="flex-1 overflow-y-auto p-4 bg-muted/30">
               <div
                 id="token-receipt"
-                className="receipt-printable bg-white text-black p-6 font-mono text-[11px] leading-tight mx-auto shadow-sm"
+                className="bg-white text-black p-6 font-mono text-[11px] leading-tight mx-auto shadow-sm"
                 style={{ width: "80mm", height: "auto", overflow: "visible" }}
               >
                 {/* Header */}
