@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity } from "lucide-react";
+import { Activity, Maximize, Minimize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 
@@ -23,7 +23,25 @@ const TokenDisplay = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [liveTokens, setLiveTokens] = useState<LiveToken[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const prevTokensRef = useRef<string>("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -123,7 +141,7 @@ const TokenDisplay = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background select-none">
+    <div ref={containerRef} className="flex h-screen flex-col bg-background select-none overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4 lg:px-10">
         <div className="flex items-center gap-3">
@@ -149,6 +167,13 @@ const TokenDisplay = () => {
               Now Serving
             </span>
           </div>
+          <button
+            onClick={toggleFullscreen}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+          </button>
         </div>
       </header>
 
