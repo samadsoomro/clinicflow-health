@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ClinicData {
@@ -150,6 +151,42 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   }, [clinic?.id]);
 
   const clinicId = clinic?.id || DEFAULT_CLINIC_ID;
+  const location = useLocation();
+
+  // Dynamic favicon and page title logic
+  useEffect(() => {
+    // 1. Determine Title
+    let title = "ClinicToken CMS";
+
+    if (location.pathname.startsWith('/superadmin')) {
+      title = "Super Admin — ClinicToken CMS";
+    } else if (location.pathname.startsWith('/admin')) {
+      title = clinic ? `Admin — ${clinic.clinic_name}` : "Admin Clinic Dashboard";
+    } else if (clinic) {
+      title = clinic.clinic_name;
+    }
+
+    document.title = title;
+
+    // 2. Determine Favicon
+    const faviconUrl = clinic?.logo_url || "/favicon.ico";
+
+    // Update main favicon
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement
+      || document.createElement('link');
+    link.type = 'image/x-icon';
+    link.rel = 'icon';
+    link.href = faviconUrl;
+    if (!link.parentNode) document.head.appendChild(link);
+
+    // Update apple touch icon
+    const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement
+      || document.createElement('link');
+    appleLink.rel = 'apple-touch-icon';
+    appleLink.href = faviconUrl;
+    if (!appleLink.parentNode) document.head.appendChild(appleLink);
+
+  }, [clinic, location.pathname]);
 
   return (
     <ClinicContext.Provider value={{ clinic, clinicId, loading, error, refreshClinic }}>
