@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, LayoutDashboard, Users, Stethoscope, Clock,
-  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout
+  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -20,6 +20,7 @@ const sidebarLinks = [
   { label: "Notifications", path: "/admin/notifications", icon: Bell },
   { label: "Patient Cards", path: "/admin/cards", icon: CreditCard },
   { label: "Location", path: "/admin/location", icon: MapPin },
+  { label: "Contact Us", path: "/admin/contact-messages", icon: Mail },
   { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
@@ -29,14 +30,35 @@ const AdminDashboard = () => {
   const { signOut, profile } = useAuth();
   const { clinicId } = useClinicId();
   const [clinicName, setClinicName] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnread = useCallback(async () => {
+    const { count } = await supabase
+      .from("contact_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("is_read", false);
+    setUnreadCount(count || 0);
+  }, [clinicId]);
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase.from("clinics").select("clinic_name").eq("id", clinicId).single();
       if (data) setClinicName(data.clinic_name);
     };
-    if (clinicId) fetch();
-  }, [clinicId]);
+    if (clinicId) {
+      fetch();
+      fetchUnread();
+    }
+  }, [clinicId, fetchUnread]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-contact-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "contact_messages", filter: `clinic_id=eq.${clinicId}` }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [clinicId, fetchUnread]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -59,6 +81,7 @@ const AdminDashboard = () => {
         <nav className="flex-1 space-y-1 p-3">
           {sidebarLinks.map((link) => {
             const isActive = location.pathname === link.path;
+            const showBadge = link.path === "/admin/contact-messages" && unreadCount > 0;
             return (
               <Link key={link.path} to={link.path} onClick={() => setSidebarOpen(false)}>
                 <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -68,6 +91,11 @@ const AdminDashboard = () => {
                 }`}>
                   <link.icon className="h-4 w-4" />
                   {link.label}
+                  {showBadge && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
               </Link>
             );

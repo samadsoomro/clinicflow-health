@@ -136,6 +136,47 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          message: string
+          name: string
+          subject: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          message: string
+          name: string
+          subject: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          name?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctors: {
         Row: {
           clinic_id: string

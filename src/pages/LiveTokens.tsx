@@ -31,7 +31,7 @@ const LiveTokens = () => {
       .eq("clinic_id", clinicId)
       .gte("created_at", today + "T00:00:00")
       .lte("created_at", today + "T23:59:59")
-      .order("token_number", { ascending: false });
+      .order("token_number", { ascending: true });
 
     setDoctors((docData as any[]) || []);
     setAllTokens((tokenData as TokenRow[]) || []);
@@ -53,33 +53,17 @@ const LiveTokens = () => {
     return "md:grid-cols-2";
   };
 
-  const getTokenStyles = (status: string | null) => {
-    switch (status) {
-      case "serving":
-        return { bg: "bg-green-600 text-white shadow-lg", label: "Now Serving", badgeVariant: "default" as const, badgeClass: "bg-green-600 hover:bg-green-700" };
-      case "waiting":
-        return { bg: "bg-yellow-500 text-white shadow-lg", label: "Waiting", badgeVariant: "secondary" as const, badgeClass: "bg-yellow-500 text-white hover:bg-yellow-600" };
-      case "unavailable":
-        return { bg: "bg-muted text-muted-foreground", label: "Patient Unavailable", badgeVariant: "destructive" as const, badgeClass: "" };
-      default:
-        return { bg: "bg-muted text-muted-foreground", label: "Completed", badgeVariant: "outline" as const, badgeClass: "" };
-    }
-  };
+  const getServingTokens = (doctorId: string) =>
+    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "serving");
 
-  const getActiveToken = (doctorId: string) => {
-    const docTokens = allTokens.filter((t) => t.doctor_id === doctorId);
-    // Find the most recent serving or waiting token
-    const serving = docTokens.find((t) => t.status === "serving");
-    if (serving) return serving;
-    const waiting = docTokens.find((t) => t.status === "waiting");
-    if (waiting) return waiting;
-    // fallback to most recent
-    return docTokens.length > 0 ? docTokens[0] : null;
-  };
+  const getWaitingTokens = (doctorId: string) =>
+    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "waiting");
 
-  const getUnavailableTokens = (doctorId: string) => {
-    return allTokens.filter((t) => t.doctor_id === doctorId && t.status === "unavailable");
-  };
+  const getUnavailableTokens = (doctorId: string) =>
+    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "unavailable");
+
+  const hasAnyActiveTokens = (doctorId: string) =>
+    allTokens.some((t) => t.doctor_id === doctorId && t.status !== "completed");
 
   return (
     <section className="py-16 md:py-24">
@@ -95,9 +79,10 @@ const LiveTokens = () => {
 
         <div className={`mx-auto grid max-w-5xl gap-6 ${getGridCols(doctors.length)}`}>
           {doctors.map((doctor, i) => {
-            const activeToken = getActiveToken(doctor.id);
+            const servingTokens = getServingTokens(doctor.id);
+            const waitingTokens = getWaitingTokens(doctor.id);
             const unavailableTokens = getUnavailableTokens(doctor.id);
-            const styles = activeToken ? getTokenStyles(activeToken.status) : null;
+            const hasTokens = hasAnyActiveTokens(doctor.id);
 
             return (
               <motion.div
@@ -105,53 +90,62 @@ const LiveTokens = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`group flex flex-col items-center rounded-3xl border-2 bg-card p-8 md:p-10 shadow-soft transition-all hover:shadow-card ${
-                  activeToken?.status === "serving" ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" :
-                  activeToken?.status === "unavailable" ? "border-destructive/40 bg-destructive/5" :
-                  activeToken?.status === "waiting" ? "border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20" : "border-border"
+                className={`group flex flex-col rounded-3xl border-2 bg-card p-6 md:p-8 shadow-soft transition-all hover:shadow-card ${
+                  servingTokens.length > 0 ? "border-green-500" : "border-border"
                 } ${doctors.length === 1 ? "max-w-xl mx-auto" : ""}`}
               >
                 {/* Doctor Info */}
-                <h3 className="mb-1 font-display text-xl md:text-2xl font-bold text-foreground text-center">{doctor.name}</h3>
-                <p className="mb-5 text-base md:text-lg text-muted-foreground text-center">{doctor.specialization}</p>
+                <div className="mb-5 text-center">
+                  <h3 className="font-display text-xl md:text-2xl font-bold text-foreground">{doctor.name}</h3>
+                  <p className="text-base md:text-lg text-muted-foreground">{doctor.specialization}</p>
+                </div>
 
-                {/* Token Number */}
-                {activeToken && activeToken.status !== "completed" ? (
-                  <>
-                    <div className={`mb-4 flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-2xl ${styles!.bg}`}>
-                      <span className="font-display text-6xl md:text-7xl font-extrabold">
-                        {activeToken.token_number}
-                      </span>
+                {!hasTokens && (
+                  <div className="flex flex-col items-center py-6">
+                    <div className="mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-muted">
+                      <span className="font-display text-5xl font-extrabold text-muted-foreground/40">—</span>
                     </div>
-                    {activeToken.patient_name && (
-                      <p className={`mb-2 text-lg font-semibold ${
-                        activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
-                      }`}>
-                        {activeToken.patient_name}
-                      </p>
-                    )}
-                    <Badge
-                      variant={styles!.badgeVariant}
-                      className={`text-sm px-4 py-1 ${styles!.badgeClass}`}
-                    >
-                      {styles!.label}
-                    </Badge>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-4 flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                      <span className="font-display text-6xl md:text-7xl font-extrabold">—</span>
-                    </div>
-                    <Badge variant="secondary" className="text-sm px-4 py-1">
-                      {doctor.status === "active" ? "Active" : "Closed"}
-                    </Badge>
-                  </>
+                    <p className="text-sm text-muted-foreground">No tokens issued yet</p>
+                  </div>
                 )}
 
-                {/* Unavailable tokens record */}
+                {/* Serving Tokens */}
+                {servingTokens.map((token) => (
+                  <div key={token.id} className="mb-4 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-green-600 hover:bg-green-700 text-white text-xs">NOW SERVING</Badge>
+                    <div className="flex justify-center">
+                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-green-600 text-white shadow-lg">
+                        <span className="font-display text-5xl md:text-6xl font-extrabold">{token.token_number}</span>
+                      </div>
+                    </div>
+                    {token.patient_name ? (
+                      <p className="mt-2 text-lg font-semibold text-foreground">{token.patient_name}</p>
+                    ) : (
+                      <p className="mt-2 text-lg font-semibold text-muted-foreground">—</p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Waiting Tokens */}
+                {waitingTokens.map((token) => (
+                  <div key={token.id} className="mb-3 rounded-2xl border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs">WAITING</Badge>
+                    <div className="flex justify-center">
+                      <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-yellow-500 text-white shadow-lg">
+                        <span className="font-display text-4xl md:text-5xl font-extrabold">{token.token_number}</span>
+                      </div>
+                    </div>
+                    {token.patient_name ? (
+                      <p className="mt-2 text-base font-semibold text-foreground">{token.patient_name}</p>
+                    ) : (
+                      <p className="mt-2 text-base font-semibold text-muted-foreground">—</p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Unavailable Tokens */}
                 {unavailableTokens.length > 0 && (
-                  <div className="mt-6 w-full border-t border-border pt-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Previously Called:</p>
+                  <div className="mt-2 border-t border-border pt-3">
                     <div className="space-y-2">
                       {unavailableTokens.map((ut) => (
                         <div key={ut.id} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
