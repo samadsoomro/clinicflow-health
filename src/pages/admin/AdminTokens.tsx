@@ -279,6 +279,7 @@ const AdminTokens = () => {
                 <TableHead>Patient</TableHead>
                 <TableHead>Doctor</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
