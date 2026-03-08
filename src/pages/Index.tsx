@@ -105,7 +105,7 @@ const Index = () => {
   const contactEmail = contactContent.email || clinic?.contact_email;
   const contactAddress = contactContent.address || clinic?.address;
   const contactHours = contactContent.working_hours || clinic?.working_hours;
-  const mapsEmbedUrl = contactContent.maps_embed_url;
+  const mapsEmbedUrl = contactContent.maps_embed_url || clinic?.maps_embed_url;
 
   return (
     <>
@@ -195,7 +195,7 @@ const Index = () => {
                 </motion.div>
               ))}
             </div>
-            </div>
+          </div>
         </section>
       )}
 
@@ -213,21 +213,21 @@ const Index = () => {
             </div>
             {certs.length === 1 ? (
               <div className="mx-auto max-w-sm">
-                  <motion.div
-                    custom={0}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    variants={fadeUp}
-                    className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
-                  >
-                    <div className="aspect-[210/297] overflow-hidden">
-                      <img src={certs[0].image_url} alt={certs[0].title} className="h-full w-full object-cover" />
-                    </div>
-                    <div className="p-4 text-center">
-                      <h3 className="font-display font-semibold text-foreground">{certs[0].title}</h3>
-                    </div>
-                  </motion.div>
+                <motion.div
+                  custom={0}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
+                >
+                  <div className="aspect-[210/297] overflow-hidden">
+                    <img src={certs[0].image_url} alt={certs[0].title} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="p-4 text-center">
+                    <h3 className="font-display font-semibold text-foreground">{certs[0].title}</h3>
+                  </div>
+                </motion.div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
@@ -275,14 +275,12 @@ const Index = () => {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className={`rounded-2xl border p-5 shadow-soft ${
-                    n.priority === "urgent" ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
-                  }`}
+                  className={`rounded-2xl border p-5 shadow-soft ${n.priority === "urgent" ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
+                    }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
-                      n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
-                    }`}>
+                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
+                      }`}>
                       {n.priority === "urgent" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
                     </div>
                     <div>
@@ -345,9 +343,18 @@ const Index = () => {
                   </div>
                 )}
               </div>
-              {mapsEmbedUrl && (
-                <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
-                  <iframe src={mapsEmbedUrl} width="100%" height="300" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Clinic Location" />
+              {mapsEmbedUrl && mapsEmbedUrl.startsWith('https://www.google.com/maps/embed') && (
+                <div className="overflow-hidden rounded-2xl border border-border shadow-soft mt-4">
+                  <iframe
+                    src={mapsEmbedUrl}
+                    width="100%"
+                    height="300"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Clinic Location"
+                  />
                 </div>
               )}
             </div>
