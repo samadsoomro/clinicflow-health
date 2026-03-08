@@ -1,23 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Stethoscope, Edit, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockDoctors as initialDoctors } from "@/data/mockData";
-import type { Doctor } from "@/types/clinic";
+import { supabase } from "@/integrations/supabase/client";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
+interface DoctorRow {
+  id: string;
+  name: string;
+  specialization: string;
+  status: string | null;
+  image_url: string | null;
+  created_at: string | null;
+}
+
 const AdminDoctors = () => {
-  const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
+  const { clinicId } = useClinicId();
+  const [doctors, setDoctors] = useState<DoctorRow[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
-  const [form, setForm] = useState({ name: "", specialization: "", status: "active" as Doctor["status"] });
+  const [editing, setEditing] = useState<DoctorRow | null>(null);
+  const [form, setForm] = useState({ name: "", specialization: "", status: "active" });
+  const [saving, setSaving] = useState(false);
+
+  const fetchDoctors = async () => {
+    const { data } = await supabase
+      .from("doctors")
+      .select("id, name, specialization, status, image_url, created_at")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false });
+    setDoctors((data as DoctorRow[]) || []);
+  };
+
+  useEffect(() => { fetchDoctors(); }, [clinicId]);
 
   const filtered = doctors.filter((d) =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -25,43 +47,46 @@ const AdminDoctors = () => {
   );
 
   const openAdd = () => {
-    setEditingDoctor(null);
+    setEditing(null);
     setForm({ name: "", specialization: "", status: "active" });
     setDialogOpen(true);
   };
 
-  const openEdit = (doctor: Doctor) => {
-    setEditingDoctor(doctor);
-    setForm({ name: doctor.name, specialization: doctor.specialization, status: doctor.status });
+  const openEdit = (d: DoctorRow) => {
+    setEditing(d);
+    setForm({ name: d.name, specialization: d.specialization, status: d.status || "active" });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.specialization) {
       toast.error("Please fill in all fields");
       return;
     }
-    if (editingDoctor) {
-      setDoctors((prev) => prev.map((d) => d.id === editingDoctor.id ? { ...d, ...form } : d));
-      toast.success("Doctor updated successfully");
+    setSaving(true);
+    if (editing) {
+      const { error } = await supabase.from("doctors").update({
+        name: form.name, specialization: form.specialization, status: form.status,
+      }).eq("id", editing.id);
+      if (error) toast.error(error.message);
+      else toast.success("Doctor updated");
     } else {
-      const newDoctor: Doctor = {
-        id: crypto.randomUUID(),
-        name: form.name,
-        specialization: form.specialization,
-        imageUrl: "",
-        status: form.status,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setDoctors((prev) => [...prev, newDoctor]);
-      toast.success("Doctor added successfully");
+      const { error } = await supabase.from("doctors").insert({
+        clinic_id: clinicId, name: form.name, specialization: form.specialization, status: form.status,
+      });
+      if (error) toast.error(error.message);
+      else toast.success("Doctor added");
     }
+    setSaving(false);
     setDialogOpen(false);
+    fetchDoctors();
   };
 
-  const handleDelete = (id: string) => {
-    setDoctors((prev) => prev.filter((d) => d.id !== id));
-    toast.success("Doctor removed");
+  const handleDelete = async (id: string) => {
+    if (!confirm("Remove this doctor?")) return;
+    const { error } = await supabase.from("doctors").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Doctor removed"); fetchDoctors(); }
   };
 
   return (
@@ -84,7 +109,8 @@ const AdminDoctors = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="font-display">{editingDoctor ? "Edit Doctor" : "Add New Doctor"}</DialogTitle>
+                <DialogTitle className="font-display">{editing ? "Edit Doctor" : "Add New Doctor"}</DialogTitle>
+                <DialogDescription>Fill in the doctor's details below.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -97,7 +123,7 @@ const AdminDoctors = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val as Doctor["status"] })}>
+                  <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
@@ -108,7 +134,7 @@ const AdminDoctors = () => {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button variant="hero" onClick={handleSave}>{editingDoctor ? "Update" : "Add"} Doctor</Button>
+                <Button variant="hero" onClick={handleSave} disabled={saving}>{saving ? "Saving..." : editing ? "Update" : "Add"} Doctor</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -122,7 +148,6 @@ const AdminDoctors = () => {
               <TableHead>Name</TableHead>
               <TableHead>Specialization</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Added</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -143,7 +168,6 @@ const AdminDoctors = () => {
                     {doctor.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{doctor.createdAt}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(doctor)}>
@@ -158,9 +182,7 @@ const AdminDoctors = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                  No doctors found
-                </TableCell>
+                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">No doctors found</TableCell>
               </TableRow>
             )}
           </TableBody>
