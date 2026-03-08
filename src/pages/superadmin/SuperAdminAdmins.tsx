@@ -34,11 +34,32 @@ const SuperAdminAdmins = () => {
   const [saving, setSaving] = useState(false);
 
   const fetchAdmins = async () => {
-    const { data } = await supabase
+    // Fetch roles first
+    const { data: roles } = await supabase
       .from("user_roles")
-      .select("id, user_id, role, clinic_id, profiles:user_id(full_name, email), clinics:clinic_id(clinic_name)")
+      .select("id, user_id, role, clinic_id")
       .in("role", ["super_admin", "clinic_admin"]);
-    setAdmins((data as any[]) || []);
+    if (!roles || roles.length === 0) { setAdmins([]); return; }
+
+    // Fetch profiles and clinics separately
+    const userIds = [...new Set(roles.map(r => r.user_id))];
+    const clinicIds = [...new Set(roles.map(r => r.clinic_id).filter(Boolean))] as string[];
+
+    const [{ data: profiles }, { data: clinicData }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email").in("id", userIds),
+      clinicIds.length > 0
+        ? supabase.from("clinics").select("id, clinic_name").in("id", clinicIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    const clinicMap = Object.fromEntries((clinicData || []).map(c => [c.id, c]));
+
+    setAdmins(roles.map(r => ({
+      ...r,
+      profile: profileMap[r.user_id] || null,
+      clinic: r.clinic_id ? clinicMap[r.clinic_id] || null : null,
+    })));
   };
 
   const fetchClinics = async () => {
