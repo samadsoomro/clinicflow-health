@@ -79,7 +79,13 @@ const AdminSettings = () => {
     setUploadingLogo(false);
   };
 
+  const isValidMapsUrl = (url: string) => !url || url.startsWith("https://www.google.com/maps/embed");
+
   const handleSave = async () => {
+    if (!isValidMapsUrl(form.mapsEmbedUrl)) {
+      toast.error("Please enter a valid Google Maps embed URL starting with https://www.google.com/maps/embed");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("clinics")
@@ -265,9 +271,21 @@ const AdminSettings = () => {
               onChange={(e) => setForm({ ...form, mapsEmbedUrl: e.target.value })}
               placeholder="https://www.google.com/maps/embed?pb=..."
             />
-            <p className="text-xs text-muted-foreground">
-              Paste the embed URL from Google Maps. Used on Contact and Location pages.
-            </p>
+            {form.mapsEmbedUrl && !form.mapsEmbedUrl.startsWith("https://www.google.com/maps/embed") && (
+              <p className="text-xs text-destructive font-medium">
+                Please paste a valid Google Maps embed URL. It should start with https://www.google.com/maps/embed
+              </p>
+            )}
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium">How to get this URL:</p>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>Open Google Maps</li>
+                <li>Search your clinic location</li>
+                <li>Click Share</li>
+                <li>Click "Embed a map"</li>
+                <li>Copy only the URL inside <code className="bg-muted px-1 rounded">src="..."</code> and paste it here</li>
+              </ol>
+            </div>
           </div>
           {form.mapsEmbedUrl && (
             <div className="overflow-hidden rounded-lg border border-border">
