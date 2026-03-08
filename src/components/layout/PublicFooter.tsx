@@ -41,6 +41,9 @@ const PublicFooter = () => {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
+              {shortName && (
+                <span className="font-display text-sm font-bold text-primary">{shortName}</span>
+              )}
               {logo ? (
                 <img src={logo} alt={name} className="h-8 w-8 rounded-lg object-cover" />
               ) : (
