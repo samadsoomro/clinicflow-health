@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { usePublicClinicId } from "@/hooks/useClinic";
 
 const Register = () => {
+  const clinicId = usePublicClinicId();
   const [fullName, setFullName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
@@ -53,7 +54,6 @@ const Register = () => {
     }
 
     if (authData.user) {
-      const clinicId = getClinicId();
       const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
 
       // Get next patient number for this clinic

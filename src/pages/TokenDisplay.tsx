@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { usePublicClinicId } from "@/hooks/useClinic";
 
 const TokenDisplay = () => {
-  const clinicId = getClinicId();
+  const clinicId = usePublicClinicId();
   const [liveToken, setLiveToken] = useState<any>(null);
   const [clinicName, setClinicName] = useState("");
   const [loading, setLoading] = useState(true);
