@@ -70,8 +70,8 @@ const SuperAdminAdmins = () => {
   useEffect(() => { fetchAdmins(); fetchClinics(); }, []);
 
   const filtered = admins.filter((a) => {
-    const name = (a as any).profiles?.full_name || "";
-    const email = (a as any).profiles?.email || "";
+    const name = a.profile?.full_name || "";
+    const email = a.profile?.email || "";
     return name.toLowerCase().includes(search.toLowerCase()) || email.toLowerCase().includes(search.toLowerCase());
   });
 
