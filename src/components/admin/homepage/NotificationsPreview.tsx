@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface NotificationsContent {
   title: string;
   subtitle: string;
+  max_display?: number;
 }
 
 interface NotificationsPreviewProps {
@@ -43,6 +44,10 @@ export const NotificationsPreview = ({ content, onChange, clinicId }: Notificati
           <Label>Subtitle</Label>
           <Input value={content.subtitle} onChange={(e) => onChange({ ...content, subtitle: e.target.value })} placeholder="Stay informed" />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Max Notifications to Display</Label>
+        <Input type="number" min={1} max={10} value={content.max_display || ""} onChange={(e) => onChange({ ...content, max_display: e.target.value ? Number(e.target.value) : undefined })} placeholder="3 (default)" />
       </div>
 
       <div>

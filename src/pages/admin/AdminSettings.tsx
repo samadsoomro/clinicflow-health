@@ -144,18 +144,6 @@ const AdminSettings = () => {
         </div>
 
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <h3 className="font-display font-semibold text-foreground">Homepage Content</h3>
-          <div className="space-y-2">
-            <Label>Hero Title</Label>
-            <Input value={form.heroTitle} onChange={(e) => setForm({ ...form, heroTitle: e.target.value })} placeholder="Welcome to Our Clinic" />
-          </div>
-          <div className="space-y-2">
-            <Label>Hero Subtitle</Label>
-            <Textarea value={form.heroSubtitle} onChange={(e) => setForm({ ...form, heroSubtitle: e.target.value })} rows={2} placeholder="Your trusted healthcare partner" />
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
           <h3 className="font-display font-semibold text-foreground">SEO & Meta</h3>
           <div className="space-y-2">
             <Label>SEO Title</Label>
