@@ -34,11 +34,32 @@ const SuperAdminAdmins = () => {
   const [saving, setSaving] = useState(false);
 
   const fetchAdmins = async () => {
-    const { data } = await supabase
+    // Fetch roles first
+    const { data: roles } = await supabase
       .from("user_roles")
-      .select("id, user_id, role, clinic_id, profiles:user_id(full_name, email), clinics:clinic_id(clinic_name)")
+      .select("id, user_id, role, clinic_id")
       .in("role", ["super_admin", "clinic_admin"]);
-    setAdmins((data as any[]) || []);
+    if (!roles || roles.length === 0) { setAdmins([]); return; }
+
+    // Fetch profiles and clinics separately
+    const userIds = [...new Set(roles.map(r => r.user_id))];
+    const clinicIds = [...new Set(roles.map(r => r.clinic_id).filter(Boolean))] as string[];
+
+    const [{ data: profiles }, { data: clinicData }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email").in("id", userIds),
+      clinicIds.length > 0
+        ? supabase.from("clinics").select("id, clinic_name").in("id", clinicIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+    const clinicMap = Object.fromEntries((clinicData || []).map(c => [c.id, c]));
+
+    setAdmins(roles.map(r => ({
+      ...r,
+      profile: profileMap[r.user_id] || null,
+      clinic: r.clinic_id ? clinicMap[r.clinic_id] || null : null,
+    })));
   };
 
   const fetchClinics = async () => {
@@ -49,8 +70,8 @@ const SuperAdminAdmins = () => {
   useEffect(() => { fetchAdmins(); fetchClinics(); }, []);
 
   const filtered = admins.filter((a) => {
-    const name = (a as any).profiles?.full_name || "";
-    const email = (a as any).profiles?.email || "";
+    const name = a.profile?.full_name || "";
+    const email = a.profile?.email || "";
     return name.toLowerCase().includes(search.toLowerCase()) || email.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -169,8 +190,8 @@ const SuperAdminAdmins = () => {
                       <Users className="h-4 w-4" />
                     </div>
                     <div>
-                      <p>{(admin as any).profiles?.full_name || "Unknown"}</p>
-                      <p className="text-xs text-muted-foreground">{(admin as any).profiles?.email || ""}</p>
+                      <p>{admin.profile?.full_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">{admin.profile?.email || ""}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -180,7 +201,7 @@ const SuperAdminAdmins = () => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {(admin as any).clinics?.clinic_name || "—"}
+                  {admin.clinic?.clinic_name || "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => handleRemove(admin.id)} className="text-destructive hover:text-destructive">
