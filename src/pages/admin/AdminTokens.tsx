@@ -68,7 +68,7 @@ const AdminTokens = () => {
       clinic_id: clinicId,
       doctor_id: issueForm.doctorId,
       token_number: tokenNumber,
-      patient_name: issueForm.patientName.trim(),
+      patient_name: issueForm.patientName.trim() || "",
       status: "waiting",
     } as any);
 
