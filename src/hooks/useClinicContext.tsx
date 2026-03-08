@@ -31,6 +31,7 @@ interface ClinicContextType {
   clinicId: string;
   loading: boolean;
   error: string | null;
+  refreshClinic: () => Promise<void>;
 }
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
