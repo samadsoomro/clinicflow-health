@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX } from "lucide-react";
+import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
