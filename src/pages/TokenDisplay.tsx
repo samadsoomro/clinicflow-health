@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Maximize, Minimize } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 
@@ -22,7 +23,7 @@ const TokenDisplay = () => {
   const clinicId = usePublicClinicId();
   const [clinic, setClinic] = useState<any>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [latestTokens, setLatestTokens] = useState<TokenData[]>([]);
+  const [allTokens, setAllTokens] = useState<TokenData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevTokensRef = useRef<string>("");
@@ -78,26 +79,24 @@ const TokenDisplay = () => {
     ]);
 
     setClinic(clinicRes.data);
-    const docs = (docRes.data as Doctor[]) || [];
-    setDoctors(docs);
+    setDoctors((docRes.data as Doctor[]) || []);
+    const tokens = (tokenRes.data as TokenData[]) || [];
+    setAllTokens(tokens);
 
-    const allTokens = (tokenRes.data as TokenData[]) || [];
-    // Get most recent token per doctor
-    const perDoctor: TokenData[] = [];
+    // Sound on change
+    const activePerDoctor: TokenData[] = [];
     const seen = new Set<string>();
-    for (const t of allTokens) {
-      if (!seen.has(t.doctor_id)) {
+    for (const t of tokens) {
+      if (!seen.has(t.doctor_id) && (t.status === "serving" || t.status === "waiting")) {
         seen.add(t.doctor_id);
-        perDoctor.push(t);
+        activePerDoctor.push(t);
       }
     }
-
-    const newKey = perDoctor.map(t => `${t.doctor_id}:${t.token_number}:${t.status}`).sort().join(",");
+    const newKey = activePerDoctor.map(t => `${t.doctor_id}:${t.token_number}:${t.status}`).sort().join(",");
     if (prevTokensRef.current && newKey !== prevTokensRef.current && newKey) {
       playSound();
     }
     prevTokensRef.current = newKey;
-    setLatestTokens(perDoctor);
     setLoading(false);
   }, [clinicId, today, playSound]);
 
@@ -114,8 +113,18 @@ const TokenDisplay = () => {
     };
   }, [fetchAll]);
 
-  const getTokenForDoctor = (doctorId: string) =>
-    latestTokens.find((t) => t.doctor_id === doctorId);
+  const getActiveToken = (doctorId: string): TokenData | null => {
+    const docTokens = allTokens.filter((t) => t.doctor_id === doctorId);
+    const serving = docTokens.find((t) => t.status === "serving");
+    if (serving) return serving;
+    const waiting = docTokens.find((t) => t.status === "waiting");
+    if (waiting) return waiting;
+    return docTokens.length > 0 ? docTokens[0] : null;
+  };
+
+  const getUnavailableTokens = (doctorId: string): TokenData[] => {
+    return allTokens.filter((t) => t.doctor_id === doctorId && t.status === "unavailable");
+  };
 
   const getGridClass = (count: number) => {
     if (count <= 1) return "grid-cols-1";
@@ -145,7 +154,7 @@ const TokenDisplay = () => {
     }
   };
 
-  const shortName = (clinic as any)?.short_name || "";
+  const shortName = clinic?.short_name || "";
   const clinicName = clinic?.clinic_name || "";
   const logoUrl = clinic?.logo_url;
 
@@ -198,7 +207,8 @@ const TokenDisplay = () => {
       <div className={`flex-1 grid gap-4 p-4 lg:gap-6 lg:p-6 ${getGridClass(doctors.length)} ${getGridRows(doctors.length)}`}>
         {doctors.length > 0 ? (
           doctors.map((doc) => {
-            const token = getTokenForDoctor(doc.id);
+            const token = getActiveToken(doc.id);
+            const unavailableTokens = getUnavailableTokens(doc.id);
             const styles = token ? getStatusStyles(token.status) : null;
 
             return (
@@ -214,7 +224,7 @@ const TokenDisplay = () => {
                 <p className="mb-6 text-sm text-muted-foreground lg:text-base">{doc.specialization}</p>
 
                 <AnimatePresence mode="wait">
-                  {token ? (
+                  {token && token.status !== "completed" ? (
                     <motion.div
                       key={`${token.id}-${token.status}`}
                       initial={{ opacity: 0, scale: 0.7 }}
@@ -256,6 +266,24 @@ const TokenDisplay = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                {/* Unavailable tokens record */}
+                {unavailableTokens.length > 0 && (
+                  <div className="mt-4 w-full border-t border-border pt-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Previously Called:</p>
+                    <div className="space-y-1">
+                      {unavailableTokens.map((ut) => (
+                        <div key={ut.id} className="flex items-center justify-between rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-display text-sm font-bold text-muted-foreground">#{ut.token_number}</span>
+                            <span className="text-xs text-muted-foreground line-through">{ut.patient_name}</span>
+                          </div>
+                          <Badge variant="destructive" className="text-[10px] px-2 py-0">Unavailable</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })
@@ -274,7 +302,7 @@ const TokenDisplay = () => {
       </div>
 
       {/* Footer message */}
-      {doctors.length > 0 && latestTokens.length === 0 && (
+      {doctors.length > 0 && allTokens.filter(t => t.status === "serving" || t.status === "waiting").length === 0 && (
         <div className="border-t border-border bg-muted/50 px-6 py-4 text-center">
           <p className="font-display text-lg font-medium text-muted-foreground animate-pulse">
             Please wait. Token will be announced shortly.

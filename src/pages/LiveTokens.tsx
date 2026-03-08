@@ -5,9 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 
+interface TokenRow {
+  id: string;
+  token_number: number;
+  patient_name: string;
+  doctor_id: string;
+  status: string;
+}
+
 const LiveTokens = () => {
   const clinicId = usePublicClinicId();
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
   const today = new Date().toISOString().split("T")[0];
 
   const fetchData = async () => {
@@ -18,27 +27,14 @@ const LiveTokens = () => {
 
     const { data: tokenData } = await supabase
       .from("tokens")
-      .select("*")
+      .select("id, token_number, patient_name, doctor_id, status")
       .eq("clinic_id", clinicId)
       .gte("created_at", today + "T00:00:00")
       .lte("created_at", today + "T23:59:59")
       .order("token_number", { ascending: false });
 
-    const docs = (docData as any[]) || [];
-    const tokens = (tokenData as any[]) || [];
-
-    const merged = docs.map((doc) => {
-      const docTokens = tokens.filter((t) => t.doctor_id === doc.id);
-      // Get the most recent token for this doctor (first in desc order)
-      const latestToken = docTokens.length > 0 ? docTokens[0] : null;
-      return {
-        ...doc,
-        currentToken: latestToken?.token_number || 0,
-        currentStatus: latestToken?.status || null,
-        patientName: latestToken?.patient_name || "",
-      };
-    });
-    setDoctors(merged);
+    setDoctors((docData as any[]) || []);
+    setAllTokens((tokenData as TokenRow[]) || []);
   };
 
   useEffect(() => {
@@ -70,6 +66,21 @@ const LiveTokens = () => {
     }
   };
 
+  const getActiveToken = (doctorId: string) => {
+    const docTokens = allTokens.filter((t) => t.doctor_id === doctorId);
+    // Find the most recent serving or waiting token
+    const serving = docTokens.find((t) => t.status === "serving");
+    if (serving) return serving;
+    const waiting = docTokens.find((t) => t.status === "waiting");
+    if (waiting) return waiting;
+    // fallback to most recent
+    return docTokens.length > 0 ? docTokens[0] : null;
+  };
+
+  const getUnavailableTokens = (doctorId: string) => {
+    return allTokens.filter((t) => t.doctor_id === doctorId && t.status === "unavailable");
+  };
+
   return (
     <section className="py-16 md:py-24">
       <div className="container">
@@ -84,7 +95,10 @@ const LiveTokens = () => {
 
         <div className={`mx-auto grid max-w-5xl gap-6 ${getGridCols(doctors.length)}`}>
           {doctors.map((doctor, i) => {
-            const styles = getTokenStyles(doctor.currentStatus);
+            const activeToken = getActiveToken(doctor.id);
+            const unavailableTokens = getUnavailableTokens(doctor.id);
+            const styles = activeToken ? getTokenStyles(activeToken.status) : null;
+
             return (
               <motion.div
                 key={doctor.id}
@@ -92,38 +106,63 @@ const LiveTokens = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className={`group flex flex-col items-center rounded-3xl border-2 bg-card p-8 md:p-10 shadow-soft transition-all hover:shadow-card ${
-                  doctor.currentStatus === "serving" ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" :
-                  doctor.currentStatus === "unavailable" ? "border-destructive/40 bg-destructive/5" :
-                  doctor.currentStatus === "waiting" ? "border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20" : "border-border"
+                  activeToken?.status === "serving" ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" :
+                  activeToken?.status === "unavailable" ? "border-destructive/40 bg-destructive/5" :
+                  activeToken?.status === "waiting" ? "border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20" : "border-border"
                 } ${doctors.length === 1 ? "max-w-xl mx-auto" : ""}`}
               >
-                {/* Token Number */}
-                <div className={`mb-6 flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-2xl ${
-                  doctor.status === "active" && doctor.currentToken > 0
-                    ? styles.bg
-                    : "bg-muted text-muted-foreground"
-                }`}>
-                  <span className="font-display text-6xl md:text-7xl font-extrabold">
-                    {doctor.status === "active" && doctor.currentToken > 0 ? doctor.currentToken : "—"}
-                  </span>
-                </div>
-
-                {/* Patient name for unavailable */}
-                {doctor.currentStatus === "unavailable" && doctor.patientName && (
-                  <p className="mb-2 text-sm text-muted-foreground line-through">{doctor.patientName}</p>
-                )}
-
                 {/* Doctor Info */}
                 <h3 className="mb-1 font-display text-xl md:text-2xl font-bold text-foreground text-center">{doctor.name}</h3>
-                <p className="mb-3 text-base md:text-lg text-muted-foreground text-center">{doctor.specialization}</p>
-                <Badge
-                  variant={doctor.status === "active" && doctor.currentToken > 0 ? styles.badgeVariant : "secondary"}
-                  className={`text-sm px-4 py-1 ${doctor.status === "active" && doctor.currentToken > 0 ? styles.badgeClass : ""}`}
-                >
-                  {doctor.status === "active"
-                    ? (doctor.currentToken > 0 ? styles.label : "Active")
-                    : "Closed"}
-                </Badge>
+                <p className="mb-5 text-base md:text-lg text-muted-foreground text-center">{doctor.specialization}</p>
+
+                {/* Token Number */}
+                {activeToken && activeToken.status !== "completed" ? (
+                  <>
+                    <div className={`mb-4 flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-2xl ${styles!.bg}`}>
+                      <span className="font-display text-6xl md:text-7xl font-extrabold">
+                        {activeToken.token_number}
+                      </span>
+                    </div>
+                    <p className={`mb-2 text-lg font-semibold ${
+                      activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                    }`}>
+                      {activeToken.patient_name}
+                    </p>
+                    <Badge
+                      variant={styles!.badgeVariant}
+                      className={`text-sm px-4 py-1 ${styles!.badgeClass}`}
+                    >
+                      {styles!.label}
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-4 flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                      <span className="font-display text-6xl md:text-7xl font-extrabold">—</span>
+                    </div>
+                    <Badge variant="secondary" className="text-sm px-4 py-1">
+                      {doctor.status === "active" ? "Active" : "Closed"}
+                    </Badge>
+                  </>
+                )}
+
+                {/* Unavailable tokens record */}
+                {unavailableTokens.length > 0 && (
+                  <div className="mt-6 w-full border-t border-border pt-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Previously Called:</p>
+                    <div className="space-y-2">
+                      {unavailableTokens.map((ut) => (
+                        <div key={ut.id} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
+                          <div className="flex items-center gap-3">
+                            <span className="font-display text-lg font-bold text-muted-foreground">#{ut.token_number}</span>
+                            <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>
+                          </div>
+                          <Badge variant="destructive" className="text-xs">Unavailable</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             );
           })}
