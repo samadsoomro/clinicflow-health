@@ -157,7 +157,7 @@ const LiveTokens = () => {
                         <div key={ut.id} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
                           <div className="flex items-center gap-3">
                             <span className="font-display text-lg font-bold text-muted-foreground">#{ut.token_number}</span>
-                            <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>
+                            {ut.patient_name && <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>}
                           </div>
                           <Badge variant="destructive" className="text-xs">Unavailable</Badge>
                         </div>
