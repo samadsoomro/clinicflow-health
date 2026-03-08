@@ -38,6 +38,7 @@ const AdminSettings = () => {
       if (data) {
         setForm({
           clinicName: data.clinic_name || "",
+          shortName: (data as any).short_name || "",
           subdomain: data.subdomain || "",
           themeColor: data.theme_color || "#0d7a5f",
           logoUrl: data.logo_url || "",
