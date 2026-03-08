@@ -44,7 +44,13 @@ const AdminLocation = () => {
     fetch();
   }, [clinicId]);
 
+  const isValidMapsUrl = (url: string) => !url || url.startsWith("https://www.google.com/maps/embed");
+
   const handleSave = async () => {
+    if (!isValidMapsUrl(form.mapsEmbedUrl)) {
+      toast.error("Please enter a valid Google Maps embed URL starting with https://www.google.com/maps/embed");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("clinics").update({
       address: form.address,

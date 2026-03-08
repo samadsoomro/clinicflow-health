@@ -97,14 +97,14 @@ const Contact = () => {
           </motion.form>
         </div>
 
-        {mapsUrl && (
+        {mapsUrl && mapsUrl.startsWith("https://www.google.com/maps/embed") && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-2xl border border-border shadow-card"
           >
-            <iframe src={mapsUrl} width="100%" height="350" style={{ border: 0 }} allowFullScreen loading="lazy" title="Clinic Location" />
+            <iframe src={mapsUrl} width="100%" height="350" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Clinic Location" />
           </motion.div>
         )}
       </div>
