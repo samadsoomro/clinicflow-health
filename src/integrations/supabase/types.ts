@@ -66,6 +66,7 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          maps_embed_url: string | null
           og_image_url: string | null
           qr_base_url: string | null
           secondary_theme_color: string | null
@@ -93,6 +94,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          maps_embed_url?: string | null
           og_image_url?: string | null
           qr_base_url?: string | null
           secondary_theme_color?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          maps_embed_url?: string | null
           og_image_url?: string | null
           qr_base_url?: string | null
           secondary_theme_color?: string | null

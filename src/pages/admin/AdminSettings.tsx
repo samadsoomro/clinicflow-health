@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +25,7 @@ const AdminSettings = () => {
     themeColor: "#0ea5e9",
     secondaryThemeColor: "#1e293b",
     termsConditions: "",
+    mapsEmbedUrl: "",
   });
 
   useEffect(() => {
@@ -44,6 +45,7 @@ const AdminSettings = () => {
           themeColor: data.theme_color || "#0ea5e9",
           secondaryThemeColor: (data as any).secondary_theme_color || "#1e293b",
           termsConditions: data.terms_conditions || "",
+          mapsEmbedUrl: (data as any).maps_embed_url || "",
         });
       }
       setLoading(false);
@@ -63,7 +65,6 @@ const AdminSettings = () => {
     }
     const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(path);
     const newUrl = urlData.publicUrl;
-    // Instantly save to DB
     const { error: updateErr } = await supabase
       .from("clinics")
       .update({ logo_url: newUrl } as any)
@@ -91,6 +92,7 @@ const AdminSettings = () => {
         theme_color: form.themeColor,
         secondary_theme_color: form.secondaryThemeColor,
         terms_conditions: form.termsConditions,
+        maps_embed_url: form.mapsEmbedUrl,
       } as any)
       .eq("id", clinicId);
 
@@ -171,7 +173,6 @@ const AdminSettings = () => {
             <p className="text-xs text-muted-foreground">Used in Navbar, Footer, Live Token TV Display, and Patient Cards.</p>
           </div>
 
-          {/* Live Preview */}
           {(form.shortName || form.logoUrl) && (
             <div className="space-y-2">
               <Label>Navbar Preview</Label>
@@ -252,8 +253,31 @@ const AdminSettings = () => {
           </div>
         </div>
 
-        {/* Section 4 — Legal */}
+        {/* Section 4 — Google Maps */}
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+            <Map className="h-4 w-4" /> Google Maps Embed
+          </h3>
+          <div className="space-y-2">
+            <Label>Google Maps Embed URL</Label>
+            <Input
+              value={form.mapsEmbedUrl}
+              onChange={(e) => setForm({ ...form, mapsEmbedUrl: e.target.value })}
+              placeholder="https://www.google.com/maps/embed?pb=..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste the embed URL from Google Maps. Used on Contact and Location pages.
+            </p>
+          </div>
+          {form.mapsEmbedUrl && (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <iframe src={form.mapsEmbedUrl} width="100%" height="200" style={{ border: 0 }} allowFullScreen loading="lazy" title="Map Preview" />
+            </div>
+          )}
+        </div>
+
+        {/* Section 5 — Legal */}
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
           <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
             <Scale className="h-4 w-4" /> Legal
           </h3>
