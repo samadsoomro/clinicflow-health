@@ -209,11 +209,11 @@ const AdminTokens = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Patient Name</Label>
+              <Label>Patient Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input
                 value={issueForm.patientName}
                 onChange={(e) => setIssueForm({ ...issueForm, patientName: e.target.value })}
-                placeholder="Enter patient name"
+                placeholder="Enter patient name (optional)"
               />
             </div>
             <div className="rounded-xl bg-secondary p-4 text-center">
