@@ -31,7 +31,7 @@ const SuperAdminClinics = () => {
   const fetchClinics = async () => {
     const { data } = await supabase
       .from("clinics")
-      .select("id, clinic_name, subdomain, domain_name, is_active, contact_email, created_at")
+      .select("id, clinic_name, subdomain, domain_name, is_active, contact_email, contact_phone, address, created_at")
       .order("created_at", { ascending: false });
     setClinics((data as ClinicRow[]) || []);
   };
