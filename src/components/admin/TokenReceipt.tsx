@@ -74,7 +74,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
 
 
 
-  const handleDownload = () => {
+  const handlePrint = () => {
     if (!data) return;
     const clinic = data.clinicName || "";
     const token = data.tokenNumber || "";
@@ -174,12 +174,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     }, 500);
   };
 
-  const handlePrint = () => {
-    // Small delay to ensure modal is rendered
-    setTimeout(() => {
-      window.print();
-    }, 200);
-  };
+  const handleDownload = handlePrint;
 
   if (!data && !loading) return null;
 
