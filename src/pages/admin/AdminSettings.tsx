@@ -62,6 +62,7 @@ const AdminSettings = () => {
       .from("clinics")
       .update({
         clinic_name: form.clinicName,
+        short_name: form.shortName,
         subdomain: form.subdomain,
         theme_color: form.themeColor,
         logo_url: form.logoUrl,
@@ -72,7 +73,7 @@ const AdminSettings = () => {
         hero_subtitle: form.heroSubtitle,
         seo_title: form.seoTitle,
         seo_description: form.seoDescription,
-      })
+      } as any)
       .eq("id", clinicId);
 
     if (error) toast.error("Failed to save: " + error.message);
