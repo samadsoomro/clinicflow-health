@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity, Upload, Loader2 } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicId } from "@/hooks/useClinic";
+import { useClinicContext } from "@/hooks/useClinicContext";
 import { toast } from "sonner";
 
 const AdminSettings = () => {
   const { clinicId } = useClinicId();
+  const { refreshClinic } = useClinicContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -18,15 +20,11 @@ const AdminSettings = () => {
     clinicName: "",
     shortName: "",
     subdomain: "",
-    themeColor: "#0d7a5f",
     logoUrl: "",
-    termsConditions: "",
-    cardBackgroundColor: "#1e293b",
     qrBaseUrl: "",
-    heroTitle: "",
-    heroSubtitle: "",
-    seoTitle: "",
-    seoDescription: "",
+    themeColor: "#0ea5e9",
+    secondaryThemeColor: "#1e293b",
+    termsConditions: "",
   });
 
   useEffect(() => {
@@ -41,21 +39,44 @@ const AdminSettings = () => {
           clinicName: data.clinic_name || "",
           shortName: (data as any).short_name || "",
           subdomain: data.subdomain || "",
-          themeColor: data.theme_color || "#0d7a5f",
           logoUrl: data.logo_url || "",
-          termsConditions: data.terms_conditions || "",
-          cardBackgroundColor: data.card_background_color || "#1e293b",
           qrBaseUrl: data.qr_base_url || "",
-          heroTitle: data.hero_title || "",
-          heroSubtitle: data.hero_subtitle || "",
-          seoTitle: data.seo_title || "",
-          seoDescription: data.seo_description || "",
+          themeColor: data.theme_color || "#0ea5e9",
+          secondaryThemeColor: (data as any).secondary_theme_color || "#1e293b",
+          termsConditions: data.terms_conditions || "",
         });
       }
       setLoading(false);
     };
     fetchClinic();
   }, [clinicId]);
+
+  const handleLogoUpload = async (file: File) => {
+    setUploadingLogo(true);
+    const ext = file.name.split(".").pop();
+    const path = `${clinicId}/logo/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("clinic-assets").upload(path, file, { upsert: true });
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+      setUploadingLogo(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(path);
+    const newUrl = urlData.publicUrl;
+    // Instantly save to DB
+    const { error: updateErr } = await supabase
+      .from("clinics")
+      .update({ logo_url: newUrl } as any)
+      .eq("id", clinicId);
+    if (updateErr) {
+      toast.error("Failed to save logo: " + updateErr.message);
+    } else {
+      setForm((prev) => ({ ...prev, logoUrl: newUrl }));
+      await refreshClinic();
+      toast.success("Logo uploaded and saved!");
+    }
+    setUploadingLogo(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -65,20 +86,20 @@ const AdminSettings = () => {
         clinic_name: form.clinicName,
         short_name: form.shortName,
         subdomain: form.subdomain,
-        theme_color: form.themeColor,
         logo_url: form.logoUrl,
-        terms_conditions: form.termsConditions,
-        card_background_color: form.cardBackgroundColor,
         qr_base_url: form.qrBaseUrl,
-        hero_title: form.heroTitle,
-        hero_subtitle: form.heroSubtitle,
-        seo_title: form.seoTitle,
-        seo_description: form.seoDescription,
+        theme_color: form.themeColor,
+        secondary_theme_color: form.secondaryThemeColor,
+        terms_conditions: form.termsConditions,
       } as any)
       .eq("id", clinicId);
 
-    if (error) toast.error("Failed to save: " + error.message);
-    else toast.success("Clinic settings saved!");
+    if (error) {
+      toast.error("Failed to save: " + error.message);
+    } else {
+      await refreshClinic();
+      toast.success("Clinic settings saved!");
+    }
     setSaving(false);
   };
 
@@ -94,21 +115,30 @@ const AdminSettings = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Clinic Settings</h2>
-        <p className="text-sm text-muted-foreground">Customize your clinic profile, branding, and SEO</p>
+        <p className="text-sm text-muted-foreground">Configure your clinic identity, branding, and legal information</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Section 1 — Clinic Identity */}
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <h3 className="font-display font-semibold text-foreground">General</h3>
+          <h3 className="font-display font-semibold text-foreground">Clinic Identity</h3>
+
           <div className="space-y-2">
             <Label>Clinic Name</Label>
             <Input value={form.clinicName} onChange={(e) => setForm({ ...form, clinicName: e.target.value })} />
           </div>
+
           <div className="space-y-2">
             <Label>Clinic Short Name / Logo Label</Label>
-            <Input value={form.shortName} onChange={(e) => setForm({ ...form, shortName: e.target.value.slice(0, 10) })} placeholder="e.g. ZHC" maxLength={10} />
-            <p className="text-xs text-muted-foreground">Max 10 characters. Appears beside your logo in the navbar. Leave empty to hide.</p>
+            <Input
+              value={form.shortName}
+              onChange={(e) => setForm({ ...form, shortName: e.target.value.slice(0, 10) })}
+              placeholder="e.g. ZHC"
+              maxLength={10}
+            />
+            <p className="text-xs text-muted-foreground">Max 10 characters. Appears beside your logo in the navbar.</p>
           </div>
+
           <div className="space-y-2">
             <Label>Subdomain</Label>
             <div className="flex items-center gap-2">
@@ -116,6 +146,7 @@ const AdminSettings = () => {
               <span className="text-sm text-muted-foreground whitespace-nowrap">.clinic.health</span>
             </div>
           </div>
+
           <div className="space-y-2">
             <Label>Clinic Logo</Label>
             <div className="flex items-center gap-3">
@@ -130,36 +161,14 @@ const AdminSettings = () => {
                   accept="image/*"
                   className="hidden"
                   disabled={uploadingLogo}
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    setUploadingLogo(true);
-                    const path = `${clinicId}/branding/logo-${Date.now()}.${file.name.split(".").pop()}`;
-                    const { error } = await supabase.storage.from("clinic-assets").upload(path, file, { upsert: true });
-                    if (error) {
-                      toast.error("Upload failed: " + error.message);
-                    } else {
-                      const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(path);
-                      const newUrl = urlData.publicUrl;
-                      // Instantly save to DB
-                      const { error: updateErr } = await supabase.from("clinics").update({ logo_url: newUrl } as any).eq("id", clinicId);
-                      if (updateErr) {
-                        toast.error("Failed to save logo: " + updateErr.message);
-                      } else {
-                        setForm((prev) => ({ ...prev, logoUrl: newUrl }));
-                        toast.success("Logo uploaded and saved!");
-                      }
-                    }
-                    setUploadingLogo(false);
+                    if (file) handleLogoUpload(file);
                   }}
                 />
               </label>
             </div>
-            <p className="text-xs text-muted-foreground">This logo appears in the navbar and footer across your website.</p>
-          </div>
-          <div className="space-y-2">
-            <Label>QR Base URL</Label>
-            <Input value={form.qrBaseUrl} onChange={(e) => setForm({ ...form, qrBaseUrl: e.target.value })} />
+            <p className="text-xs text-muted-foreground">Used in Navbar, Footer, Live Token TV Display, and Patient Cards.</p>
           </div>
 
           {/* Live Preview */}
@@ -183,41 +192,82 @@ const AdminSettings = () => {
           )}
         </div>
 
+        {/* Section 2 — QR Configuration */}
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
           <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
-            <Palette className="h-4 w-4" /> Appearance & Card
+            <QrCode className="h-4 w-4" /> QR Configuration
           </h3>
+          <div className="space-y-2">
+            <Label>QR Base URL</Label>
+            <Input
+              value={form.qrBaseUrl}
+              onChange={(e) => setForm({ ...form, qrBaseUrl: e.target.value })}
+              placeholder="https://zahida.clinic.health"
+            />
+            <p className="text-xs text-muted-foreground">
+              Base URL used to generate QR codes for patient cards, appointment check-in, and patient profile links.
+            </p>
+          </div>
+          {form.qrBaseUrl && (
+            <div className="rounded-lg border border-border bg-muted/50 p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Example generated link:</p>
+              <code className="text-xs text-foreground">{form.qrBaseUrl}/patient/123</code>
+            </div>
+          )}
+        </div>
+
+        {/* Section 3 — Website Theme */}
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+            <Palette className="h-4 w-4" /> Website Theme
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Controls website appearance: navbar, buttons, links, and homepage accents. Does not affect patient card design.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Theme Color</Label>
+              <Label>Primary Theme Color</Label>
               <div className="flex items-center gap-2">
-                <input type="color" value={form.themeColor} onChange={(e) => setForm({ ...form, themeColor: e.target.value })} className="h-10 w-10 cursor-pointer rounded-lg border border-border" />
+                <input
+                  type="color"
+                  value={form.themeColor}
+                  onChange={(e) => setForm({ ...form, themeColor: e.target.value })}
+                  className="h-10 w-10 cursor-pointer rounded-lg border border-border"
+                />
                 <Input value={form.themeColor} onChange={(e) => setForm({ ...form, themeColor: e.target.value })} className="flex-1" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Card Background</Label>
+              <Label>Secondary Theme Color</Label>
               <div className="flex items-center gap-2">
-                <input type="color" value={form.cardBackgroundColor} onChange={(e) => setForm({ ...form, cardBackgroundColor: e.target.value })} className="h-10 w-10 cursor-pointer rounded-lg border border-border" />
-                <Input value={form.cardBackgroundColor} onChange={(e) => setForm({ ...form, cardBackgroundColor: e.target.value })} className="flex-1" />
+                <input
+                  type="color"
+                  value={form.secondaryThemeColor}
+                  onChange={(e) => setForm({ ...form, secondaryThemeColor: e.target.value })}
+                  className="h-10 w-10 cursor-pointer rounded-lg border border-border"
+                />
+                <Input value={form.secondaryThemeColor} onChange={(e) => setForm({ ...form, secondaryThemeColor: e.target.value })} className="flex-1" />
               </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Terms & Conditions</Label>
-            <Textarea value={form.termsConditions} onChange={(e) => setForm({ ...form, termsConditions: e.target.value })} rows={4} />
-          </div>
         </div>
 
+        {/* Section 4 — Legal */}
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <h3 className="font-display font-semibold text-foreground">SEO & Meta</h3>
+          <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+            <Scale className="h-4 w-4" /> Legal
+          </h3>
           <div className="space-y-2">
-            <Label>SEO Title</Label>
-            <Input value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} placeholder="Clinic Name - Healthcare" />
-          </div>
-          <div className="space-y-2">
-            <Label>SEO Description</Label>
-            <Textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} rows={2} placeholder="Description for search engines" />
+            <Label>Terms & Conditions</Label>
+            <Textarea
+              value={form.termsConditions}
+              onChange={(e) => setForm({ ...form, termsConditions: e.target.value })}
+              rows={6}
+              placeholder="Enter your clinic's terms and conditions..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Appears on patient registration pages, patient card pages, and footer links.
+            </p>
           </div>
         </div>
       </div>

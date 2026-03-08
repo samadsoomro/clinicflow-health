@@ -1,13 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import { usePublicClinicId } from "@/hooks/useClinic";
-import { supabase } from "@/integrations/supabase/client";
+import { useClinicContext } from "@/hooks/useClinicContext";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -24,23 +23,10 @@ const PublicNavbar = () => {
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
-  const clinicId = usePublicClinicId();
-  const [clinic, setClinic] = useState<any>(null);
+  const { clinic } = useClinicContext();
 
   const isAdmin = isSuperAdmin || isClinicAdmin();
   const displayName = profile?.full_name || user?.email || null;
-
-  useEffect(() => {
-    const fetchClinic = async () => {
-      const { data } = await supabase
-        .from("clinics")
-        .select("clinic_name, logo_url, short_name, theme_color")
-        .eq("id", clinicId)
-        .single();
-      setClinic(data);
-    };
-    fetchClinic();
-  }, [clinicId]);
 
   const shortName = (clinic as any)?.short_name || "";
   const logoUrl = clinic?.logo_url;
