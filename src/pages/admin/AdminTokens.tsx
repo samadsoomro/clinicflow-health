@@ -239,7 +239,7 @@ const AdminTokens = () => {
               <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 text-center">
                 <p className="text-xs text-muted-foreground">Now Serving</p>
                 <p className="font-display text-4xl font-bold text-green-600">{servingToken.token_number}</p>
-                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name || "—"}</p>
                 <p className="text-xs text-muted-foreground mt-1">{servingToken.doctors?.name || ""}</p>
               </div>
             ) : (
