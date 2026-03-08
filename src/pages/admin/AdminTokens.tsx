@@ -18,10 +18,9 @@ import autoTable from "jspdf-autotable";
 const AdminTokens = () => {
   const { doctors, loading: doctorsLoading, clinicId } = useClinicDoctors();
   const [issueForm, setIssueForm] = useState({ doctorId: "", patientName: "" });
-  const [activateNumber, setActivateNumber] = useState("");
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
-  const [activating, setActivating] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [clinicShortName, setClinicShortName] = useState("");
 
