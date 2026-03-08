@@ -280,11 +280,12 @@ const AdminTokens = () => {
                 </TableRow>
               ) : (
                 todayTokens.map((token) => (
-                    <TableRow key={token.id} className={token.status === "live" ? "bg-primary/5" : token.status === "unavailable" ? "bg-destructive/5" : ""}>
+                    <TableRow key={token.id} className={token.status === "serving" ? "bg-green-500/5" : token.status === "unavailable" ? "bg-destructive/5" : ""}>
                     <TableCell>
                       <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
-                        token.status === "live" ? "bg-primary text-primary-foreground" :
-                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" : "bg-secondary text-primary"
+                        token.status === "serving" ? "bg-green-600 text-white" :
+                        token.status === "waiting" ? "bg-yellow-500 text-white" :
+                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" : "bg-secondary text-muted-foreground"
                       }`}>
                         {token.token_number}
                       </span>
@@ -294,29 +295,62 @@ const AdminTokens = () => {
                       {token.doctors?.name || "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={
-                        token.status === "live" ? "default" :
-                        token.status === "waiting" ? "secondary" :
-                        token.status === "unavailable" ? "destructive" : "outline"
-                      }>
-                        {token.status === "unavailable" ? "Unavailable" : token.status}
+                      <Badge
+                        variant={
+                          token.status === "serving" ? "default" :
+                          token.status === "waiting" ? "secondary" :
+                          token.status === "unavailable" ? "destructive" : "outline"
+                        }
+                        className={
+                          token.status === "serving" ? "bg-green-600 hover:bg-green-700 text-white" :
+                          token.status === "waiting" ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""
+                        }
+                      >
+                        {token.status === "serving" ? "Serving" :
+                         token.status === "waiting" ? "Waiting" :
+                         token.status === "unavailable" ? "Unavailable" :
+                         token.status === "completed" ? "Completed" : token.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {token.status === "waiting" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={async () => {
-                            await supabase.from("tokens").update({ status: "unavailable" } as any).eq("id", token.id);
-                            fetchTodayTokens();
-                            toast.info(`Token #${token.token_number} marked as unavailable`);
-                          }}
-                        >
-                          Mark Unavailable
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {token.status === "waiting" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                              onClick={() => handleMarkServing(token)}
+                            >
+                              <UserCheck className="mr-1 h-3.5 w-3.5" />
+                              Serving
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleMarkUnavailable(token)}
+                            >
+                              <UserX className="mr-1 h-3.5 w-3.5" />
+                              Unavailable
+                            </Button>
+                          </>
+                        )}
+                        {token.status === "serving" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleMarkUnavailable(token)}
+                          >
+                            <UserX className="mr-1 h-3.5 w-3.5" />
+                            Unavailable
+                          </Button>
+                        )}
+                        {(token.status === "unavailable" || token.status === "completed") && (
+                          <span className="text-xs text-muted-foreground">Done</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
