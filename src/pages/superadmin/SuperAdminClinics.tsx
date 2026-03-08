@@ -45,7 +45,7 @@ const SuperAdminClinics = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "" });
+    setForm({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
     setDialogOpen(true);
   };
 
