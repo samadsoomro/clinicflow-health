@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface NotificationsContent {
   title: string;
   subtitle: string;
+  max_display?: number;
 }
 
 interface NotificationsPreviewProps {
