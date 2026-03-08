@@ -15,6 +15,7 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     clinicName: "",
+    shortName: "",
     subdomain: "",
     themeColor: "#0d7a5f",
     logoUrl: "",
