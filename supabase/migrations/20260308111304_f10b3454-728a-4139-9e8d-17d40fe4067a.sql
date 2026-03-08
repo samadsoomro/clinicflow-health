@@ -1,0 +1,2 @@
+ALTER TABLE public.tokens DROP CONSTRAINT tokens_status_check;
+ALTER TABLE public.tokens ADD CONSTRAINT tokens_status_check CHECK (status = ANY (ARRAY['waiting'::text, 'live'::text, 'serving'::text, 'completed'::text, 'unavailable'::text]));
