@@ -255,11 +255,11 @@ const AdminTokens = () => {
         </Card>
       </div>
 
-      <Card className="border-border shadow-soft overflow-hidden">
+      <Card className="border-border shadow-soft">
         <CardHeader>
           <CardTitle className="font-display text-lg">Today's Tokens</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
