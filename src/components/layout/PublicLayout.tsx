@@ -3,7 +3,7 @@ import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
 
 const PublicLayout = () => (
-  <div className="flex min-h-screen flex-col">
+  <div className="flex min-h-screen flex-col overflow-x-hidden">
     <PublicNavbar />
     <main className="flex-1">
       <Outlet />

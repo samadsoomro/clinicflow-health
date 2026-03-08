@@ -104,7 +104,7 @@ const TokenDisplay = () => {
     fetchAll();
     const channel = supabase
       .channel("tv-token-display")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchAll())
       .subscribe();
     const interval = setInterval(fetchAll, 10000);
     return () => {
@@ -240,11 +240,13 @@ const TokenDisplay = () => {
                           {token.token_number}
                         </span>
                       </div>
-                      <p className={`font-display text-lg font-semibold lg:text-2xl xl:text-3xl ${
-                        token.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
-                      }`}>
-                        {token.patient_name}
-                      </p>
+                      {token.patient_name && (
+                        <p className={`font-display text-lg font-semibold lg:text-2xl xl:text-3xl ${
+                          token.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                        }`}>
+                          {token.patient_name}
+                        </p>
+                      )}
                       <p className={`mt-1 text-sm font-bold uppercase tracking-wider lg:text-base ${styles!.labelClass}`}>
                         {styles!.label}
                       </p>
@@ -276,7 +278,7 @@ const TokenDisplay = () => {
                         <div key={ut.id} className="flex items-center justify-between rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-1.5">
                           <div className="flex items-center gap-2">
                             <span className="font-display text-sm font-bold text-muted-foreground">#{ut.token_number}</span>
-                            <span className="text-xs text-muted-foreground line-through">{ut.patient_name}</span>
+                            {ut.patient_name && <span className="text-xs text-muted-foreground line-through">{ut.patient_name}</span>}
                           </div>
                           <Badge variant="destructive" className="text-[10px] px-2 py-0">Unavailable</Badge>
                         </div>

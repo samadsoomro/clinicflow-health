@@ -58,8 +58,8 @@ const AdminTokens = () => {
   };
 
   const handleIssueToken = async () => {
-    if (!issueForm.doctorId || !issueForm.patientName.trim()) {
-      toast.error("Please select a doctor and enter patient name");
+    if (!issueForm.doctorId) {
+      toast.error("Please select a doctor");
       return;
     }
     setIssuing(true);
@@ -68,7 +68,7 @@ const AdminTokens = () => {
       clinic_id: clinicId,
       doctor_id: issueForm.doctorId,
       token_number: tokenNumber,
-      patient_name: issueForm.patientName.trim(),
+      patient_name: issueForm.patientName.trim() || "",
       status: "waiting",
     } as any);
 
@@ -209,11 +209,11 @@ const AdminTokens = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Patient Name</Label>
+              <Label>Patient Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input
                 value={issueForm.patientName}
                 onChange={(e) => setIssueForm({ ...issueForm, patientName: e.target.value })}
-                placeholder="Enter patient name"
+                placeholder="Enter patient name (optional)"
               />
             </div>
             <div className="rounded-xl bg-secondary p-4 text-center">
@@ -239,7 +239,7 @@ const AdminTokens = () => {
               <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 text-center">
                 <p className="text-xs text-muted-foreground">Now Serving</p>
                 <p className="font-display text-4xl font-bold text-green-600">{servingToken.token_number}</p>
-                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name || "—"}</p>
                 <p className="text-xs text-muted-foreground mt-1">{servingToken.doctors?.name || ""}</p>
               </div>
             ) : (
@@ -255,11 +255,11 @@ const AdminTokens = () => {
         </Card>
       </div>
 
-      <Card className="border-border shadow-soft overflow-hidden">
+      <Card className="border-border shadow-soft">
         <CardHeader>
           <CardTitle className="font-display text-lg">Today's Tokens</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -287,7 +287,7 @@ const AdminTokens = () => {
                         {token.token_number}
                       </span>
                     </TableCell>
-                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name}</TableCell>
+                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {token.doctors?.name || "—"}
                     </TableCell>

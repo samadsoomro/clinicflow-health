@@ -41,7 +41,7 @@ const LiveTokens = () => {
     fetchData();
     const channel = supabase
       .channel("public-live-tokens")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [clinicId]);
@@ -123,11 +123,13 @@ const LiveTokens = () => {
                         {activeToken.token_number}
                       </span>
                     </div>
-                    <p className={`mb-2 text-lg font-semibold ${
-                      activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
-                    }`}>
-                      {activeToken.patient_name}
-                    </p>
+                    {activeToken.patient_name && (
+                      <p className={`mb-2 text-lg font-semibold ${
+                        activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                      }`}>
+                        {activeToken.patient_name}
+                      </p>
+                    )}
                     <Badge
                       variant={styles!.badgeVariant}
                       className={`text-sm px-4 py-1 ${styles!.badgeClass}`}
@@ -155,7 +157,7 @@ const LiveTokens = () => {
                         <div key={ut.id} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
                           <div className="flex items-center gap-3">
                             <span className="font-display text-lg font-bold text-muted-foreground">#{ut.token_number}</span>
-                            <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>
+                            {ut.patient_name && <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>}
                           </div>
                           <Badge variant="destructive" className="text-xs">Unavailable</Badge>
                         </div>
