@@ -69,6 +69,7 @@ const App = () => (
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="cards" element={<AdminPatientCards />} />
                 <Route path="location" element={<AdminLocation />} />
+                <Route path="contact-messages" element={<AdminContactMessages />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
