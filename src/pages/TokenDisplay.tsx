@@ -141,7 +141,7 @@ const TokenDisplay = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background select-none">
+    <div ref={containerRef} className="flex h-screen flex-col bg-background select-none overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4 lg:px-10">
         <div className="flex items-center gap-3">
