@@ -25,10 +25,12 @@ Deno.serve(async (req) => {
 
     // Extract user from JWT using admin client
     const token = authHeader.replace("Bearer ", "");
+    console.log("Verifying token for caller...");
     const { data: { user: caller }, error: userError } = await adminClient.auth.getUser(token);
+    console.log("User result:", caller?.id, "Error:", userError?.message);
     
     if (userError || !caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
