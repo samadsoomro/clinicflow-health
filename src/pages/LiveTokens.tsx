@@ -59,7 +59,7 @@ const LiveTokens = () => {
 
   const getTokenStyles = (status: string | null) => {
     switch (status) {
-      case "live":
+      case "serving":
         return { bg: "bg-green-600 text-white shadow-lg", label: "Now Serving", badgeVariant: "default" as const, badgeClass: "bg-green-600 hover:bg-green-700" };
       case "waiting":
         return { bg: "bg-yellow-500 text-white shadow-lg", label: "Waiting", badgeVariant: "secondary" as const, badgeClass: "bg-yellow-500 text-white hover:bg-yellow-600" };
