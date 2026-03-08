@@ -10,18 +10,19 @@ interface Doctor {
   specialization: string;
 }
 
-interface LiveToken {
+interface TokenData {
   id: string;
   token_number: number;
   patient_name: string;
   doctor_id: string;
+  status: string;
 }
 
 const TokenDisplay = () => {
   const clinicId = usePublicClinicId();
   const [clinic, setClinic] = useState<any>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [liveTokens, setLiveTokens] = useState<LiveToken[]>([]);
+  const [latestTokens, setLatestTokens] = useState<TokenData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevTokensRef = useRef<string>("");
@@ -48,7 +49,6 @@ const TokenDisplay = () => {
   const playSound = useCallback(() => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      // Play a pleasant two-tone chime
       const playTone = (freq: number, start: number, dur: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -71,38 +71,43 @@ const TokenDisplay = () => {
     const [clinicRes, docRes, tokenRes] = await Promise.all([
       supabase.from("clinics").select("clinic_name, logo_url, short_name, theme_color").eq("id", clinicId).single(),
       supabase.from("doctors").select("id, name, specialization").eq("clinic_id", clinicId).eq("status", "active").order("name"),
-      supabase.from("tokens").select("id, token_number, patient_name, doctor_id")
-        .eq("clinic_id", clinicId).eq("status", "live")
-        .gte("created_at", today + "T00:00:00").lte("created_at", today + "T23:59:59"),
+      supabase.from("tokens").select("id, token_number, patient_name, doctor_id, status")
+        .eq("clinic_id", clinicId)
+        .gte("created_at", today + "T00:00:00").lte("created_at", today + "T23:59:59")
+        .order("token_number", { ascending: false }),
     ]);
 
     setClinic(clinicRes.data);
-    setDoctors((docRes.data as Doctor[]) || []);
+    const docs = (docRes.data as Doctor[]) || [];
+    setDoctors(docs);
 
-    const newTokens = (tokenRes.data as LiveToken[]) || [];
-    const newKey = newTokens.map(t => `${t.doctor_id}:${t.token_number}`).sort().join(",");
+    const allTokens = (tokenRes.data as TokenData[]) || [];
+    // Get most recent token per doctor
+    const perDoctor: TokenData[] = [];
+    const seen = new Set<string>();
+    for (const t of allTokens) {
+      if (!seen.has(t.doctor_id)) {
+        seen.add(t.doctor_id);
+        perDoctor.push(t);
+      }
+    }
 
+    const newKey = perDoctor.map(t => `${t.doctor_id}:${t.token_number}:${t.status}`).sort().join(",");
     if (prevTokensRef.current && newKey !== prevTokensRef.current && newKey) {
       playSound();
     }
     prevTokensRef.current = newKey;
-    setLiveTokens(newTokens);
+    setLatestTokens(perDoctor);
     setLoading(false);
   }, [clinicId, today, playSound]);
 
   useEffect(() => {
     fetchAll();
-
     const channel = supabase
       .channel("tv-token-display")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
-        fetchAll();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => fetchAll())
       .subscribe();
-
-    // Backup refresh every 10 seconds
     const interval = setInterval(fetchAll, 10000);
-
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
@@ -110,7 +115,7 @@ const TokenDisplay = () => {
   }, [fetchAll]);
 
   const getTokenForDoctor = (doctorId: string) =>
-    liveTokens.find((t) => t.doctor_id === doctorId);
+    latestTokens.find((t) => t.doctor_id === doctorId);
 
   const getGridClass = (count: number) => {
     if (count <= 1) return "grid-cols-1";
@@ -127,10 +132,22 @@ const TokenDisplay = () => {
     return "grid-rows-3";
   };
 
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case "live":
+        return { tokenBg: "bg-green-600", borderClass: "border-green-500 bg-green-950/20", label: "Now Serving", labelClass: "text-green-400" };
+      case "waiting":
+        return { tokenBg: "bg-yellow-500", borderClass: "border-yellow-400 bg-yellow-950/20", label: "Waiting", labelClass: "text-yellow-400" };
+      case "unavailable":
+        return { tokenBg: "bg-muted", borderClass: "border-destructive/40 bg-destructive/5", label: "Patient Unavailable", labelClass: "text-destructive" };
+      default:
+        return { tokenBg: "bg-muted", borderClass: "border-border bg-card", label: "Completed", labelClass: "text-muted-foreground" };
+    }
+  };
+
   const shortName = (clinic as any)?.short_name || "";
   const clinicName = clinic?.clinic_name || "";
   const logoUrl = clinic?.logo_url;
-  const hasAnyLive = liveTokens.length > 0;
 
   if (loading) {
     return (
@@ -164,7 +181,7 @@ const TokenDisplay = () => {
               <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
             </span>
             <span className="font-display text-sm font-bold uppercase tracking-widest text-primary lg:text-base">
-              Now Serving
+              Live Queue
             </span>
           </div>
           <button
@@ -182,16 +199,15 @@ const TokenDisplay = () => {
         {doctors.length > 0 ? (
           doctors.map((doc) => {
             const token = getTokenForDoctor(doc.id);
+            const styles = token ? getStatusStyles(token.status) : null;
+
             return (
               <div
                 key={doc.id}
                 className={`flex flex-col items-center justify-center rounded-3xl border-2 p-6 transition-all ${
-                  token
-                    ? "border-primary bg-primary/5 shadow-elevated"
-                    : "border-border bg-card shadow-soft"
+                  styles ? styles.borderClass : "border-border bg-card shadow-soft"
                 }`}
               >
-                {/* Doctor Name */}
                 <p className="mb-2 font-display text-xl font-bold text-foreground lg:text-2xl xl:text-3xl">
                   {doc.name}
                 </p>
@@ -200,20 +216,27 @@ const TokenDisplay = () => {
                 <AnimatePresence mode="wait">
                   {token ? (
                     <motion.div
-                      key={token.id}
+                      key={`${token.id}-${token.status}`}
                       initial={{ opacity: 0, scale: 0.7 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.7 }}
                       transition={{ type: "spring", duration: 0.5 }}
                       className="flex flex-col items-center"
                     >
-                      <div className="mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-primary shadow-lg lg:h-44 lg:w-44 xl:h-56 xl:w-56">
-                        <span className="font-display text-6xl font-extrabold text-primary-foreground lg:text-8xl xl:text-9xl">
+                      <div className={`mb-4 flex h-32 w-32 items-center justify-center rounded-2xl shadow-lg lg:h-44 lg:w-44 xl:h-56 xl:w-56 ${styles!.tokenBg}`}>
+                        <span className={`font-display text-6xl font-extrabold lg:text-8xl xl:text-9xl ${
+                          token.status === "unavailable" ? "text-muted-foreground/60" : "text-white"
+                        }`}>
                           {token.token_number}
                         </span>
                       </div>
-                      <p className="font-display text-lg font-semibold text-foreground lg:text-2xl xl:text-3xl">
+                      <p className={`font-display text-lg font-semibold lg:text-2xl xl:text-3xl ${
+                        token.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                      }`}>
                         {token.patient_name}
+                      </p>
+                      <p className={`mt-1 text-sm font-bold uppercase tracking-wider lg:text-base ${styles!.labelClass}`}>
+                        {styles!.label}
                       </p>
                     </motion.div>
                   ) : (
@@ -250,8 +273,8 @@ const TokenDisplay = () => {
         )}
       </div>
 
-      {/* Waiting message overlay when no tokens active */}
-      {doctors.length > 0 && !hasAnyLive && (
+      {/* Footer message */}
+      {doctors.length > 0 && latestTokens.length === 0 && (
         <div className="border-t border-border bg-muted/50 px-6 py-4 text-center">
           <p className="font-display text-lg font-medium text-muted-foreground animate-pulse">
             Please wait. Token will be announced shortly.
