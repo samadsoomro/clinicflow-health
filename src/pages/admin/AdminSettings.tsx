@@ -104,6 +104,11 @@ const AdminSettings = () => {
             <Input value={form.clinicName} onChange={(e) => setForm({ ...form, clinicName: e.target.value })} />
           </div>
           <div className="space-y-2">
+            <Label>Clinic Short Name / Logo Label</Label>
+            <Input value={form.shortName} onChange={(e) => setForm({ ...form, shortName: e.target.value.slice(0, 10) })} placeholder="e.g. ZHC" maxLength={10} />
+            <p className="text-xs text-muted-foreground">Max 10 characters. Appears beside your logo in the navbar. Leave empty to hide.</p>
+          </div>
+          <div className="space-y-2">
             <Label>Subdomain</Label>
             <div className="flex items-center gap-2">
               <Input value={form.subdomain} onChange={(e) => setForm({ ...form, subdomain: e.target.value })} />
@@ -118,6 +123,26 @@ const AdminSettings = () => {
             <Label>QR Base URL</Label>
             <Input value={form.qrBaseUrl} onChange={(e) => setForm({ ...form, qrBaseUrl: e.target.value })} />
           </div>
+
+          {/* Live Preview */}
+          {(form.shortName || form.logoUrl) && (
+            <div className="space-y-2">
+              <Label>Navbar Preview</Label>
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 px-4 py-3">
+                {form.shortName && (
+                  <span className="font-display text-sm font-bold text-primary">{form.shortName}</span>
+                )}
+                {form.logoUrl ? (
+                  <img src={form.logoUrl} alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Activity className="h-4 w-4 text-primary" />
+                  </div>
+                )}
+                <span className="font-display text-sm font-semibold text-foreground">{form.clinicName || "Clinic Name"}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
