@@ -3,10 +3,10 @@ import { motion } from "framer-motion";
 import { Clock, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { usePublicClinicId } from "@/hooks/useClinic";
 
 const LiveTokens = () => {
-  const clinicId = getClinicId();
+  const clinicId = usePublicClinicId();
   const [doctors, setDoctors] = useState<any[]>([]);
   const today = new Date().toISOString().split("T")[0];
 

@@ -54,7 +54,7 @@ const Register = () => {
     }
 
     if (authData.user) {
-      const clinicId = getClinicId();
+      const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
       const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
 
       // Get next patient number for this clinic

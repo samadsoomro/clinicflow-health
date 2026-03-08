@@ -7,17 +7,17 @@ import { generatePatientCardPDF } from "@/lib/patientCardPdf";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { getClinicId } from "@/hooks/useClinic";
+import { usePublicClinicId } from "@/hooks/useClinic";
 
 const PatientCard = () => {
   const { user, loading: authLoading } = useAuth();
+  const clinicId = usePublicClinicId();
   const [patient, setPatient] = useState<any>(null);
   const [clinic, setClinic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    const clinicId = getClinicId();
     const fetchData = async () => {
       const [patientRes, clinicRes] = await Promise.all([
         supabase.from("patients").select("*").eq("user_id", user.id).eq("clinic_id", clinicId).single(),
