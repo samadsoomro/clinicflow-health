@@ -70,6 +70,7 @@ export type Database = {
           qr_base_url: string | null
           seo_description: string | null
           seo_title: string | null
+          short_name: string | null
           subdomain: string
           terms_conditions: string | null
           theme_color: string | null
@@ -95,6 +96,7 @@ export type Database = {
           qr_base_url?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          short_name?: string | null
           subdomain: string
           terms_conditions?: string | null
           theme_color?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           qr_base_url?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          short_name?: string | null
           subdomain?: string
           terms_conditions?: string | null
           theme_color?: string | null
