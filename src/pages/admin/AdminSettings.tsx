@@ -140,8 +140,15 @@ const AdminSettings = () => {
                       toast.error("Upload failed: " + error.message);
                     } else {
                       const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(path);
-                      setForm({ ...form, logoUrl: urlData.publicUrl });
-                      toast.success("Logo uploaded! Click Save to apply.");
+                      const newUrl = urlData.publicUrl;
+                      // Instantly save to DB
+                      const { error: updateErr } = await supabase.from("clinics").update({ logo_url: newUrl } as any).eq("id", clinicId);
+                      if (updateErr) {
+                        toast.error("Failed to save logo: " + updateErr.message);
+                      } else {
+                        setForm((prev) => ({ ...prev, logoUrl: newUrl }));
+                        toast.success("Logo uploaded and saved!");
+                      }
                     }
                     setUploadingLogo(false);
                   }}
