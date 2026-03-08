@@ -58,13 +58,17 @@ const AdminHomepage = () => {
       .order("display_order");
 
     if (data && data.length > 0) {
-      setSections(data.map((d: any) => ({
+      const fetched = data.map((d: any) => ({
         id: d.id,
         section_name: d.section_name,
         content_json: d.content_json,
         is_enabled: d.is_enabled,
         display_order: d.display_order,
-      })));
+      }));
+      // Merge any new default sections that don't exist in DB yet
+      const fetchedNames = new Set(fetched.map((s: SectionData) => s.section_name));
+      const missing = DEFAULT_SECTIONS.filter((ds) => !fetchedNames.has(ds.section_name));
+      setSections([...fetched, ...missing]);
     } else {
       setSections(DEFAULT_SECTIONS);
     }
