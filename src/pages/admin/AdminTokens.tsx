@@ -119,7 +119,6 @@ const AdminTokens = () => {
       } else {
         setTodayTokens([]);
         setIssueForm({ doctorId: "", patientName: "" });
-        setActivateNumber("");
         toast.success("Today's tokens have been reset!");
       }
     } else {
