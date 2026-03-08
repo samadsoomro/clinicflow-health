@@ -23,7 +23,25 @@ const TokenDisplay = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [liveTokens, setLiveTokens] = useState<LiveToken[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const prevTokensRef = useRef<string>("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const today = new Date().toISOString().split("T")[0];
 
