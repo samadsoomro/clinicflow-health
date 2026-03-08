@@ -29,7 +29,8 @@ const DEFAULT_SECTIONS: SectionData[] = [
   { section_name: "doctors", content_json: { title: "Meet Our Doctors", subtitle: "Our team of experienced professionals" }, is_enabled: true, display_order: 2 },
   { section_name: "certifications", content_json: { title: "Our Certifications", subtitle: "Recognized excellence in healthcare" }, is_enabled: true, display_order: 3 },
   { section_name: "notifications", content_json: { title: "Latest Updates", subtitle: "Stay informed about our clinic" }, is_enabled: true, display_order: 4 },
-  { section_name: "contact", content_json: { title: "Contact Us", subtitle: "Get in touch with our team" }, is_enabled: true, display_order: 5 },
+  { section_name: "contact", content_json: { title: "Contact Us", subtitle: "Get in touch with our team", phone: "", email: "", address: "", working_hours: "", maps_embed_url: "" }, is_enabled: true, display_order: 5 },
+  { section_name: "footer", content_json: { description: "", phone: "", email: "", address: "", copyright: "", logo_override: "", social_facebook: "", social_instagram: "", social_whatsapp: "", social_linkedin: "" }, is_enabled: true, display_order: 6 },
 ];
 
 const SECTION_LABELS: Record<string, string> = {
@@ -39,6 +40,7 @@ const SECTION_LABELS: Record<string, string> = {
   certifications: "Certifications & Achievements",
   notifications: "Notifications Preview",
   contact: "Contact Information",
+  footer: "Footer",
 };
 
 const AdminHomepage = () => {
