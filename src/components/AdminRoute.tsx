@@ -18,9 +18,12 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Clinic admins trying /superadmin are handled by SuperAdminLayout
-  // Super admins can access /admin too
-  if (!isSuperAdmin && !isClinicAdmin(clinicId)) {
+  // Super admins should use /superadmin, not /admin
+  if (isSuperAdmin) {
+    return <Navigate to="/superadmin" replace />;
+  }
+
+  if (!isClinicAdmin(clinicId)) {
     return <Navigate to="/" replace />;
   }
 
