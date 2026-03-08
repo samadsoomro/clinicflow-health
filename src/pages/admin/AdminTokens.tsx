@@ -285,7 +285,7 @@ const AdminTokens = () => {
             <TableBody>
               {todayTokens.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
                 </TableRow>
               ) : (
                 todayTokens.map((token) => (
