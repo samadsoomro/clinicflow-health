@@ -416,6 +416,8 @@ const AdminTokens = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <TokenReceipt open={receiptOpen} onOpenChange={setReceiptOpen} token={receiptToken} clinicId={clinicId} />
     </motion.div>
   );
 };
