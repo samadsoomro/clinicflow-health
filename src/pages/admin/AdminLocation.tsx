@@ -15,8 +15,7 @@ const AdminLocation = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     address: "",
-    latitude: "",
-    longitude: "",
+    mapsEmbedUrl: "",
     phone: "",
     email: "",
     workingHours: "",
@@ -27,14 +26,13 @@ const AdminLocation = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("address, latitude, longitude, contact_phone, contact_email, working_hours, emergency_contact")
+        .select("address, maps_embed_url, contact_phone, contact_email, working_hours, emergency_contact")
         .eq("id", clinicId)
         .single();
       if (data) {
         setForm({
           address: data.address || "",
-          latitude: data.latitude?.toString() || "",
-          longitude: data.longitude?.toString() || "",
+          mapsEmbedUrl: (data as any).maps_embed_url || "",
           phone: data.contact_phone || "",
           email: data.contact_email || "",
           workingHours: data.working_hours || "",
@@ -50,13 +48,12 @@ const AdminLocation = () => {
     setSaving(true);
     const { error } = await supabase.from("clinics").update({
       address: form.address,
-      latitude: parseFloat(form.latitude) || 0,
-      longitude: parseFloat(form.longitude) || 0,
+      maps_embed_url: form.mapsEmbedUrl,
       contact_phone: form.phone,
       contact_email: form.email,
       working_hours: form.workingHours,
       emergency_contact: form.emergencyContact,
-    }).eq("id", clinicId);
+    } as any).eq("id", clinicId);
 
     if (error) toast.error("Failed to save: " + error.message);
     else toast.success("Location & contact info saved!");
@@ -85,23 +82,26 @@ const AdminLocation = () => {
             <Label>Full Address</Label>
             <Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Latitude</Label>
-              <Input value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Longitude</Label>
-              <Input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
-            </div>
+          <div className="space-y-2">
+            <Label>Google Maps Embed URL</Label>
+            <Input
+              value={form.mapsEmbedUrl}
+              onChange={(e) => setForm({ ...form, mapsEmbedUrl: e.target.value })}
+              placeholder="https://www.google.com/maps/embed?pb=..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Open Google Maps → click Share → Embed a map → copy the <code>src</code> URL and paste here.
+            </p>
           </div>
-          {form.latitude && form.longitude && (
+          {form.mapsEmbedUrl && (
             <div className="overflow-hidden rounded-xl border border-border">
               <iframe
-                title="Preview"
+                title="Map Preview"
                 className="h-48 w-full"
-                src={`https://www.google.com/maps?q=${form.latitude},${form.longitude}&output=embed`}
+                src={form.mapsEmbedUrl}
                 loading="lazy"
+                allowFullScreen
+                style={{ border: 0 }}
               />
             </div>
           )}

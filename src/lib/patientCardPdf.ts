@@ -1,5 +1,15 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import type { Patient } from "@/types/clinic";
+
+interface Patient {
+  id: string;
+  fullName: string;
+  age: number;
+  gender: string;
+  email?: string;
+  phone?: string;
+  formattedPatientId: string;
+  createdAt?: string;
+}
 
 interface ClinicInfo {
   name: string;
