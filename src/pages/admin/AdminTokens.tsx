@@ -21,7 +21,6 @@ const AdminTokens = () => {
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [clinicShortName, setClinicShortName] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
