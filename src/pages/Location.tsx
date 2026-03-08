@@ -46,7 +46,7 @@ const Location = () => {
         </motion.div>
 
         <div className="mx-auto max-w-4xl">
-          {mapsUrl && (
+          {mapsUrl && mapsUrl.startsWith("https://www.google.com/maps/embed") ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -60,9 +60,15 @@ const Location = () => {
                 loading="lazy"
                 allowFullScreen
                 style={{ border: 0 }}
+                referrerPolicy="no-referrer-when-downgrade"
               />
             </motion.div>
-          )}
+          ) : !mapsUrl ? (
+            <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
+              <MapPin className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">Map not configured. Add a Google Maps embed URL in Settings.</p>
+            </div>
+          ) : null}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
