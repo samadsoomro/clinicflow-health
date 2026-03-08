@@ -43,7 +43,10 @@ const Login = () => {
 
       const roleList = roles?.map((r) => r.role) || [];
 
-      if (roleList.includes("super_admin") || roleList.includes("clinic_admin")) {
+      if (roleList.includes("super_admin")) {
+        toast({ title: "Welcome Super Admin!", description: "Redirecting to platform dashboard..." });
+        navigate("/superadmin");
+      } else if (roleList.includes("clinic_admin")) {
         toast({ title: "Welcome Admin!", description: "Redirecting to dashboard..." });
         navigate("/admin");
       } else {
