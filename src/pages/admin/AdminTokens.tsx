@@ -58,8 +58,8 @@ const AdminTokens = () => {
   };
 
   const handleIssueToken = async () => {
-    if (!issueForm.doctorId || !issueForm.patientName.trim()) {
-      toast.error("Please select a doctor and enter patient name");
+    if (!issueForm.doctorId) {
+      toast.error("Please select a doctor");
       return;
     }
     setIssuing(true);
