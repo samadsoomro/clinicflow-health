@@ -120,7 +120,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
               <div className="space-y-0">
                 <div className="flex justify-between"><span className="text-gray-500">Patient</span><span className="font-semibold text-right max-w-[55%] truncate">{data.patientName}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-semibold">{data.doctorName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Spec</span><span>{data.specialization}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Specialization</span><span>{data.specialization}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Date</span><span>{data.dateTime}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Status</span><span className="capitalize">{data.status}</span></div>
               </div>
