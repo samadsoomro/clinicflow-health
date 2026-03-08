@@ -181,7 +181,7 @@ const Index = () => {
                   whileInView="visible"
                   viewport={{ once: true, margin: "-50px" }}
                   variants={fadeUp}
-                  className="group rounded-2xl border border-border bg-card p-6 shadow-soft text-center transition-all hover:shadow-card hover:-translate-y-1"
+                  className="group flex flex-col items-center text-center rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card hover:-translate-y-1"
                 >
                   {doc.image_url ? (
                     <img src={doc.image_url} alt={doc.name} className="mx-auto mb-4 h-24 w-24 rounded-full object-cover border-4 border-secondary" />

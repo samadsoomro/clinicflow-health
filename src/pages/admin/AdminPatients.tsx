@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, FileSpreadsheet, FileText } from "lucide-react";
+import { Search, FileSpreadsheet, FileText, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicId } from "@/hooks/useClinic";
+import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -27,21 +29,32 @@ const AdminPatients = () => {
   const [search, setSearch] = useState("");
   const [clinicShortName, setClinicShortName] = useState("");
 
+  const fetchData = async () => {
+    const [{ data: pts }, { data: clinic }] = await Promise.all([
+      supabase
+        .from("patients")
+        .select("id, full_name, formatted_patient_id, age, gender, phone, email, created_at")
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false }),
+      supabase.from("clinics").select("short_name, clinic_name").eq("id", clinicId).single(),
+    ]);
+    setPatients((pts as PatientRow[]) || []);
+    setClinicShortName((clinic as any)?.short_name || clinic?.clinic_name || "Clinic");
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      const [{ data: pts }, { data: clinic }] = await Promise.all([
-        supabase
-          .from("patients")
-          .select("id, full_name, formatted_patient_id, age, gender, phone, email, created_at")
-          .eq("clinic_id", clinicId)
-          .order("created_at", { ascending: false }),
-        supabase.from("clinics").select("short_name, clinic_name").eq("id", clinicId).single(),
-      ]);
-      setPatients((pts as PatientRow[]) || []);
-      setClinicShortName((clinic as any)?.short_name || clinic?.clinic_name || "Clinic");
-    };
     fetchData();
   }, [clinicId]);
+
+  const handleDelete = async (patient: PatientRow) => {
+    const { error } = await supabase.from("patients").delete().eq("id", patient.id);
+    if (error) {
+      toast.error("Failed to delete: " + error.message);
+    } else {
+      toast.success(`Patient ${patient.formatted_patient_id} deleted`);
+      setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    }
+  };
 
   const filtered = patients.filter((p) =>
     p.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -75,13 +88,11 @@ const AdminPatients = () => {
     doc.text(`Patients - ${clinicShortName}`, 14, 15);
     doc.setFontSize(10);
     doc.text(`Exported: ${getTimestamp()}`, 14, 22);
-
     autoTable(doc, {
       startY: 28,
       head: [["Patient ID", "Full Name", "Age", "Gender", "Phone", "Registered"]],
       body: exportRows.map((r) => [r["Patient ID"], r["Full Name"], r.Age, r.Gender, r.Phone, r["Registration Date"]]),
     });
-
     doc.save(`Patients - ${clinicShortName} - ${getTimestamp()}.pdf`);
   };
 
@@ -116,6 +127,7 @@ const AdminPatients = () => {
               <TableHead>Gender</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Registered</TableHead>
+              <TableHead className="w-16">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,11 +152,34 @@ const AdminPatients = () => {
                 <TableCell className="text-muted-foreground">
                   {patient.created_at ? new Date(patient.created_at).toLocaleDateString() : "—"}
                 </TableCell>
+                <TableCell>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Patient</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to permanently delete <strong>{patient.full_name}</strong> ({patient.formatted_patient_id})? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(patient)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
               </TableRow>
             )}
           </TableBody>
