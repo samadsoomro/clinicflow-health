@@ -107,6 +107,16 @@ const AdminTokens = () => {
     }
   };
 
+  const handleMarkCompleted = async (token: any) => {
+    const { error } = await supabase.from("tokens").update({ status: "completed" } as any).eq("id", token.id);
+    if (error) {
+      toast.error("Failed: " + error.message);
+    } else {
+      toast.success(`Token #${token.token_number} marked as completed`);
+      fetchTodayTokens();
+    }
+  };
+
   const handleResetToday = async () => {
     if (!confirm("Reset all of today's tokens? This action cannot be undone.")) return;
     setResetting(true);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ const LiveTokens = () => {
   const clinicId = usePublicClinicId();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const today = new Date().toISOString().split("T")[0];
 
   const fetchData = async () => {
@@ -39,11 +40,41 @@ const LiveTokens = () => {
 
   useEffect(() => {
     fetchData();
+
     const channel = supabase
-      .channel("public-live-tokens")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      .channel("live-tokens-" + clinicId)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tokens",
+          filter: `clinic_id=eq.${clinicId}`,
+        },
+        () => fetchData()
+      )
+      .subscribe((status) => {
+        // If subscription is active, clear polling
+        if (status === "SUBSCRIBED") {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+        } else {
+          // Fallback polling if realtime drops
+          if (!pollingRef.current) {
+            pollingRef.current = setInterval(fetchData, 5000);
+          }
+        }
+      });
+
+    // Start polling as backup initially
+    pollingRef.current = setInterval(fetchData, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, [clinicId]);
 
   const getGridCols = (count: number) => {
@@ -53,17 +84,20 @@ const LiveTokens = () => {
     return "md:grid-cols-2";
   };
 
-  const getServingTokens = (doctorId: string) =>
-    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "serving");
+  // Queue logic per doctor
+  const getQueueState = (doctorId: string) => {
+    const doctorTokens = allTokens.filter((t) => t.doctor_id === doctorId);
+    const servingToken = doctorTokens.find((t) => t.status === "serving") || null;
+    const waitingTokens = doctorTokens.filter((t) => t.status === "waiting");
+    const unavailableTokens = doctorTokens.filter((t) => t.status === "unavailable");
 
-  const getWaitingTokens = (doctorId: string) =>
-    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "waiting");
+    // Next waiting = first waiting token (they're already ordered by token_number)
+    const nextWaiting = waitingTokens.length > 0 ? waitingTokens[0] : null;
 
-  const getUnavailableTokens = (doctorId: string) =>
-    allTokens.filter((t) => t.doctor_id === doctorId && t.status === "unavailable");
+    const hasAnyActive = servingToken || nextWaiting;
 
-  const hasAnyActiveTokens = (doctorId: string) =>
-    allTokens.some((t) => t.doctor_id === doctorId && t.status !== "completed");
+    return { servingToken, nextWaiting, unavailableTokens, hasAnyActive };
+  };
 
   return (
     <section className="py-16 md:py-24">
@@ -79,10 +113,7 @@ const LiveTokens = () => {
 
         <div className={`mx-auto grid max-w-5xl gap-6 ${getGridCols(doctors.length)}`}>
           {doctors.map((doctor, i) => {
-            const servingTokens = getServingTokens(doctor.id);
-            const waitingTokens = getWaitingTokens(doctor.id);
-            const unavailableTokens = getUnavailableTokens(doctor.id);
-            const hasTokens = hasAnyActiveTokens(doctor.id);
+            const { servingToken, nextWaiting, unavailableTokens, hasAnyActive } = getQueueState(doctor.id);
 
             return (
               <motion.div
@@ -91,7 +122,7 @@ const LiveTokens = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className={`group flex flex-col rounded-3xl border-2 bg-card p-6 md:p-8 shadow-soft transition-all hover:shadow-card ${
-                  servingTokens.length > 0 ? "border-green-500" : "border-border"
+                  servingToken ? "border-green-500" : "border-border"
                 } ${doctors.length === 1 ? "max-w-xl mx-auto" : ""}`}
               >
                 {/* Doctor Info */}
@@ -100,7 +131,7 @@ const LiveTokens = () => {
                   <p className="text-base md:text-lg text-muted-foreground">{doctor.specialization}</p>
                 </div>
 
-                {!hasTokens && (
+                {!hasAnyActive && unavailableTokens.length === 0 && (
                   <div className="flex flex-col items-center py-6">
                     <div className="mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-muted">
                       <span className="font-display text-5xl font-extrabold text-muted-foreground/40">—</span>
@@ -109,41 +140,58 @@ const LiveTokens = () => {
                   </div>
                 )}
 
-                {/* Serving Tokens */}
-                {servingTokens.map((token) => (
-                  <div key={token.id} className="mb-4 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 text-center">
+                {!hasAnyActive && unavailableTokens.length > 0 && (
+                  <div className="flex flex-col items-center py-6">
+                    <p className="text-sm text-muted-foreground">No active tokens. Queue is clear.</p>
+                  </div>
+                )}
+
+                {/* Serving Token — Green Box */}
+                {servingToken && (
+                  <div className="mb-4 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 text-center">
                     <Badge className="mb-2 bg-green-600 hover:bg-green-700 text-white text-xs">NOW SERVING</Badge>
                     <div className="flex justify-center">
                       <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-green-600 text-white shadow-lg">
-                        <span className="font-display text-5xl md:text-6xl font-extrabold">{token.token_number}</span>
+                        <span className="font-display text-5xl sm:text-7xl font-extrabold">{servingToken.token_number}</span>
                       </div>
                     </div>
-                    {token.patient_name ? (
-                      <p className="mt-2 text-lg font-semibold text-foreground">{token.patient_name}</p>
-                    ) : (
-                      <p className="mt-2 text-lg font-semibold text-muted-foreground">—</p>
-                    )}
+                    {servingToken.patient_name ? (
+                      <p className="mt-2 text-lg font-semibold text-foreground">{servingToken.patient_name}</p>
+                    ) : null}
                   </div>
-                ))}
+                )}
 
-                {/* Waiting Tokens */}
-                {waitingTokens.map((token) => (
-                  <div key={token.id} className="mb-3 rounded-2xl border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-4 text-center">
-                    <Badge className="mb-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs">WAITING</Badge>
+                {/* Next Waiting Token */}
+                {nextWaiting && servingToken && (
+                  <div className="mb-4 rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-amber-500 hover:bg-amber-600 text-white text-xs">GET READY — YOUR TURN IS COMING</Badge>
                     <div className="flex justify-center">
-                      <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-yellow-500 text-white shadow-lg">
-                        <span className="font-display text-4xl md:text-5xl font-extrabold">{token.token_number}</span>
+                      <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg">
+                        <span className="font-display text-4xl sm:text-5xl font-extrabold">{nextWaiting.token_number}</span>
                       </div>
                     </div>
-                    {token.patient_name ? (
-                      <p className="mt-2 text-base font-semibold text-foreground">{token.patient_name}</p>
-                    ) : (
-                      <p className="mt-2 text-base font-semibold text-muted-foreground">—</p>
-                    )}
+                    {nextWaiting.patient_name ? (
+                      <p className="mt-2 text-base font-semibold text-foreground">{nextWaiting.patient_name}</p>
+                    ) : null}
                   </div>
-                ))}
+                )}
 
-                {/* Unavailable Tokens */}
+                {/* First waiting when nothing is serving — Orange Box */}
+                {nextWaiting && !servingToken && (
+                  <div className="mb-4 rounded-2xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-orange-500 hover:bg-orange-600 text-white text-xs">WAITING</Badge>
+                    <div className="flex justify-center">
+                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg">
+                        <span className="font-display text-5xl sm:text-7xl font-extrabold">{nextWaiting.token_number}</span>
+                      </div>
+                    </div>
+                    {nextWaiting.patient_name ? (
+                      <p className="mt-2 text-lg font-semibold text-foreground">{nextWaiting.patient_name}</p>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Unavailable Tokens — dimmed red records */}
                 {unavailableTokens.length > 0 && (
                   <div className="mt-2 border-t border-border pt-3">
                     <div className="space-y-2">
