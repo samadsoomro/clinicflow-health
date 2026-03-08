@@ -214,8 +214,7 @@ const Index = () => {
               </p>
             </div>
             {certs.length === 1 ? (
-              <div className="flex justify-center">
-                <div className="w-full sm:w-1/2 max-w-sm">
+              <div className="mx-auto max-w-sm">
                   <motion.div
                     custom={0}
                     initial="hidden"
@@ -231,7 +230,6 @@ const Index = () => {
                       <h3 className="font-display font-semibold text-foreground">{certs[0].title}</h3>
                     </div>
                   </motion.div>
-                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
