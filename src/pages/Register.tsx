@@ -55,7 +55,6 @@ const Register = () => {
 
     if (authData.user) {
       const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
-      const genderPrefix = gender === "male" ? "M" : gender === "female" ? "F" : "O";
 
       // Get next patient number for this clinic
       const { count } = await supabase
