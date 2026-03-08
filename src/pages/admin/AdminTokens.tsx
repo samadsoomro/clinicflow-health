@@ -287,7 +287,7 @@ const AdminTokens = () => {
                         {token.token_number}
                       </span>
                     </TableCell>
-                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name}</TableCell>
+                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {token.doctors?.name || "—"}
                     </TableCell>
