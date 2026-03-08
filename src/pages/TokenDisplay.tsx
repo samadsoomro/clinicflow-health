@@ -104,7 +104,7 @@ const TokenDisplay = () => {
     fetchAll();
     const channel = supabase
       .channel("tv-token-display")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchAll())
       .subscribe();
     const interval = setInterval(fetchAll, 10000);
     return () => {
