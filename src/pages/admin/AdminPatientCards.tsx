@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Eye, Palette, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,53 +6,104 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockPatients } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
+interface PatientPreview {
+  id: string;
+  full_name: string;
+  formatted_patient_id: string;
+  age: number;
+  gender: string;
+  created_at: string | null;
+}
+
 const AdminPatientCards = () => {
-  const [previewPatientId, setPreviewPatientId] = useState(mockPatients[0]?.id || "");
-  const previewPatient = mockPatients.find((p) => p.id === previewPatientId);
+  const { clinicId } = useClinicId();
+  const [patients, setPatients] = useState<PatientPreview[]>([]);
+  const [previewPatientId, setPreviewPatientId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [layout, setLayout] = useState({
-    clinicName: "ClinicToken Demo Clinic",
+    clinicName: "",
     tagline: "Health Identity Card",
-    backgroundColor: "#0d3d2e",
+    backgroundColor: "#1e293b",
     accentColor: "#4ade80",
-    termsConditions: "1. This card must be presented at every visit.\n2. Patient ID is non-transferable.\n3. Clinic reserves the right to update terms.\n4. Appointments are subject to doctor availability.\n5. Emergency services available 24/7 at emergency contact.",
-    address: "123 Healthcare Avenue, Medical District, Karachi 75500",
-    phone: "+92 300 1234567",
-    email: "support@clinictoken.health",
-    workingHours: "Mon–Sat: 9:00 AM – 9:00 PM",
-    emergencyContact: "+92 300 9999999",
-    showQr: true,
+    termsConditions: "",
+    address: "",
+    phone: "",
+    email: "",
+    workingHours: "",
+    emergencyContact: "",
   });
 
-  const handleSave = () => {
-    toast.success("Card layout saved successfully!");
+  useEffect(() => {
+    const fetchData = async () => {
+      const [{ data: clinic }, { data: pts }] = await Promise.all([
+        supabase.from("clinics").select("clinic_name, card_background_color, terms_conditions, address, contact_phone, contact_email, working_hours, emergency_contact, theme_color").eq("id", clinicId).single(),
+        supabase.from("patients").select("id, full_name, formatted_patient_id, age, gender, created_at").eq("clinic_id", clinicId).order("created_at", { ascending: false }).limit(20),
+      ]);
+
+      if (clinic) {
+        setLayout({
+          clinicName: clinic.clinic_name || "",
+          tagline: "Health Identity Card",
+          backgroundColor: clinic.card_background_color || "#1e293b",
+          accentColor: clinic.theme_color || "#4ade80",
+          termsConditions: clinic.terms_conditions || "",
+          address: clinic.address || "",
+          phone: clinic.contact_phone || "",
+          email: clinic.contact_email || "",
+          workingHours: clinic.working_hours || "",
+          emergencyContact: clinic.emergency_contact || "",
+        });
+      }
+
+      setPatients((pts as PatientPreview[]) || []);
+      if (pts && pts.length > 0) setPreviewPatientId(pts[0].id);
+      setLoading(false);
+    };
+    fetchData();
+  }, [clinicId]);
+
+  const previewPatient = patients.find((p) => p.id === previewPatientId);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("clinics").update({
+      card_background_color: layout.backgroundColor,
+      theme_color: layout.accentColor,
+      terms_conditions: layout.termsConditions,
+    }).eq("id", clinicId);
+
+    if (error) toast.error(error.message);
+    else toast.success("Card layout saved!");
+    setSaving(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Patient Card Layout</h2>
-        <p className="text-sm text-muted-foreground">Design and customize the patient card template. Patients download their own cards from the public page.</p>
+        <p className="text-sm text-muted-foreground">Design and customize the patient card template.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Layout Editor */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-soft space-y-4">
             <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
               <Palette className="h-4 w-4" /> Card Design
             </h3>
-            <div className="space-y-2">
-              <Label>Clinic Name on Card</Label>
-              <Input value={layout.clinicName} onChange={(e) => setLayout({ ...layout, clinicName: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Tagline</Label>
-              <Input value={layout.tagline} onChange={(e) => setLayout({ ...layout, tagline: e.target.value })} />
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Background Color</Label>
@@ -69,66 +120,38 @@ const AdminPatientCards = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-soft space-y-4">
-            <h3 className="font-display font-semibold text-foreground">Contact & Terms</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input value={layout.phone} onChange={(e) => setLayout({ ...layout, phone: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input value={layout.email} onChange={(e) => setLayout({ ...layout, email: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input value={layout.address} onChange={(e) => setLayout({ ...layout, address: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Working Hours</Label>
-                <Input value={layout.workingHours} onChange={(e) => setLayout({ ...layout, workingHours: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Emergency Contact</Label>
-                <Input value={layout.emergencyContact} onChange={(e) => setLayout({ ...layout, emergencyContact: e.target.value })} />
-              </div>
-            </div>
             <div className="space-y-2">
               <Label>Terms & Conditions</Label>
               <Textarea value={layout.termsConditions} onChange={(e) => setLayout({ ...layout, termsConditions: e.target.value })} rows={5} />
             </div>
           </div>
 
-          <Button variant="hero" onClick={handleSave} className="w-full">
-            <Save className="mr-2 h-4 w-4" /> Save Card Layout
+          <Button variant="hero" onClick={handleSave} className="w-full" disabled={saving}>
+            <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Card Layout"}
           </Button>
         </div>
 
-        {/* Live Preview */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Eye className="h-4 w-4" /> Live Preview
             </p>
-            <div className="w-48">
-              <Select value={previewPatientId} onValueChange={setPreviewPatientId}>
-                <SelectTrigger><SelectValue placeholder="Preview patient" /></SelectTrigger>
-                <SelectContent>
-                  {mockPatients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.formattedPatientId} — {p.fullName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {patients.length > 0 && (
+              <div className="w-48">
+                <Select value={previewPatientId} onValueChange={setPreviewPatientId}>
+                  <SelectTrigger><SelectValue placeholder="Preview patient" /></SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.formatted_patient_id} — {p.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
-          {previewPatient && (
+          {previewPatient ? (
             <div className="sticky top-20">
-              {/* Card Front */}
               <div className="rounded-t-2xl border border-border p-6 text-white" style={{ backgroundColor: layout.backgroundColor }}>
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
@@ -143,11 +166,11 @@ const AdminPatientCards = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-[10px] uppercase tracking-wider opacity-50">Patient Name</p>
-                      <p className="font-display font-semibold">{previewPatient.fullName}</p>
+                      <p className="font-display font-semibold">{previewPatient.full_name}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-wider opacity-50">Patient ID</p>
-                      <p className="font-display text-xl font-bold" style={{ color: layout.accentColor }}>{previewPatient.formattedPatientId}</p>
+                      <p className="font-display text-xl font-bold" style={{ color: layout.accentColor }}>{previewPatient.formatted_patient_id}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
@@ -161,13 +184,11 @@ const AdminPatientCards = () => {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-wider opacity-50">Registered</p>
-                      <p className="font-medium">{previewPatient.createdAt}</p>
+                      <p className="font-medium">{previewPatient.created_at ? new Date(previewPatient.created_at).toLocaleDateString() : "—"}</p>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Card Back */}
               <div className="rounded-b-2xl border border-t-0 border-border bg-card p-6">
                 <h4 className="mb-2 font-display text-sm font-semibold text-foreground">Terms & Conditions</h4>
                 <div className="mb-4 space-y-1">
@@ -176,13 +197,15 @@ const AdminPatientCards = () => {
                   ))}
                 </div>
                 <div className="space-y-1 border-t border-border pt-3">
-                  <p className="text-[11px] text-muted-foreground">📍 {layout.address}</p>
-                  <p className="text-[11px] text-muted-foreground">📞 {layout.phone} | ✉️ {layout.email}</p>
-                  <p className="text-[11px] text-muted-foreground">🕐 {layout.workingHours}</p>
-                  <p className="text-[11px] text-muted-foreground">🚨 Emergency: {layout.emergencyContact}</p>
+                  {layout.address && <p className="text-[11px] text-muted-foreground">📍 {layout.address}</p>}
+                  {(layout.phone || layout.email) && <p className="text-[11px] text-muted-foreground">📞 {layout.phone} | ✉️ {layout.email}</p>}
+                  {layout.workingHours && <p className="text-[11px] text-muted-foreground">🕐 {layout.workingHours}</p>}
+                  {layout.emergencyContact && <p className="text-[11px] text-muted-foreground">🚨 Emergency: {layout.emergencyContact}</p>}
                 </div>
               </div>
             </div>
+          ) : (
+            <p className="py-12 text-center text-muted-foreground">No patients to preview. Register a patient first.</p>
           )}
         </div>
       </div>

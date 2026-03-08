@@ -1,48 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Bell, AlertTriangle, Info, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, AlertTriangle, Info, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockNotifications as initialNotifications } from "@/data/mockData";
-import type { Notification } from "@/types/clinic";
+import { supabase } from "@/integrations/supabase/client";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
-const AdminNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", message: "", priority: "normal" as Notification["priority"] });
+interface NotifRow {
+  id: string;
+  title: string;
+  message: string;
+  priority: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+}
 
-  const handleAdd = () => {
+const AdminNotifications = () => {
+  const { clinicId } = useClinicId();
+  const [notifications, setNotifications] = useState<NotifRow[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", message: "", priority: "normal" });
+  const [saving, setSaving] = useState(false);
+
+  const fetchNotifications = async () => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, title, message, priority, is_active, created_at")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false });
+    setNotifications((data as NotifRow[]) || []);
+  };
+
+  useEffect(() => { fetchNotifications(); }, [clinicId]);
+
+  const handleAdd = async () => {
     if (!form.title || !form.message) {
       toast.error("Please fill in all fields");
       return;
     }
-    const newNotif: Notification = {
-      id: crypto.randomUUID(),
+    setSaving(true);
+    const { error } = await supabase.from("notifications").insert({
+      clinic_id: clinicId,
       title: form.title,
       message: form.message,
       priority: form.priority,
-      isActive: true,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
-    toast.success("Notification created");
-    setDialogOpen(false);
-    setForm({ title: "", message: "", priority: "normal" });
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Notification created");
+      setDialogOpen(false);
+      setForm({ title: "", message: "", priority: "normal" });
+      fetchNotifications();
+    }
+    setSaving(false);
   };
 
-  const toggleActive = (id: string) => {
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isActive: !n.isActive } : n));
+  const toggleActive = async (n: NotifRow) => {
+    await supabase.from("notifications").update({ is_active: !n.is_active }).eq("id", n.id);
+    fetchNotifications();
   };
 
-  const handleDelete = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this notification?")) return;
+    await supabase.from("notifications").delete().eq("id", id);
     toast.success("Notification deleted");
+    fetchNotifications();
   };
 
   return (
@@ -50,7 +78,7 @@ const AdminNotifications = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Notifications</h2>
-          <p className="text-sm text-muted-foreground">{notifications.filter((n) => n.isActive).length} active notifications</p>
+          <p className="text-sm text-muted-foreground">{notifications.filter((n) => n.is_active).length} active notifications</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -59,6 +87,7 @@ const AdminNotifications = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-display">Create Notification</DialogTitle>
+              <DialogDescription>Create a new notification for your clinic.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -71,7 +100,7 @@ const AdminNotifications = () => {
               </div>
               <div className="space-y-2">
                 <Label>Priority</Label>
-                <Select value={form.priority} onValueChange={(val) => setForm({ ...form, priority: val as Notification["priority"] })}>
+                <Select value={form.priority} onValueChange={(val) => setForm({ ...form, priority: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">Normal</SelectItem>
@@ -82,7 +111,7 @@ const AdminNotifications = () => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button variant="hero" onClick={handleAdd}>Create</Button>
+              <Button variant="hero" onClick={handleAdd} disabled={saving}>{saving ? "Creating..." : "Create"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -97,7 +126,7 @@ const AdminNotifications = () => {
             transition={{ delay: i * 0.05 }}
             className={`rounded-2xl border p-5 shadow-soft transition-all ${
               n.priority === "urgent" ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
-            } ${!n.isActive ? "opacity-60" : ""}`}
+            } ${!n.is_active ? "opacity-60" : ""}`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -109,17 +138,19 @@ const AdminNotifications = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
-                    <Badge variant={n.isActive ? "default" : "secondary"} className="text-xs">
-                      {n.isActive ? "Active" : "Inactive"}
+                    <Badge variant={n.is_active ? "default" : "secondary"} className="text-xs">
+                      {n.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>
-                  <span className="mt-2 inline-block text-xs text-muted-foreground">{n.createdAt}</span>
+                  <span className="mt-2 inline-block text-xs text-muted-foreground">
+                    {n.created_at ? new Date(n.created_at).toLocaleDateString() : ""}
+                  </span>
                 </div>
               </div>
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={() => toggleActive(n.id)} title={n.isActive ? "Deactivate" : "Activate"}>
-                  {n.isActive ? <ToggleRight className="h-4 w-4 text-primary" /> : <ToggleLeft className="h-4 w-4" />}
+                <Button variant="ghost" size="icon" onClick={() => toggleActive(n)} title={n.is_active ? "Deactivate" : "Activate"}>
+                  {n.is_active ? <ToggleRight className="h-4 w-4 text-primary" /> : <ToggleLeft className="h-4 w-4" />}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(n.id)} className="text-destructive hover:text-destructive">
                   <Trash2 className="h-4 w-4" />
@@ -128,6 +159,9 @@ const AdminNotifications = () => {
             </div>
           </motion.div>
         ))}
+        {notifications.length === 0 && (
+          <p className="py-12 text-center text-muted-foreground">No notifications yet</p>
+        )}
       </div>
     </motion.div>
   );

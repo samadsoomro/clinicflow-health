@@ -1,26 +1,75 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Save, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 
 const AdminLocation = () => {
+  const { clinicId } = useClinicId();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    address: "123 Healthcare Avenue, Medical District, Karachi 75500",
-    latitude: "24.8607",
-    longitude: "67.0011",
-    phone: "+92 300 1234567",
-    email: "support@clinictoken.health",
-    workingHours: "Mon–Sat: 9:00 AM – 9:00 PM",
-    emergencyContact: "+92 300 9999999",
+    address: "",
+    latitude: "",
+    longitude: "",
+    phone: "",
+    email: "",
+    workingHours: "",
+    emergencyContact: "",
   });
 
-  const handleSave = () => {
-    toast.success("Location & contact info saved!");
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("address, latitude, longitude, contact_phone, contact_email, working_hours, emergency_contact")
+        .eq("id", clinicId)
+        .single();
+      if (data) {
+        setForm({
+          address: data.address || "",
+          latitude: data.latitude?.toString() || "",
+          longitude: data.longitude?.toString() || "",
+          phone: data.contact_phone || "",
+          email: data.contact_email || "",
+          workingHours: data.working_hours || "",
+          emergencyContact: data.emergency_contact || "",
+        });
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, [clinicId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("clinics").update({
+      address: form.address,
+      latitude: parseFloat(form.latitude) || 0,
+      longitude: parseFloat(form.longitude) || 0,
+      contact_phone: form.phone,
+      contact_email: form.email,
+      working_hours: form.workingHours,
+      emergency_contact: form.emergencyContact,
+    }).eq("id", clinicId);
+
+    if (error) toast.error("Failed to save: " + error.message);
+    else toast.success("Location & contact info saved!");
+    setSaving(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -46,14 +95,16 @@ const AdminLocation = () => {
               <Input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
             </div>
           </div>
-          <div className="overflow-hidden rounded-xl border border-border">
-            <iframe
-              title="Preview"
-              className="h-48 w-full"
-              src={`https://www.google.com/maps?q=${form.latitude},${form.longitude}&output=embed`}
-              loading="lazy"
-            />
-          </div>
+          {form.latitude && form.longitude && (
+            <div className="overflow-hidden rounded-xl border border-border">
+              <iframe
+                title="Preview"
+                className="h-48 w-full"
+                src={`https://www.google.com/maps?q=${form.latitude},${form.longitude}&output=embed`}
+                loading="lazy"
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
@@ -77,8 +128,8 @@ const AdminLocation = () => {
         </div>
       </div>
 
-      <Button variant="hero" onClick={handleSave}>
-        <Save className="mr-2 h-4 w-4" /> Save Changes
+      <Button variant="hero" onClick={handleSave} disabled={saving}>
+        <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Changes"}
       </Button>
     </motion.div>
   );

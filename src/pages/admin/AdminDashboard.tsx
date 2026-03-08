@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, LayoutDashboard, Users, Stethoscope, Clock,
-  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard
+  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { useClinicId } from "@/hooks/useClinic";
+import { supabase } from "@/integrations/supabase/client";
 
 const sidebarLinks = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
@@ -24,6 +26,16 @@ const AdminDashboard = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut, profile } = useAuth();
+  const { clinicId } = useClinicId();
+  const [clinicName, setClinicName] = useState("");
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from("clinics").select("clinic_name").eq("id", clinicId).single();
+      if (data) setClinicName(data.clinic_name);
+    };
+    if (clinicId) fetch();
+  }, [clinicId]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -33,6 +45,11 @@ const AdminDashboard = () => {
             <Activity className="h-4 w-4 text-sidebar-primary" />
           </div>
           <span className="font-display text-lg font-bold text-sidebar-foreground">Admin Panel</span>
+          {clinicName && (
+            <span className="ml-auto mr-2 text-[10px] font-medium text-sidebar-foreground/50 hidden lg:inline truncate max-w-[100px]" title={clinicName}>
+              {clinicName}
+            </span>
+          )}
           <Button variant="ghost" size="icon" className="ml-auto text-sidebar-foreground lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </Button>
@@ -84,7 +101,13 @@ const AdminDashboard = () => {
           <h2 className="font-display font-semibold text-foreground">
             {sidebarLinks.find((l) => l.path === location.pathname)?.label || "Admin"}
           </h2>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            {clinicName && (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium text-foreground">{clinicName}</span>
+              </div>
+            )}
             {profile && <span className="text-sm text-muted-foreground hidden sm:inline">{profile.full_name}</span>}
             <ThemeToggle />
           </div>
