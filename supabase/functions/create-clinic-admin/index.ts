@@ -27,12 +27,9 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify caller's JWT by creating a client with their auth header
-    const userClient = createClient(supabaseUrl, serviceRoleKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data: { user: caller }, error: userError } = await userClient.auth.getUser();
+    // Verify caller's JWT
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: caller }, error: userError } = await adminClient.auth.getUser(token);
 
     if (userError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
