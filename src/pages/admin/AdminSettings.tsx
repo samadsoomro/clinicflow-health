@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ const AdminSettings = () => {
   const { clinicId } = useClinicId();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState({
     clinicName: "",
     shortName: "",
@@ -116,8 +117,38 @@ const AdminSettings = () => {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Logo URL</Label>
-            <Input value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} placeholder="https://..." />
+            <Label>Clinic Logo</Label>
+            <div className="flex items-center gap-3">
+              {form.logoUrl && (
+                <img src={form.logoUrl} alt="Logo" className="h-12 w-12 rounded-lg border border-border object-cover" />
+              )}
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 transition-colors">
+                {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploadingLogo ? "Uploading..." : "Upload Logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingLogo}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingLogo(true);
+                    const path = `${clinicId}/branding/logo-${Date.now()}.${file.name.split(".").pop()}`;
+                    const { error } = await supabase.storage.from("clinic-assets").upload(path, file, { upsert: true });
+                    if (error) {
+                      toast.error("Upload failed: " + error.message);
+                    } else {
+                      const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(path);
+                      setForm({ ...form, logoUrl: urlData.publicUrl });
+                      toast.success("Logo uploaded! Click Save to apply.");
+                    }
+                    setUploadingLogo(false);
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">This logo appears in the navbar and footer across your website.</p>
           </div>
           <div className="space-y-2">
             <Label>QR Base URL</Label>
