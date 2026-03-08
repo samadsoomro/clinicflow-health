@@ -134,7 +134,7 @@ const TokenDisplay = () => {
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case "live":
+      case "serving":
         return { tokenBg: "bg-green-600", borderClass: "border-green-500 bg-green-950/20", label: "Now Serving", labelClass: "text-green-400" };
       case "waiting":
         return { tokenBg: "bg-yellow-500", borderClass: "border-yellow-400 bg-yellow-950/20", label: "Waiting", labelClass: "text-yellow-400" };

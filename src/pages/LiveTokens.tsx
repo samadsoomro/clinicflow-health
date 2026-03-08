@@ -59,7 +59,7 @@ const LiveTokens = () => {
 
   const getTokenStyles = (status: string | null) => {
     switch (status) {
-      case "live":
+      case "serving":
         return { bg: "bg-green-600 text-white shadow-lg", label: "Now Serving", badgeVariant: "default" as const, badgeClass: "bg-green-600 hover:bg-green-700" };
       case "waiting":
         return { bg: "bg-yellow-500 text-white shadow-lg", label: "Waiting", badgeVariant: "secondary" as const, badgeClass: "bg-yellow-500 text-white hover:bg-yellow-600" };
@@ -92,7 +92,7 @@ const LiveTokens = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className={`group flex flex-col items-center rounded-3xl border-2 bg-card p-8 md:p-10 shadow-soft transition-all hover:shadow-card ${
-                  doctor.currentStatus === "live" ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" :
+                  doctor.currentStatus === "serving" ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" :
                   doctor.currentStatus === "unavailable" ? "border-destructive/40 bg-destructive/5" :
                   doctor.currentStatus === "waiting" ? "border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20" : "border-border"
                 } ${doctors.length === 1 ? "max-w-xl mx-auto" : ""}`}
