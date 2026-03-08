@@ -72,7 +72,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     fetchData();
   }, [open, token, clinicId]);
 
-  const handlePrint = () => window.print();
+
 
   const handleDownload = () => {
     if (!data) return;
@@ -172,6 +172,13 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
       win.print();
       win.close();
     }, 500);
+  };
+
+  const handlePrint = () => {
+    // Small delay to ensure modal is rendered
+    setTimeout(() => {
+      window.print();
+    }, 200);
   };
 
   if (!data && !loading) return null;
@@ -276,7 +283,10 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
               <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={handleDownload}>
                 <Download className="mr-2 h-4 w-4" /> Download PDF
               </Button>
-              <Button className="flex-1 rounded-xl h-11 gradient-primary shadow-lg shadow-primary/20" onClick={handlePrint}>
+              <Button
+                onClick={handlePrint}
+                className="flex-1 rounded-xl h-11 gradient-primary shadow-lg shadow-primary/20"
+              >
                 <Printer className="mr-2 h-4 w-4" /> Print
               </Button>
             </div>
