@@ -233,30 +233,27 @@ const AdminTokens = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Zap className="h-5 w-5 text-primary" />
-              Activate Token
+              Currently Serving
             </CardTitle>
-            <CardDescription>Set the currently serving token number</CardDescription>
+            <CardDescription>The token currently being served</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {liveToken && (
-              <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Currently Live</p>
-                <p className="font-display text-4xl font-bold text-primary">{liveToken.token_number}</p>
-                <p className="text-sm text-muted-foreground mt-1">{liveToken.patient_name}</p>
+            {servingToken ? (
+              <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 text-center">
+                <p className="text-xs text-muted-foreground">Now Serving</p>
+                <p className="font-display text-4xl font-bold text-green-600">{servingToken.token_number}</p>
+                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{servingToken.doctors?.name || ""}</p>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-secondary p-4 text-center">
+                <p className="text-xs text-muted-foreground">No token currently serving</p>
+                <p className="font-display text-4xl font-bold text-muted-foreground">—</p>
               </div>
             )}
-            <div className="space-y-2">
-              <Label>Token Number</Label>
-              <Input
-                type="number"
-                value={activateNumber}
-                onChange={(e) => setActivateNumber(e.target.value)}
-                placeholder="Enter token number to activate"
-              />
-            </div>
-            <Button variant="hero" className="w-full" onClick={handleActivateToken} disabled={activating}>
-              {activating ? "Activating..." : "Make Live"}
-            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Use the "Mark Serving" button in the table below to set a token as serving.
+            </p>
           </CardContent>
         </Card>
       </div>
