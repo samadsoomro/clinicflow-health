@@ -108,13 +108,34 @@ const AdminTokens = () => {
   };
 
   const handleMarkCompleted = async (token: any) => {
+    // Step 1: Find next waiting token for this doctor
+    const { data: nextToken } = await supabase
+      .from("tokens")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .eq("doctor_id", token.doctor_id)
+      .eq("status", "waiting")
+      .gte("created_at", today + "T00:00:00")
+      .lte("created_at", today + "T23:59:59")
+      .order("token_number", { ascending: true })
+      .limit(1)
+      .single();
+
+    // Step 2: Mark current token as completed
     const { error } = await supabase.from("tokens").update({ status: "completed" } as any).eq("id", token.id);
     if (error) {
       toast.error("Failed: " + error.message);
-    } else {
-      toast.success(`Token #${token.token_number} marked as completed`);
-      fetchTodayTokens();
+      return;
     }
+
+    // Step 3: Auto-promote next waiting token to serving
+    if (nextToken) {
+      await supabase.from("tokens").update({ status: "serving" } as any).eq("id", nextToken.id);
+      toast.success(`Token #${token.token_number} completed → Token #${nextToken.token_number} now serving`);
+    } else {
+      toast.success(`Token #${token.token_number} completed. Queue is clear.`);
+    }
+    fetchTodayTokens();
   };
 
   const handleResetToday = async () => {
