@@ -13,6 +13,7 @@ const AdminSettings = () => {
   const { clinicId } = useClinicId();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState({
     clinicName: "",
     shortName: "",
