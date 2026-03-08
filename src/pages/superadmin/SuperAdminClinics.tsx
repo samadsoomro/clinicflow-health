@@ -139,6 +139,14 @@ const SuperAdminClinics = () => {
                   <Input value={form.domain_name} onChange={(e) => setForm({ ...form, domain_name: e.target.value })} placeholder="myclinic.com" />
                 </div>
                 <div className="space-y-2">
+                  <Label>Address</Label>
+                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St, City" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="+92 300 1234567" />
+                </div>
+                <div className="space-y-2">
                   <Label>Contact Email</Label>
                   <Input value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} placeholder="admin@clinic.com" />
                 </div>
