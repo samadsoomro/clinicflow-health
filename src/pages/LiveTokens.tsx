@@ -123,11 +123,13 @@ const LiveTokens = () => {
                         {activeToken.token_number}
                       </span>
                     </div>
-                    <p className={`mb-2 text-lg font-semibold ${
-                      activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
-                    }`}>
-                      {activeToken.patient_name}
-                    </p>
+                    {activeToken.patient_name && (
+                      <p className={`mb-2 text-lg font-semibold ${
+                        activeToken.status === "unavailable" ? "line-through text-muted-foreground" : "text-foreground"
+                      }`}>
+                        {activeToken.patient_name}
+                      </p>
+                    )}
                     <Badge
                       variant={styles!.badgeVariant}
                       className={`text-sm px-4 py-1 ${styles!.badgeClass}`}
