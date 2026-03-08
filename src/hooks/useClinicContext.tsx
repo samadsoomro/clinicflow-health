@@ -25,6 +25,8 @@ interface ClinicData {
   og_image_url: string | null;
   is_active: boolean | null;
   short_name: string | null;
+  maps_embed_url: string | null;
+  secondary_theme_color: string | null;
 }
 
 interface ClinicContextType {
