@@ -22,6 +22,8 @@ const AdminTokens = () => {
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [receiptToken, setReceiptToken] = useState<any>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [clinicShortName, setClinicShortName] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
