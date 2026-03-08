@@ -91,17 +91,29 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const resolveClinic = useCallback(async () => {
-    const clinicParam = getClinicParam();
+    const urlParams = new URLSearchParams(window.location.search);
+    const clinicParam = urlParams.get("clinic");
     const subdomain = extractSubdomain();
 
     let query = supabase.from("clinics").select("*");
+    let activeSubdomain = subdomain;
 
     if (clinicParam) {
+      // Save to sessionStorage for persistence
+      sessionStorage.setItem('clinic_subdomain', clinicParam);
+      activeSubdomain = clinicParam;
       query = query.eq("subdomain", clinicParam);
-    } else if (subdomain) {
-      query = query.eq("subdomain", subdomain);
     } else {
-      query = query.eq("id", DEFAULT_CLINIC_ID);
+      // Fallback to sessionStorage if URL param missing
+      const sessionSubdomain = sessionStorage.getItem('clinic_subdomain');
+      if (sessionSubdomain) {
+        activeSubdomain = sessionSubdomain;
+        query = query.eq("subdomain", sessionSubdomain);
+      } else if (subdomain) {
+        query = query.eq("subdomain", subdomain);
+      } else {
+        query = query.eq("id", DEFAULT_CLINIC_ID);
+      }
     }
 
     const { data, error: fetchError } = await query.maybeSingle();
@@ -114,21 +126,24 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
 
     if (data) {
       setClinic(data as ClinicData);
-    } else if (!clinicParam && !subdomain) {
-      const { data: firstClinic } = await supabase
-        .from("clinics")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at")
-        .limit(1)
-        .maybeSingle();
-      if (firstClinic) {
-        setClinic(firstClinic as ClinicData);
-      } else {
-        setError("No clinic found");
-      }
     } else {
-      setError("Clinic not found");
+      const isCustomAccess = clinicParam || sessionStorage.getItem('clinic_subdomain') || subdomain;
+      if (!isCustomAccess) {
+        const { data: firstClinic } = await supabase
+          .from("clinics")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at")
+          .limit(1)
+          .maybeSingle();
+        if (firstClinic) {
+          setClinic(firstClinic as ClinicData);
+        } else {
+          setError("No clinic found");
+        }
+      } else {
+        setError("Clinic not found");
+      }
     }
 
     setLoading(false);

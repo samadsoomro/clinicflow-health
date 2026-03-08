@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Activity, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicContext } from "@/hooks/useClinicContext";
+import ClinicLink from "@/components/ClinicLink";
 
 const PublicFooter = () => {
   const { clinic, clinicId } = useClinicContext();
@@ -60,17 +60,17 @@ const PublicFooter = () => {
           <div>
             <h4 className="mb-3 font-display font-semibold text-foreground">Quick Links</h4>
             <div className="flex flex-col gap-2">
-              <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">Home</Link>
-              <Link to="/tokens" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Tokens</Link>
-              <Link to="/notifications" className="text-sm text-muted-foreground hover:text-primary transition-colors">Notifications</Link>
+              <ClinicLink to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">Home</ClinicLink>
+              <ClinicLink to="/tokens" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Tokens</ClinicLink>
+              <ClinicLink to="/notifications" className="text-sm text-muted-foreground hover:text-primary transition-colors">Notifications</ClinicLink>
             </div>
           </div>
           <div>
             <h4 className="mb-3 font-display font-semibold text-foreground">Services</h4>
             <div className="flex flex-col gap-2">
-              <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link>
-              <Link to="/location" className="text-sm text-muted-foreground hover:text-primary transition-colors">Location</Link>
-              <Link to="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors">Patient Registration</Link>
+              <ClinicLink to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</ClinicLink>
+              <ClinicLink to="/location" className="text-sm text-muted-foreground hover:text-primary transition-colors">Location</ClinicLink>
+              <ClinicLink to="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors">Patient Registration</ClinicLink>
             </div>
           </div>
           <div>

@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useClinicContext } from "@/hooks/useClinicContext";
+import ClinicLink from "@/components/ClinicLink";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -36,13 +37,16 @@ const PublicNavbar = () => {
     await signOut();
     setMobileOpen(false);
     toast({ title: "Logged out", description: "You have been signed out." });
-    navigate("/");
+
+    const params = new URLSearchParams(location.search);
+    const clinicParam = params.get('clinic');
+    navigate(clinicParam ? `/?clinic=${clinicParam}` : "/");
   };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <ClinicLink to="/" className="flex items-center gap-2">
           {shortName && (
             <span className="font-display text-sm font-bold text-primary">{shortName}</span>
           )}
@@ -56,11 +60,11 @@ const PublicNavbar = () => {
           <span className="font-display text-xl font-bold text-foreground">
             {clinicName}
           </span>
-        </Link>
+        </ClinicLink>
 
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
-            <Link key={link.path} to={link.path}>
+            <ClinicLink key={link.path} to={link.path}>
               <Button
                 variant={location.pathname === link.path ? "secondary" : "ghost"}
                 size="sm"
@@ -68,7 +72,7 @@ const PublicNavbar = () => {
               >
                 {link.label}
               </Button>
-            </Link>
+            </ClinicLink>
           ))}
         </nav>
 
@@ -77,9 +81,9 @@ const PublicNavbar = () => {
           {user ? (
             <>
               {isAdmin && (
-                <Link to="/admin">
+                <ClinicLink to="/admin">
                   <Button variant="ghost" size="sm">Dashboard</Button>
-                </Link>
+                </ClinicLink>
               )}
               {displayName && (
                 <span className="text-sm font-medium text-foreground px-2">{displayName}</span>
@@ -91,12 +95,12 @@ const PublicNavbar = () => {
             </>
           ) : (
             <>
-              <Link to="/login">
+              <ClinicLink to="/login">
                 <Button variant="ghost" size="sm">Log in</Button>
-              </Link>
-              <Link to="/register">
+              </ClinicLink>
+              <ClinicLink to="/register">
                 <Button variant="hero" size="sm">Register</Button>
-              </Link>
+              </ClinicLink>
             </>
           )}
         </div>
@@ -121,14 +125,14 @@ const PublicNavbar = () => {
           >
             <div className="container flex flex-col gap-2 py-4">
               {navLinks.map((link) => (
-                <Link key={link.path} to={link.path} onClick={() => setMobileOpen(false)}>
+                <ClinicLink key={link.path} to={link.path} onClick={() => setMobileOpen(false)}>
                   <Button
                     variant={location.pathname === link.path ? "secondary" : "ghost"}
                     className="w-full justify-start"
                   >
                     {link.label}
                   </Button>
-                </Link>
+                </ClinicLink>
               ))}
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {user ? (
@@ -138,9 +142,9 @@ const PublicNavbar = () => {
                     )}
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
+                        <ClinicLink to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
                           <Button variant="outline" className="w-full">Dashboard</Button>
-                        </Link>
+                        </ClinicLink>
                       )}
                       <Button variant="destructive" className="flex-1" onClick={handleLogout}>
                         <LogOut className="mr-1 h-4 w-4" />
@@ -150,12 +154,12 @@ const PublicNavbar = () => {
                   </>
                 ) : (
                   <>
-                    <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    <ClinicLink to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
                       <Button variant="outline" className="w-full">Log in</Button>
-                    </Link>
-                    <Link to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    </ClinicLink>
+                    <ClinicLink to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
                       <Button variant="hero" className="w-full">Register</Button>
-                    </Link>
+                    </ClinicLink>
                   </>
                 )}
               </div>
