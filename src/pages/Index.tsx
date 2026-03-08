@@ -172,8 +172,7 @@ const Index = () => {
                 {doctorsSection?.content_json?.subtitle || "Our team of experienced professionals"}
               </p>
             </div>
-            <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl w-full">
+            <div className={`mx-auto max-w-4xl ${featuredDoctors.length < 3 ? 'flex flex-wrap justify-center gap-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
               {featuredDoctors.map((doc, i) => (
                 <motion.div
                   key={doc.id}
