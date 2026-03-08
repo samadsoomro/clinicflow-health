@@ -25,7 +25,7 @@ const SuperAdminClinics = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClinicRow | null>(null);
-  const [form, setForm] = useState({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "" });
+  const [form, setForm] = useState({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
   const [saving, setSaving] = useState(false);
 
   const fetchClinics = async () => {
