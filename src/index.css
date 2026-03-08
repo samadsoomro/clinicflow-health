@@ -139,3 +139,22 @@
     background-clip: text;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .receipt-printable,
+  .receipt-printable * {
+    visibility: visible !important;
+  }
+  .receipt-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+  }
+  .receipt-no-print {
+    display: none !important;
+  }
+}

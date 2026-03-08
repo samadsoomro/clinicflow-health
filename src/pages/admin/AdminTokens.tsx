@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle } from "lucide-react";
+import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle, Printer } from "lucide-react";
+import TokenReceipt from "@/components/admin/TokenReceipt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,8 @@ const AdminTokens = () => {
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [receiptToken, setReceiptToken] = useState<any>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [clinicShortName, setClinicShortName] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
@@ -75,7 +78,10 @@ const AdminTokens = () => {
     if (error) {
       toast.error("Failed to issue token: " + error.message);
     } else {
-      toast.success(`Token #${tokenNumber} issued successfully`);
+      const issuedToken = { token_number: tokenNumber, patient_name: issueForm.patientName.trim() || "", doctor_id: issueForm.doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
+      toast.success(`Token #${tokenNumber} issued successfully`, {
+        action: { label: "Print Token", onClick: () => { setReceiptToken(issuedToken); setReceiptOpen(true); } },
+      });
       setIssueForm({ doctorId: "", patientName: "" });
       fetchTodayTokens();
     }
@@ -392,6 +398,15 @@ const AdminTokens = () => {
                         {token.status === "completed" && (
                           <span className="text-xs text-muted-foreground">Done</span>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => { setReceiptToken(token); setReceiptOpen(true); }}
+                        >
+                          <Printer className="mr-1 h-3.5 w-3.5" />
+                          Print
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -401,6 +416,8 @@ const AdminTokens = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <TokenReceipt open={receiptOpen} onOpenChange={setReceiptOpen} token={receiptToken} clinicId={clinicId} />
     </motion.div>
   );
 };
