@@ -8,6 +8,7 @@ interface DoctorsContent {
   title: string;
   subtitle: string;
   featured_ids?: string[];
+  max_display?: number;
 }
 
 interface DoctorsEditorProps {
