@@ -81,6 +81,7 @@ const AdminDashboard = () => {
         <nav className="flex-1 space-y-1 p-3">
           {sidebarLinks.map((link) => {
             const isActive = location.pathname === link.path;
+            const showBadge = link.path === "/admin/contact-messages" && unreadCount > 0;
             return (
               <Link key={link.path} to={link.path} onClick={() => setSidebarOpen(false)}>
                 <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -90,6 +91,11 @@ const AdminDashboard = () => {
                 }`}>
                   <link.icon className="h-4 w-4" />
                   {link.label}
+                  {showBadge && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
               </Link>
             );
