@@ -101,7 +101,13 @@ const AdminDashboard = () => {
           <h2 className="font-display font-semibold text-foreground">
             {sidebarLinks.find((l) => l.path === location.pathname)?.label || "Admin"}
           </h2>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            {clinicName && (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium text-foreground">{clinicName}</span>
+              </div>
+            )}
             {profile && <span className="text-sm text-muted-foreground hidden sm:inline">{profile.full_name}</span>}
             <ThemeToggle />
           </div>
