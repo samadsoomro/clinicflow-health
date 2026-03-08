@@ -1,0 +1,1 @@
+ALTER TABLE public.clinics ADD COLUMN short_name text DEFAULT '' NULL;

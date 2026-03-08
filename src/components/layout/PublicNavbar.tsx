@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+import { usePublicClinicId } from "@/hooks/useClinic";
+import { supabase } from "@/integrations/supabase/client";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -22,9 +24,27 @@ const PublicNavbar = () => {
   const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
+  const clinicId = usePublicClinicId();
+  const [clinic, setClinic] = useState<any>(null);
 
   const isAdmin = isSuperAdmin || isClinicAdmin();
   const displayName = profile?.full_name || user?.email || null;
+
+  useEffect(() => {
+    const fetchClinic = async () => {
+      const { data } = await supabase
+        .from("clinics")
+        .select("clinic_name, logo_url, short_name, theme_color")
+        .eq("id", clinicId)
+        .single();
+      setClinic(data);
+    };
+    fetchClinic();
+  }, [clinicId]);
+
+  const shortName = (clinic as any)?.short_name || "";
+  const logoUrl = clinic?.logo_url;
+  const clinicName = clinic?.clinic_name || "ClinicToken";
 
   const handleLogout = async () => {
     await signOut();
@@ -37,11 +57,18 @@ const PublicNavbar = () => {
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-            <Activity className="h-5 w-5 text-primary-foreground" />
-          </div>
+          {shortName && (
+            <span className="font-display text-sm font-bold text-primary">{shortName}</span>
+          )}
+          {logoUrl ? (
+            <img src={logoUrl} alt={clinicName} className="h-9 w-9 rounded-lg object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+              <Activity className="h-5 w-5 text-primary-foreground" />
+            </div>
+          )}
           <span className="font-display text-xl font-bold text-foreground">
-            Clinic<span className="text-primary">Token</span>
+            {clinicName}
           </span>
         </Link>
 

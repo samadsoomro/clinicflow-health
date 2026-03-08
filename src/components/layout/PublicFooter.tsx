@@ -13,7 +13,7 @@ const PublicFooter = () => {
     const fetchData = async () => {
       const [footerRes, clinicRes] = await Promise.all([
         supabase.from("homepage_sections").select("content_json, is_enabled").eq("clinic_id", clinicId).eq("section_name", "footer").single(),
-        supabase.from("clinics").select("clinic_name, logo_url, contact_phone, contact_email").eq("id", clinicId).single(),
+        supabase.from("clinics").select("clinic_name, logo_url, contact_phone, contact_email, short_name").eq("id", clinicId).single(),
       ]);
       if (footerRes.data?.is_enabled) setFooter(footerRes.data.content_json);
       setClinic(clinicRes.data);
@@ -23,6 +23,7 @@ const PublicFooter = () => {
 
   const f = footer || {};
   const name = clinic?.clinic_name || "ClinicToken";
+  const shortName = (clinic as any)?.short_name || "";
   const logo = f.logo_override || clinic?.logo_url;
   const phone = f.phone || clinic?.contact_phone;
   const email = f.email || clinic?.contact_email;
@@ -40,6 +41,9 @@ const PublicFooter = () => {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
+              {shortName && (
+                <span className="font-display text-sm font-bold text-primary">{shortName}</span>
+              )}
               {logo ? (
                 <img src={logo} alt={name} className="h-8 w-8 rounded-lg object-cover" />
               ) : (
