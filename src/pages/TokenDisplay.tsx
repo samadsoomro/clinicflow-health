@@ -278,7 +278,7 @@ const TokenDisplay = () => {
                         <div key={ut.id} className="flex items-center justify-between rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-1.5">
                           <div className="flex items-center gap-2">
                             <span className="font-display text-sm font-bold text-muted-foreground">#{ut.token_number}</span>
-                            <span className="text-xs text-muted-foreground line-through">{ut.patient_name}</span>
+                            {ut.patient_name && <span className="text-xs text-muted-foreground line-through">{ut.patient_name}</span>}
                           </div>
                           <Badge variant="destructive" className="text-[10px] px-2 py-0">Unavailable</Badge>
                         </div>
