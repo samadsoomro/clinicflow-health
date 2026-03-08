@@ -320,7 +320,7 @@ const AdminTokens = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {token.status === "waiting" && (
                           <>
                             <Button
@@ -344,17 +344,31 @@ const AdminTokens = () => {
                           </>
                         )}
                         {token.status === "serving" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleMarkUnavailable(token)}
-                          >
-                            <UserX className="mr-1 h-3.5 w-3.5" />
-                            Unavailable
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                              onClick={() => handleMarkCompleted(token)}
+                            >
+                              <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                              Completed
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleMarkUnavailable(token)}
+                            >
+                              <UserX className="mr-1 h-3.5 w-3.5" />
+                              Unavailable
+                            </Button>
+                          </>
                         )}
-                        {(token.status === "unavailable" || token.status === "completed") && (
+                        {token.status === "unavailable" && (
+                          <span className="text-xs text-muted-foreground">Skipped</span>
+                        )}
+                        {token.status === "completed" && (
                           <span className="text-xs text-muted-foreground">Done</span>
                         )}
                       </div>
