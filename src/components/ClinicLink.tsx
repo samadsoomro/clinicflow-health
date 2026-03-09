@@ -6,16 +6,17 @@ interface ClinicLinkProps {
     children: React.ReactNode;
     className?: string;
     id?: string;
+    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
-const ClinicLink = ({ to, children, className, id }: ClinicLinkProps) => {
+const ClinicLink = ({ to, children, className, id, onClick }: ClinicLinkProps) => {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const clinic = params.get('clinic');
     const href = clinic ? `${to}${to.includes('?') ? '&' : '?'}clinic=${clinic}` : to;
 
     return (
-        <Link to={href} className={className} id={id}>
+        <Link to={href} className={className} id={id} onClick={onClick}>
             {children}
         </Link>
     );
