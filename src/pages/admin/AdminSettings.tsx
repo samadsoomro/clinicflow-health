@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -225,9 +225,26 @@ const AdminSettings = () => {
 
         {/* Section 3 — Website Theme */}
         <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
-            <Palette className="h-4 w-4" /> Website Theme
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+              <Palette className="h-4 w-4" /> Website Theme
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setForm((prev) => ({
+                  ...prev,
+                  themeColor: "#0ea5e9",
+                  secondaryThemeColor: "#1e293b",
+                }));
+                toast.info("Theme colors reset to defaults. Click 'Save Settings' to apply.");
+              }}
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              Reset Default
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             Controls website appearance: navbar, buttons, links, and homepage accents. Does not affect patient card design.
           </p>
