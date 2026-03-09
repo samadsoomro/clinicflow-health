@@ -22,8 +22,8 @@ const AdminSettings = () => {
     subdomain: "",
     logoUrl: "",
     qrBaseUrl: "",
-    themeColor: "#0ea5e9",
-    secondaryThemeColor: "#1e293b",
+    themeColor: "#218a6b",
+    secondaryThemeColor: "#162a30",
     termsConditions: "",
     mapsEmbedUrl: "",
   });
