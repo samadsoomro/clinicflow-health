@@ -23,9 +23,10 @@ export const NotificationsPreview = ({ content, onChange, clinicId }: Notificati
     const fetch = async () => {
       const { data } = await supabase
         .from("notifications")
-        .select("id, title, message, priority, created_at")
+        .select("id, title, message, priority, is_pinned, created_at")
         .eq("clinic_id", clinicId)
         .eq("is_active", true)
+        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(3);
       setNotifs(data || []);
@@ -62,6 +63,7 @@ export const NotificationsPreview = ({ content, onChange, clinicId }: Notificati
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">{n.title}</p>
+                    {n.is_pinned && <span className="text-primary text-xs" title="Pinned">📌</span>}
                     {n.priority === "urgent" && <Badge variant="destructive" className="text-[10px]">Urgent</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>

@@ -45,7 +45,7 @@ const Index = () => {
         supabase.from("clinics").select("*").eq("id", clinicId).single(),
         supabase.from("doctors").select("id, name, specialization, image_url, status").eq("clinic_id", clinicId).eq("status", "active"),
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
-        supabase.from("notifications").select("id, title, message, priority, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("created_at", { ascending: false }).limit(3),
+        supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
       ]);
 
       setSections((secRes.data as SectionData[]) || []);
@@ -286,6 +286,7 @@ const Index = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
+                        {n.is_pinned && <span className="text-primary" title="Pinned">📌</span>}
                         {n.priority === "urgent" && <Badge variant="destructive" className="text-[10px]">Urgent</Badge>}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>

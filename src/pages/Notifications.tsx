@@ -13,9 +13,10 @@ const Notifications = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("notifications")
-        .select("id, title, message, priority, created_at")
+        .select("id, title, message, priority, is_pinned, created_at")
         .eq("clinic_id", clinicId)
         .eq("is_active", true)
+        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
       setNotifications((data as any[]) || []);
       setLoading(false);
@@ -53,20 +54,21 @@ const Notifications = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`rounded-2xl border p-5 shadow-soft transition-all hover:shadow-card ${
-                n.priority === "urgent"
+              className={`rounded-2xl border p-5 shadow-soft transition-all hover:shadow-card ${n.priority === "urgent"
                   ? "border-destructive/30 bg-destructive/5"
                   : "border-border bg-card"
-              }`}
+                }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
-                  n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
-                }`}>
+                <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
+                  }`}>
                   {n.priority === "urgent" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
                 </div>
                 <div>
-                  <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
+                    {n.is_pinned && <span className="text-primary" title="Pinned">📌</span>}
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>
                   <span className="mt-2 inline-block text-xs text-muted-foreground">
                     {n.created_at ? new Date(n.created_at).toLocaleDateString() : ""}
