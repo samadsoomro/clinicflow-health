@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
