@@ -1,29 +1,30 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Zap, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle, Printer } from "lucide-react";
+import { Ticket, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle, Printer } from "lucide-react";
 import TokenReceipt from "@/components/admin/TokenReceipt";
+import IssueTokenModal from "@/components/admin/IssueTokenModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useClinicDoctors } from "@/hooks/useClinic";
+import { useClinicId } from "@/hooks/useClinic";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const AdminTokens = () => {
-  const { doctors, loading: doctorsLoading, clinicId } = useClinicDoctors();
-  const [issueForm, setIssueForm] = useState({ doctorId: "", patientName: "" });
+  const { clinicId } = useClinicId();
+  const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [receiptToken, setReceiptToken] = useState<any>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [issueModalOpen, setIssueModalOpen] = useState(false);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string | undefined>(undefined);
   const [clinicShortName, setClinicShortName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
@@ -32,24 +33,27 @@ const AdminTokens = () => {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    supabase.from("clinics").select("short_name, clinic_name, qr_base_url").eq("id", clinicId).single()
-      .then(({ data }) => {
-        setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
-        setWebsiteUrl((data as any)?.qr_base_url || "");
-      });
-  }, [clinicId]);
+    const fetchDoctors = async () => {
+      setDoctorsLoading(true);
+      const { data: doctorsData } = await supabase
+        .from("doctors")
+        .select("id, name, specialization")
+        .eq("clinic_id", clinicId)
+        .eq("status", "active")
+        .order("name");
+      setActiveDoctors(doctorsData || []);
+      setDoctorsLoading(false);
+    };
 
-  const handleSaveUrl = async () => {
-    setSavingUrl(true);
-    const { error } = await supabase.from("clinics").update({ qr_base_url: websiteUrl.trim() } as any).eq("id", clinicId);
-    if (error) {
-      setUrlSaveMsg("✗ Failed to save");
-    } else {
-      setUrlSaveMsg("✓ Saved");
+    if (clinicId) {
+      fetchDoctors();
+      supabase.from("clinics").select("short_name, clinic_name, qr_base_url").eq("id", clinicId).single()
+        .then(({ data }) => {
+          setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
+          setWebsiteUrl((data as any)?.qr_base_url || "");
+        });
     }
-    setSavingUrl(false);
-    setTimeout(() => setUrlSaveMsg(null), 2000);
-  };
+  }, [clinicId]);
 
   const fetchTodayTokens = async () => {
     const { data } = await supabase
@@ -63,14 +67,16 @@ const AdminTokens = () => {
   };
 
   useEffect(() => {
-    fetchTodayTokens();
-    const channel = supabase
-      .channel("admin-tokens")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
-        fetchTodayTokens();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    if (clinicId) {
+      fetchTodayTokens();
+      const channel = supabase
+        .channel("admin-tokens")
+        .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
+          fetchTodayTokens();
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
   }, [clinicId]);
 
   const getNextTokenNumber = () => {
@@ -78,36 +84,35 @@ const AdminTokens = () => {
     return Math.max(...todayTokens.map((t) => t.token_number)) + 1;
   };
 
-  const handleIssueToken = async () => {
-    if (!issueForm.doctorId) {
-      toast.error("Please select a doctor");
-      return;
-    }
+  const handleOpenIssueModal = (doctorId?: string) => {
+    setSelectedDoctorId(doctorId);
+    setIssueModalOpen(true);
+  };
+
+  const handleIssueToken = async (doctorId: string, patientName: string) => {
     setIssuing(true);
     const tokenNumber = getNextTokenNumber();
     const { error } = await supabase.from("tokens").insert({
       clinic_id: clinicId,
-      doctor_id: issueForm.doctorId,
+      doctor_id: doctorId,
       token_number: tokenNumber,
-      patient_name: issueForm.patientName.trim() || "",
+      patient_name: patientName.trim() || "",
       status: "waiting",
     } as any);
 
     if (error) {
       toast.error("Failed to issue token: " + error.message);
     } else {
-      const issuedToken = { token_number: tokenNumber, patient_name: issueForm.patientName.trim() || "", doctor_id: issueForm.doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
+      const issuedToken = { token_number: tokenNumber, patient_name: patientName.trim() || "", doctor_id: doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
       toast.success(`Token #${tokenNumber} issued successfully`, {
         action: { label: "Print Token", onClick: () => { setReceiptToken(issuedToken); setReceiptOpen(true); } },
       });
-      setIssueForm({ doctorId: "", patientName: "" });
       fetchTodayTokens();
     }
     setIssuing(false);
   };
 
   const handleMarkServing = async (token: any) => {
-    // Complete any currently serving token for the same doctor
     const servingForDoc = todayTokens.filter((t) => t.doctor_id === token.doctor_id && t.status === "serving");
     for (const st of servingForDoc) {
       await supabase.from("tokens").update({ status: "completed" } as any).eq("id", st.id);
@@ -132,7 +137,6 @@ const AdminTokens = () => {
   };
 
   const handleMarkCompleted = async (token: any) => {
-    // Step 1: Find next waiting token for this doctor
     const { data: nextToken } = await supabase
       .from("tokens")
       .select("*")
@@ -145,14 +149,12 @@ const AdminTokens = () => {
       .limit(1)
       .single();
 
-    // Step 2: Mark current token as completed
     const { error } = await supabase.from("tokens").update({ status: "completed" } as any).eq("id", token.id);
     if (error) {
       toast.error("Failed: " + error.message);
       return;
     }
 
-    // Step 3: Auto-promote next waiting token to serving
     if (nextToken) {
       await supabase.from("tokens").update({ status: "serving" } as any).eq("id", nextToken.id);
       toast.success(`Token #${token.token_number} completed → Token #${nextToken.token_number} now serving`);
@@ -173,7 +175,6 @@ const AdminTokens = () => {
         toast.error("Failed to reset: " + error.message);
       } else {
         setTodayTokens([]);
-        setIssueForm({ doctorId: "", patientName: "" });
         toast.success("Today's tokens have been reset!");
       }
     } else {
@@ -218,7 +219,17 @@ const AdminTokens = () => {
     doc.save(`Today's Tokens - ${clinicShortName} - ${getTimestamp()}.pdf`);
   };
 
-  const servingToken = todayTokens.find((t) => t.status === "serving");
+  const handleSaveUrl = async () => {
+    setSavingUrl(true);
+    const { error } = await supabase.from("clinics").update({ qr_base_url: websiteUrl.trim() } as any).eq("id", clinicId);
+    if (error) {
+      setUrlSaveMsg("✗ Failed to save");
+    } else {
+      setUrlSaveMsg("✓ Saved");
+    }
+    setSavingUrl(false);
+    setTimeout(() => setUrlSaveMsg(null), 2000);
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -253,207 +264,191 @@ const AdminTokens = () => {
         <p className="text-[10px] text-muted-foreground -mt-1">This URL appears on token receipts so patients can check live token status</p>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-2xl font-bold text-foreground">Token Management</h2>
-            <p className="text-sm text-muted-foreground">
-              {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 overflow-hidden">
+            <div>
+              <h2 className="font-display text-2xl font-bold text-foreground truncate">Token Management</h2>
+              <p className="text-sm text-muted-foreground">
+                {todayTokens.length} tokens issued today · {todayTokens.filter((t) => t.status === "waiting").length} waiting
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-border shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-lg">
-              <Ticket className="h-5 w-5 text-primary" />
-              Issue Token
-            </CardTitle>
-            <CardDescription>Issue a new token for a walk-in patient</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Doctor</Label>
-              <Select value={issueForm.doctorId} onValueChange={(v) => setIssueForm({ ...issueForm, doctorId: v })}>
-                <SelectTrigger><SelectValue placeholder="Select doctor" /></SelectTrigger>
-                <SelectContent>
-                  {doctors.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name} — {d.specialization}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Patient Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Input
-                value={issueForm.patientName}
-                onChange={(e) => setIssueForm({ ...issueForm, patientName: e.target.value })}
-                placeholder="Enter patient name (optional)"
-              />
-            </div>
-            <div className="rounded-xl bg-secondary p-4 text-center">
-              <p className="text-xs text-muted-foreground">Next Token</p>
-              <p className="font-display text-4xl font-bold text-primary">{getNextTokenNumber()}</p>
-            </div>
-            <Button variant="hero" className="w-full" onClick={handleIssueToken} disabled={issuing}>
-              {issuing ? "Issuing..." : "Issue Token"}
-            </Button>
-          </CardContent>
-        </Card>
+      {doctorsLoading ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+          {activeDoctors.map((doctor) => {
+            const doctorTokens = todayTokens.filter(t => t.doctor_id === doctor.id);
+            const servingToken = doctorTokens.find(t => t.status === 'serving');
+            const waitingCount = doctorTokens.filter(t => t.status === 'waiting').length;
 
-        <Card className="border-border shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-lg">
-              <Zap className="h-5 w-5 text-primary" />
-              Currently Serving
-            </CardTitle>
-            <CardDescription>The token currently being served</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {servingToken ? (
-              <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Now Serving</p>
-                <p className="font-display text-4xl font-bold text-green-600">{servingToken.token_number}</p>
-                <p className="text-sm text-muted-foreground mt-1">{servingToken.patient_name || "—"}</p>
-                <p className="text-xs text-muted-foreground mt-1">{servingToken.doctors?.name || ""}</p>
-              </div>
-            ) : (
-              <div className="rounded-xl bg-secondary p-4 text-center">
-                <p className="text-xs text-muted-foreground">No token currently serving</p>
-                <p className="font-display text-4xl font-bold text-muted-foreground">—</p>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground text-center">
-              Use the "Mark Serving" button in the table below to set a token as serving.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            return (
+              <div key={doctor.id} className="border border-border rounded-2xl p-6 bg-card shadow-soft flex flex-col">
+                {/* Doctor header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold font-display">{doctor.name}</h3>
+                    <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+                  </div>
+                  <Button
+                    onClick={() => handleOpenIssueModal(doctor.id)}
+                    variant="hero"
+                    size="sm"
+                  >
+                    <Ticket className="mr-2 h-4 w-4" /> Issue Token
+                  </Button>
+                </div>
 
-      <Card className="border-border shadow-soft">
-        <CardHeader>
-          <CardTitle className="font-display text-lg">Today's Tokens</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Token #</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Doctor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {todayTokens.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No tokens issued today</TableCell>
-                </TableRow>
-              ) : (
-                todayTokens.map((token) => (
-                    <TableRow key={token.id} className={token.status === "serving" ? "bg-green-500/5" : token.status === "unavailable" ? "bg-destructive/5" : ""}>
-                    <TableCell>
-                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
-                        token.status === "serving" ? "bg-green-600 text-white" :
-                        token.status === "waiting" ? "bg-yellow-500 text-white" :
-                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" : "bg-secondary text-muted-foreground"
-                      }`}>
-                        {token.token_number}
-                      </span>
-                    </TableCell>
-                    <TableCell className={`font-medium ${token.status === "unavailable" ? "line-through text-muted-foreground" : ""}`}>{token.patient_name || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {token.doctors?.name || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          token.status === "serving" ? "default" :
-                          token.status === "waiting" ? "secondary" :
-                          token.status === "unavailable" ? "destructive" : "outline"
-                        }
-                        className={
-                          token.status === "serving" ? "bg-green-600 hover:bg-green-700 text-white" :
-                          token.status === "waiting" ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""
-                        }
-                      >
-                        {token.status === "serving" ? "Serving" :
-                         token.status === "waiting" ? "Waiting" :
-                         token.status === "unavailable" ? "Unavailable" :
-                         token.status === "completed" ? "Completed" : token.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {token.status === "waiting" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
-                              onClick={() => handleMarkServing(token)}
-                            >
-                              <UserCheck className="mr-1 h-3.5 w-3.5" />
-                              Serving
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleMarkUnavailable(token)}
-                            >
-                              <UserX className="mr-1 h-3.5 w-3.5" />
-                              Unavailable
-                            </Button>
-                          </>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-primary/5 border border-primary/10 rounded-xl px-4 py-3 text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Now Serving</div>
+                    <div className="text-2xl font-bold font-display text-primary">
+                      {servingToken ? `#${servingToken.token_number}` : '—'}
+                    </div>
+                  </div>
+                  <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-xl px-4 py-3 text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Waiting</div>
+                    <div className="text-2xl font-bold font-display text-yellow-600">{waitingCount}</div>
+                  </div>
+                </div>
+
+                {/* Token table for this doctor only */}
+                <div className="flex-1 overflow-hidden border rounded-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted/50 text-left text-muted-foreground border-b border-border">
+                          <th className="px-4 py-3 font-semibold">#</th>
+                          <th className="px-4 py-3 font-semibold">Patient</th>
+                          <th className="px-4 py-3 font-semibold text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {doctorTokens.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="px-4 py-12 text-center text-muted-foreground italic">
+                              No tokens yet for {doctor.name}
+                            </td>
+                          </tr>
+                        ) : (
+                          doctorTokens
+                            .sort((a, b) => a.token_number - b.token_number)
+                            .map(token => (
+                              <tr key={token.id} className={`hover:bg-muted/30 transition-colors ${token.status === 'serving' ? 'bg-primary/5' : ''}`}>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${token.status === "serving" ? "bg-primary text-white" :
+                                      token.status === "waiting" ? "bg-yellow-500 text-white" :
+                                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" :
+                                          "bg-secondary text-muted-foreground"
+                                    }`}>
+                                    {token.token_number}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <p className={`font-medium ${token.status === 'unavailable' ? 'line-through text-muted-foreground' : ''}`}>
+                                    {token.patient_name || 'Walk-in'}
+                                  </p>
+                                  <Badge variant="outline" className={`mt-1 text-[10px] px-1.5 py-0 capitalize ${token.status === 'serving' ? 'bg-primary/10 text-primary border-primary/20' :
+                                      token.status === 'waiting' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' :
+                                        token.status === 'completed' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
+                                          'bg-destructive/10 text-destructive border-destructive/20'
+                                    }`}>
+                                    {token.status}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-center gap-1">
+                                    {token.status === "waiting" && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                          onClick={() => handleMarkServing(token)}
+                                          title="Mark Serving"
+                                        >
+                                          <UserCheck className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          onClick={() => handleMarkUnavailable(token)}
+                                          title="Mark Unavailable"
+                                        >
+                                          <UserX className="h-4 w-4" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    {token.status === "serving" && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                          onClick={() => handleMarkCompleted(token)}
+                                          title="Mark Completed"
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          onClick={() => handleMarkUnavailable(token)}
+                                          title="Mark Unavailable"
+                                        >
+                                          <UserX className="h-4 w-4" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                      onClick={() => { setReceiptToken(token); setReceiptOpen(true); }}
+                                      title="Print Receipt"
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
                         )}
-                        {token.status === "serving" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
-                              onClick={() => handleMarkCompleted(token)}
-                            >
-                              <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                              Completed
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleMarkUnavailable(token)}
-                            >
-                              <UserX className="mr-1 h-3.5 w-3.5" />
-                              Unavailable
-                            </Button>
-                          </>
-                        )}
-                        {token.status === "unavailable" && (
-                          <span className="text-xs text-muted-foreground">Skipped</span>
-                        )}
-                        {token.status === "completed" && (
-                          <span className="text-xs text-muted-foreground">Done</span>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => { setReceiptToken(token); setReceiptOpen(true); }}
-                        >
-                          <Printer className="mr-1 h-3.5 w-3.5" />
-                          Print
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {activeDoctors.length === 0 && (
+            <div className="col-span-full border-2 border-dashed rounded-3xl p-20 text-center bg-muted/20">
+              <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" />
+              <h3 className="text-xl font-bold font-display">No Active Doctors Found</h3>
+              <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+                Please add active doctors in the settings to start managing tokens by doctor.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <IssueTokenModal
+        open={issueModalOpen}
+        onOpenChange={setIssueModalOpen}
+        doctors={activeDoctors}
+        initialDoctorId={selectedDoctorId}
+        onIssue={handleIssueToken}
+        isIssuing={issuing}
+        nextTokenNumber={getNextTokenNumber()}
+      />
 
       <TokenReceipt open={receiptOpen} onOpenChange={setReceiptOpen} token={receiptToken} clinicId={clinicId} />
     </motion.div>
