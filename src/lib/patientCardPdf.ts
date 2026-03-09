@@ -23,7 +23,7 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
   const bg = hexToRgb(bgColor);
   const ac = hexToRgb(accentColor);
 
-  // ── TOP SECTION (dark background) ──
+  // -- TOP SECTION (dark background) --
   doc.setFillColor(bg.r, bg.g, bg.b);
   doc.rect(0, 0, W, topH, 'F');
 
@@ -71,7 +71,7 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
   doc.setTextColor(200, 200, 200);
   doc.text('Health Identity Card', logoX + logoSize + 3, logoY + 10);
 
-  // QR code (top-right) — fetch from QR API
+  // QR code (top-right) - fetch from QR API
   if (clinic.qr_base_url) {
     try {
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(clinic.qr_base_url)}`;
@@ -126,7 +126,7 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
     doc.text(field.value || '-', cx, cy + 5);
   });
 
-  // ── BOTTOM SECTION (white) ──
+  // -- BOTTOM SECTION (white) --
   doc.setFillColor(255, 255, 255);
   doc.rect(0, topH, W, 148 - topH, 'F');
 
@@ -159,20 +159,22 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
   if (clinic.address) {
-    doc.text(`📍 ${clinic.address}`, 8, bottomY);
-    bottomY += 4;
+    const addressLines = doc.splitTextToSize(`Address: ${clinic.address}`, W - 16);
+    doc.text(addressLines, 8, bottomY);
+    bottomY += addressLines.length * 3.5 + 1;
   }
   if (clinic.contact_phone) {
-    doc.text(`📞 ${clinic.contact_phone}`, 8, bottomY);
+    doc.text(`Phone: ${clinic.contact_phone}`, 8, bottomY);
     bottomY += 4;
   }
   if (clinic.contact_email) {
-    doc.text(`✉ ${clinic.contact_email}`, 8, bottomY);
+    doc.text(`Email: ${clinic.contact_email}`, 8, bottomY);
     bottomY += 4;
   }
   if (clinic.working_hours) {
-    doc.text(`🕐 ${clinic.working_hours}`, 8, bottomY);
-    bottomY += 4;
+    const hoursLines = doc.splitTextToSize(`Hours: ${clinic.working_hours}`, W - 16);
+    doc.text(hoursLines, 8, bottomY);
+    bottomY += hoursLines.length * 3.5 + 1;
   }
 
   // Footer
