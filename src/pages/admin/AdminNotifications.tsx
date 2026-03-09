@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, AlertTriangle, Info, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, AlertTriangle, Info, Trash2, ToggleLeft, ToggleRight, Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ interface NotifRow {
   message: string;
   priority: string | null;
   is_active: boolean | null;
+  is_pinned: boolean;
   created_at: string | null;
 }
 
@@ -31,7 +32,7 @@ const AdminNotifications = () => {
   const fetchNotifications = async () => {
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, message, priority, is_active, created_at")
+      .select("id, title, message, priority, is_active, is_pinned, created_at")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
     setNotifications((data as NotifRow[]) || []);
@@ -62,7 +63,13 @@ const AdminNotifications = () => {
   };
 
   const toggleActive = async (n: NotifRow) => {
-    await supabase.from("notifications").update({ is_active: !n.is_active }).eq("id", n.id);
+    await supabase.from("notifications").update({ is_active: !n.is_active } as any).eq("id", n.id);
+    fetchNotifications();
+  };
+
+  const togglePinned = async (n: NotifRow) => {
+    await supabase.from("notifications").update({ is_pinned: !n.is_pinned } as any).eq("id", n.id);
+    toast.success(n.is_pinned ? "Notification unpinned" : "Notification pinned to homepage banner");
     fetchNotifications();
   };
 
@@ -78,7 +85,9 @@ const AdminNotifications = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Notifications</h2>
-          <p className="text-sm text-muted-foreground">{notifications.filter((n) => n.is_active).length} active notifications</p>
+          <p className="text-sm text-muted-foreground">
+            {notifications.filter((n) => n.is_active).length} active · {notifications.filter((n) => n.is_pinned).length} pinned to banner
+          </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -136,11 +145,16 @@ const AdminNotifications = () => {
                   {n.priority === "urgent" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
                     <Badge variant={n.is_active ? "default" : "secondary"} className="text-xs">
                       {n.is_active ? "Active" : "Inactive"}
                     </Badge>
+                    {n.is_pinned && (
+                      <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                        <Pin className="mr-1 h-3 w-3" /> Pinned
+                      </Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>
                   <span className="mt-2 inline-block text-xs text-muted-foreground">
@@ -149,6 +163,15 @@ const AdminNotifications = () => {
                 </div>
               </div>
               <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => togglePinned(n)}
+                  title={n.is_pinned ? "Unpin from homepage" : "Pin to homepage banner"}
+                  className={n.is_pinned ? "text-primary" : ""}
+                >
+                  {n.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                </Button>
                 <Button variant="ghost" size="icon" onClick={() => toggleActive(n)} title={n.is_active ? "Deactivate" : "Activate"}>
                   {n.is_active ? <ToggleRight className="h-4 w-4 text-primary" /> : <ToggleLeft className="h-4 w-4" />}
                 </Button>
