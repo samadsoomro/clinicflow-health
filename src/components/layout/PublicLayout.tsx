@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
+import PinnedNotificationsBanner from "./PinnedNotificationsBanner";
 import { useClinicContext } from "@/hooks/useClinicContext";
 
 const ClinicNotFound = () => (
@@ -23,6 +24,7 @@ const PublicLayout = () => {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       <PublicNavbar />
+      {!loading && !error && <PinnedNotificationsBanner />}
       <main className="flex-1">
         {loading ? (
           <div className="flex min-h-[60vh] items-center justify-center">
