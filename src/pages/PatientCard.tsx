@@ -135,9 +135,9 @@ export default function PatientCard() {
   }
 
   // Use clinic's saved colors, fallback to defaults
-  const bgColor = clinic.card_bg_color || '#1e293b';
-  const accentColor = clinic.card_accent_color || '#0ea5e9';
-  const clinicInitials = clinic.clinic_name?.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
+  const bgColor = clinic.card_background_color || '#1e293b';
+  const accentColor = clinic.theme_color || '#0ea5e9';
+  const clinicInitials = clinic.short_name || clinic.clinic_name?.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -164,6 +164,14 @@ export default function PatientCard() {
                   <div style={{ fontSize: '12px', opacity: 0.7 }}>Health Identity Card</div>
                 </div>
               </div>
+
+              {clinic.qr_base_url && (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(clinic.qr_base_url)}`}
+                  alt="QR Code"
+                  style={{ width: '64px', height: '64px', borderRadius: '4px', background: 'white', padding: '2px' }}
+                />
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px' }}>
@@ -173,7 +181,7 @@ export default function PatientCard() {
               </div>
               <div>
                 <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Patient ID</div>
-                <div style={{ fontWeight: 'bold', fontSize: '16px', color: accentColor, marginTop: '4px' }}>{patient.formatted_patient_id || patient.patient_id || patient.id}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', color: accentColor, marginTop: '4px' }}>{patient.patient_id || patient.formatted_patient_id || patient.id}</div>
               </div>
               <div>
                 <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Age</div>
@@ -200,7 +208,9 @@ export default function PatientCard() {
             )}
             <div style={{ fontSize: '12px', color: '#555', borderTop: '1px solid #eee', paddingTop: '12px' }}>
               {clinic.address && <div>📍 {clinic.address}</div>}
-              {clinic.phone && <div style={{ marginTop: '4px' }}>📞 {clinic.phone}</div>}
+              {clinic.contact_phone && <div style={{ marginTop: '4px' }}>📞 {clinic.contact_phone}</div>}
+              {clinic.contact_email && <div style={{ marginTop: '4px' }}>✉️ {clinic.contact_email}</div>}
+              {clinic.working_hours && <div style={{ marginTop: '4px' }}>🕐 {clinic.working_hours}</div>}
             </div>
             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '10px', color: '#aaa', letterSpacing: '2px', textTransform: 'uppercase' }}>
               Validated Digital Health Record

@@ -1,115 +1,189 @@
-import jsPDF from 'jspdf'
+import jsPDF from 'jspdf';
 
-export const generatePatientCardPDF = async (patient: any, clinic: any) => {
+export async function generatePatientCardPDF(patient: any, clinic: any) {
   const doc = new jsPDF({
-    orientation: 'landscape',
+    orientation: 'portrait',
     unit: 'mm',
-    format: [85, 54]  // Standard ID card size (CR80)
-  })
+    format: [105, 148]  // A6 portrait
+  });
 
-  const w = 85
-  const h = 54
+  const bgColor = clinic.card_background_color || '#1e293b';
+  const accentColor = clinic.theme_color || '#0ea5e9';
+  const W = 105;
+  const topH = 82;  // dark section height
 
-  // Top dark section background
-  doc.setFillColor(20, 80, 70)
-  doc.rect(0, 0, w, h * 0.55, 'F')
+  // Helper: hex to RGB
+  const hexToRgb = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+  };
 
-  // Bottom white section
-  doc.setFillColor(255, 255, 255)
-  doc.rect(0, h * 0.55, w, h * 0.45, 'F')
+  const bg = hexToRgb(bgColor);
+  const ac = hexToRgb(accentColor);
 
-  // Clinic name top
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.text(clinic?.clinic_name || '', w / 2, 8, { align: 'center' })
+  // ── TOP SECTION (dark background) ──
+  doc.setFillColor(bg.r, bg.g, bg.b);
+  doc.rect(0, 0, W, topH, 'F');
 
-  // Health Identity Card subtitle
-  doc.setFontSize(6)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(180, 230, 220)
-  doc.text('Health Identity Card', w / 2, 13, { align: 'center' })
+  // Logo or initials box (top-left)
+  const logoSize = 14;
+  const logoX = 8;
+  const logoY = 8;
 
-  // Patient Name label
-  doc.setFontSize(6)
-  doc.setTextColor(180, 230, 220)
-  doc.text('PATIENT NAME', 6, 20)
+  if (clinic.logo_url) {
+    try {
+      // Fetch logo as base64
+      const response = await fetch(clinic.logo_url);
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      doc.addImage(base64, 'PNG', logoX, logoY, logoSize, logoSize);
+    } catch {
+      // fallback: colored box with initials
+      doc.setFillColor(ac.r, ac.g, ac.b);
+      doc.roundedRect(logoX, logoY, logoSize, logoSize, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(clinic.short_name?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+    }
+  } else {
+    doc.setFillColor(ac.r, ac.g, ac.b);
+    doc.roundedRect(logoX, logoY, logoSize, logoSize, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(clinic.short_name?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+  }
 
-  // Patient ID label
-  doc.text('PATIENT ID', w / 2 + 2, 20)
+  // Clinic short name and subtitle (next to logo)
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text(clinic.short_name || 'CLINIC', logoX + logoSize + 3, logoY + 5);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(200, 200, 200);
+  doc.text('Health Identity Card', logoX + logoSize + 3, logoY + 10);
 
-  // Patient Name value
-  doc.setFontSize(8)
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.text(patient?.full_name || '', 6, 25)
-
-  // Patient ID value (large teal)
-  doc.setTextColor(100, 220, 200)
-  doc.setFontSize(10)
-  doc.text(patient?.formatted_patient_id || '', w / 2 + 2, 25)
-
-  // Age label
-  doc.setFontSize(6)
-  doc.setTextColor(180, 230, 220)
-  doc.setFont('helvetica', 'normal')
-  doc.text('AGE', 6, 31)
-
-  // Gender label
-  doc.text('GENDER', w / 3, 31)
-
-  // Registered label
-  doc.text('REGISTERED', w / 3 * 2, 31)
-
-  // Age value
-  doc.setFontSize(8)
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.text(String(patient?.age || ''), 6, 36)
-
-  // Gender value
-  const gender = patient?.gender
-    ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)
-    : ''
-  doc.text(gender, w / 3, 36)
-
-  // Registered date value
-  const regDate = patient?.created_at
-    ? new Date(patient.created_at).toISOString().split('T')[0]
-    : ''
-  doc.text(regDate, w / 3 * 2, 36)
+  // QR code (top-right) — fetch from QR API
+  if (clinic.qr_base_url) {
+    try {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(clinic.qr_base_url)}`;
+      const qrResponse = await fetch(qrUrl);
+      const qrBlob = await qrResponse.blob();
+      const qrBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(qrBlob);
+      });
+      doc.addImage(qrBase64, 'PNG', W - 24, 6, 18, 18);
+    } catch {
+      // skip QR if fetch fails
+    }
+  }
 
   // Divider line
-  doc.setDrawColor(200, 200, 200)
-  doc.setLineWidth(0.2)
-  doc.line(4, h * 0.55 + 1, w - 4, h * 0.55 + 1)
+  doc.setDrawColor(ac.r, ac.g, ac.b);
+  doc.setLineWidth(0.3);
+  doc.line(8, 28, W - 8, 28);
 
-  // Terms & Conditions heading
-  doc.setFontSize(6)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text('Terms & Conditions', 4, h * 0.55 + 5)
+  // Patient fields (2-column grid)
+  const fields = [
+    { label: 'PATIENT NAME', value: patient.full_name },
+    { label: 'PATIENT ID', value: patient.patient_id || patient.formatted_patient_id || patient.id, accent: true },
+    { label: 'AGE', value: String(patient.age) },
+    { label: 'GENDER', value: patient.gender },
+    { label: 'REGISTERED', value: new Date(patient.created_at).toLocaleDateString('en-GB') },
+  ];
 
-  // Terms text
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(5)
-  doc.setTextColor(80, 80, 80)
-  const terms = clinic?.terms_conditions || 'This card is NOT TRANSFERABLE.'
-  const termLines = doc.splitTextToSize(terms, w - 8)
-  doc.text(termLines.slice(0, 2), 4, h * 0.55 + 9)
+  let y = 34;
+  const colW = (W - 16) / 2;
 
-  // Contact info at bottom
-  doc.setFontSize(5)
-  doc.setTextColor(80, 80, 80)
-  const contactLine = [
-    clinic?.contact_address,
-    clinic?.contact_phone,
-    clinic?.contact_email
-  ].filter(Boolean).join('  |  ')
-  doc.text(contactLine, 4, h - 3, { maxWidth: w - 8 })
+  fields.forEach((field, i) => {
+    const cx = i % 2 === 0 ? 8 : 8 + colW;
+    const cy = y + Math.floor(i / 2) * 14;
 
-  // Save file
-  const filename = `PatientCard-${patient?.formatted_patient_id || 'card'}-${(clinic?.short_name || clinic?.clinic_name || 'clinic').replace(/\s+/g, '')}.pdf`
-  doc.save(filename)
-  return true
+    // Label
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160, 180, 200);
+    doc.text(field.label, cx, cy);
+
+    // Value
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    if (field.accent) {
+      doc.setTextColor(ac.r, ac.g, ac.b);
+    } else {
+      doc.setTextColor(255, 255, 255);
+    }
+    doc.text(field.value || '-', cx, cy + 5);
+  });
+
+  // ── BOTTOM SECTION (white) ──
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, topH, W, 148 - topH, 'F');
+
+  let bottomY = topH + 8;
+
+  // Terms & Conditions
+  if (clinic.terms_conditions) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 30);
+    doc.text('Terms & Conditions', 8, bottomY);
+    bottomY += 5;
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    const termsLines = doc.splitTextToSize(clinic.terms_conditions, W - 16);
+    doc.text(termsLines, 8, bottomY);
+    bottomY += termsLines.length * 3.5 + 4;
+  }
+
+  // Divider
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.2);
+  doc.line(8, bottomY, W - 8, bottomY);
+  bottomY += 5;
+
+  // Contact info
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  if (clinic.address) {
+    doc.text(`📍 ${clinic.address}`, 8, bottomY);
+    bottomY += 4;
+  }
+  if (clinic.contact_phone) {
+    doc.text(`📞 ${clinic.contact_phone}`, 8, bottomY);
+    bottomY += 4;
+  }
+  if (clinic.contact_email) {
+    doc.text(`✉ ${clinic.contact_email}`, 8, bottomY);
+    bottomY += 4;
+  }
+  if (clinic.working_hours) {
+    doc.text(`🕐 ${clinic.working_hours}`, 8, bottomY);
+    bottomY += 4;
+  }
+
+  // Footer
+  doc.setFontSize(6);
+  doc.setTextColor(170, 170, 170);
+  doc.setFont('helvetica', 'normal');
+  const footerText = 'VALIDATED DIGITAL HEALTH RECORD';
+  const footerW = doc.getTextWidth(footerText);
+  doc.text(footerText, (W - footerW) / 2, 144);
+
+  // Save
+  const shortName = clinic.short_name || 'clinic';
+  doc.save(`PatientCard-${patient.patient_id || patient.formatted_patient_id || patient.id}-${shortName}.pdf`);
 }
