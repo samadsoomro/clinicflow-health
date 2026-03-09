@@ -47,33 +47,17 @@ const Register = () => {
 
     setEmailStatus("checking");
     try {
-      // Check 1: patients table for this clinic
-      const { data: existingPatient } = await supabase
+      // Check patients table for this clinic
+      const { data } = await supabase
         .from("patients")
         .select("id")
         .eq("email", formatted)
         .eq("clinic_id", clinicId)
         .maybeSingle();
 
-      if (existingPatient) {
+      if (data) {
         setEmailStatus("taken");
-        return;
-      }
-
-      // Check 2: try OTP method to detect if email exists in auth
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: formatted,
-        options: { shouldCreateUser: false }
-      });
-
-      if (!otpError) {
-        // OTP sent means email EXISTS in auth
-        setEmailStatus("taken");
-      } else if (otpError.message.includes("Email not found") || otpError.message.includes("email_not_found")) {
-        // Email does NOT exist
-        setEmailStatus("available");
       } else {
-        // Other error — assume available to not block registration
         setEmailStatus("available");
       }
     } catch {
@@ -139,11 +123,25 @@ const Register = () => {
       if (
         msg.toLowerCase().includes("already registered") ||
         msg.toLowerCase().includes("already exists") ||
-        msg.toLowerCase().includes("email address is already")
+        msg.toLowerCase().includes("user already")
       ) {
         msg = "This email is already registered. Please login instead.";
       }
+      setErrors((p) => ({ ...p, email: msg }));
       toast({ title: "Registration failed", description: msg, variant: "destructive" });
+      return;
+    }
+
+    // Check if user was returned but already existed (identities field is empty for existing emails)
+    if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
+      setLoading(false);
+      const msg = "This email is already registered. Please login instead.";
+      setErrors((p) => ({ ...p, email: msg }));
+      toast({
+        title: "Registration failed",
+        description: msg,
+        variant: "destructive"
+      });
       return;
     }
 

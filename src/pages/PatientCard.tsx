@@ -15,20 +15,68 @@ const PatientCard = () => {
   const [patient, setPatient] = useState<any>(null);
   const [clinic, setClinic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    const fetchData = async () => {
-      const [patientRes, clinicRes] = await Promise.all([
-        supabase.from("patients").select("*").eq("user_id", user.id).eq("clinic_id", clinicId).single(),
-        supabase.from("clinics").select("*").eq("id", clinicId).single(),
-      ]);
-      setPatient(patientRes.data);
-      setClinic(clinicRes.data);
-      setLoading(false);
+    const fetchPatientData = async () => {
+      try {
+        setLoading(true);
+
+        // Get current authenticated user
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        if (userError || !authUser) {
+          setError("Please login to view your patient card");
+          return;
+        }
+
+        // Fetch patient record
+        const { data: patientData, error: patientError } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("user_id", authUser.id)
+          .single();
+
+        if (patientError || !patientData) {
+          setError("Patient record not found. Please register first.");
+          return;
+        }
+
+        // Fetch clinic data using patient's clinic_id
+        const { data: clinicData, error: clinicError } = await supabase
+          .from("clinics")
+          .select("*")
+          .eq("id", patientData.clinic_id)
+          .single();
+
+        if (clinicError || !clinicData) {
+          setError("Clinic data not found.");
+          return;
+        }
+
+        setPatient(patientData);
+        setClinic(clinicData);
+      } catch (err: any) {
+        setError("Failed to load patient card: " + err.message);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchData();
-  }, [user]);
+
+    fetchPatientData();
+  }, []);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-red-500 text-lg mb-4">{error}</p>
+          <Link to="/login" className="text-blue-500 hover:underline font-medium">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (authLoading || loading) {
     return (
