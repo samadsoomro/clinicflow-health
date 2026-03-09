@@ -57,7 +57,7 @@ const PublicNavbar = () => {
               <Activity className="h-5 w-5 text-primary-foreground" />
             </div>
           )}
-          <span className="font-display text-xl font-bold text-foreground">
+          <span className="font-display text-lg md:text-xl font-bold text-foreground truncate max-w-[140px] md:max-w-none">
             {clinicName}
           </span>
         </ClinicLink>
@@ -105,14 +105,16 @@ const PublicNavbar = () => {
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       <AnimatePresence>
