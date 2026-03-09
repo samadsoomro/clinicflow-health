@@ -1,5 +1,13 @@
 import jsPDF from 'jspdf';
 
+// Helper to remove PDF-breaking characters from dynamic data
+const sanitizeStr = (str: string | null | undefined): string => {
+  if (!str) return '';
+  return str
+    .replace(/،/g, ',') // Replace Arabic comma with ASCII comma
+    .replace(/[^\x00-\x7F]/g, ''); // Remove any other non-ASCII characters
+};
+
 export async function generatePatientCardPDF(patient: any, clinic: any) {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -50,7 +58,7 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
-      doc.text(clinic.short_name?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+      doc.text(sanitizeStr(clinic.short_name)?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
     }
   } else {
     doc.setFillColor(ac.r, ac.g, ac.b);
@@ -58,14 +66,14 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text(clinic.short_name?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+    doc.text(sanitizeStr(clinic.short_name)?.slice(0, 3) || 'CL', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
   }
 
   // Clinic short name and subtitle (next to logo)
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text(clinic.short_name || 'CLINIC', logoX + logoSize + 3, logoY + 5);
+  doc.text(sanitizeStr(clinic.short_name) || 'CLINIC', logoX + logoSize + 3, logoY + 5);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(200, 200, 200);
@@ -95,10 +103,10 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
 
   // Patient fields (2-column grid)
   const fields = [
-    { label: 'PATIENT NAME', value: patient.full_name },
-    { label: 'PATIENT ID', value: patient.patient_id || patient.formatted_patient_id || patient.id, accent: true },
+    { label: 'PATIENT NAME', value: sanitizeStr(patient.full_name) },
+    { label: 'PATIENT ID', value: sanitizeStr(patient.patient_id || patient.formatted_patient_id || patient.id), accent: true },
     { label: 'AGE', value: String(patient.age) },
-    { label: 'GENDER', value: patient.gender },
+    { label: 'GENDER', value: sanitizeStr(patient.gender) },
     { label: 'REGISTERED', value: new Date(patient.created_at).toLocaleDateString('en-GB') },
   ];
 
@@ -143,7 +151,8 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 80, 80);
-    const termsLines = doc.splitTextToSize(clinic.terms_conditions, W - 16);
+    const sanitizedTerms = sanitizeStr(clinic.terms_conditions);
+    const termsLines = doc.splitTextToSize(sanitizedTerms, W - 16);
     doc.text(termsLines, 8, bottomY);
     bottomY += termsLines.length * 3.5 + 4;
   }
@@ -159,20 +168,24 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
   if (clinic.address) {
-    const addressLines = doc.splitTextToSize(`Address: ${clinic.address}`, W - 16);
+    const sanitizedAddr = sanitizeStr(clinic.address);
+    const addressLines = doc.splitTextToSize(`Address: ${sanitizedAddr}`, W - 16);
     doc.text(addressLines, 8, bottomY);
     bottomY += addressLines.length * 3.5 + 1;
   }
   if (clinic.contact_phone) {
-    doc.text(`Phone: ${clinic.contact_phone}`, 8, bottomY);
+    const sanitizedPhone = sanitizeStr(clinic.contact_phone);
+    doc.text(`Phone: ${sanitizedPhone}`, 8, bottomY);
     bottomY += 4;
   }
   if (clinic.contact_email) {
-    doc.text(`Email: ${clinic.contact_email}`, 8, bottomY);
+    const sanitizedEmail = sanitizeStr(clinic.contact_email);
+    doc.text(`Email: ${sanitizedEmail}`, 8, bottomY);
     bottomY += 4;
   }
   if (clinic.working_hours) {
-    const hoursLines = doc.splitTextToSize(`Hours: ${clinic.working_hours}`, W - 16);
+    const sanitizedHours = sanitizeStr(clinic.working_hours);
+    const hoursLines = doc.splitTextToSize(`Hours: ${sanitizedHours}`, W - 16);
     doc.text(hoursLines, 8, bottomY);
     bottomY += hoursLines.length * 3.5 + 1;
   }
@@ -186,6 +199,6 @@ export async function generatePatientCardPDF(patient: any, clinic: any) {
   doc.text(footerText, (W - footerW) / 2, 144);
 
   // Save
-  const shortName = clinic.short_name || 'clinic';
+  const shortName = sanitizeStr(clinic.short_name) || 'clinic';
   doc.save(`PatientCard-${patient.patient_id || patient.formatted_patient_id || patient.id}-${shortName}.pdf`);
 }
