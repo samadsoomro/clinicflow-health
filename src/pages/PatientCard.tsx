@@ -16,61 +16,70 @@ const PatientCard = () => {
   const [clinic, setClinic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
-    const fetchPatientData = async () => {
+    const load = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // Get current authenticated user
-        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-        if (userError || !authUser) {
-          setError("Please login to view your patient card");
+        // Get session directly
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          setError("Please login to view your patient card.");
           return;
         }
 
-        // Fetch patient record
-        const { data: patientData, error: patientError } = await supabase
+        // Fetch patient by user_id only — no clinic_id dependency
+        const { data: patientData, error: patientErr } = await supabase
           .from("patients")
           .select("*")
-          .eq("user_id", authUser.id)
-          .single();
+          .eq("user_id", session.user.id)
+          .maybeSingle();
 
-        if (patientError || !patientData) {
-          setError("Patient record not found. Please register first.");
+        if (patientErr || !patientData) {
+          setError("No patient record found. Please register first.");
           return;
         }
 
-        // Fetch clinic data using patient's clinic_id
-        const { data: clinicData, error: clinicError } = await supabase
+        // Fetch clinic using patient own clinic_id
+        const { data: clinicData, error: clinicErr } = await supabase
           .from("clinics")
           .select("*")
           .eq("id", patientData.clinic_id)
-          .single();
+          .maybeSingle();
 
-        if (clinicError || !clinicData) {
-          setError("Clinic data not found.");
+        if (clinicErr || !clinicData) {
+          setError("Clinic data could not be loaded.");
           return;
         }
 
         setPatient(patientData);
         setClinic(clinicData);
       } catch (err: any) {
-        setError("Failed to load patient card: " + err.message);
+        setError("Something went wrong: " + err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPatientData();
+    load();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500 text-lg">Loading your patient card...</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center p-8">
           <p className="text-red-500 text-lg mb-4">{error}</p>
-          <Link to="/login" className="text-blue-500 hover:underline font-medium">
+          <Link to="/login" className="px-6 py-3 bg-primary text-white rounded-lg inline-block">
             Go to Login
           </Link>
         </div>
@@ -78,13 +87,11 @@ const PatientCard = () => {
     );
   }
 
-  if (authLoading || loading) {
+  if (!patient || !clinic) {
     return (
-      <section className="py-20">
-        <div className="container flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
-      </section>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-400">No patient data available.</p>
+      </div>
     );
   }
 

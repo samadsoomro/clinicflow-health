@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
@@ -31,48 +31,12 @@ const Register = () => {
 
   const [form, setForm] = useState({ fullName: "", age: "", gender: "", phone: "", email: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
     if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
   };
-
-  const checkEmailAvailability = useCallback(async (email: string) => {
-    const formatted = email.toLowerCase().trim();
-    const err = validateEmail(formatted);
-    if (err) { setEmailStatus("idle"); return; }
-
-    setEmailStatus("checking");
-    try {
-      // Check patients table for this clinic
-      const { data } = await supabase
-        .from("patients")
-        .select("id")
-        .eq("email", formatted)
-        .eq("clinic_id", clinicId)
-        .maybeSingle();
-
-      if (data) {
-        setEmailStatus("taken");
-      } else {
-        setEmailStatus("available");
-      }
-    } catch {
-      setEmailStatus("available");
-    } finally {
-      setEmailStatus((prev) => (prev === "checking" ? "idle" : prev));
-    }
-  }, [clinicId]);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!form.email) { setEmailStatus("idle"); return; }
-    debounceRef.current = setTimeout(() => checkEmailAvailability(form.email), 600);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [form.email, checkEmailAvailability]);
 
   const validateField = (field: string): string | null => {
     const v = form[field as keyof typeof form];
@@ -99,14 +63,22 @@ const Register = () => {
     fields.forEach((f) => { newErrors[f] = validateField(f); });
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
-    if (emailStatus === "taken") { setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." })); return; }
-
     setLoading(true);
     const normalizedEmail = form.email.toLowerCase().trim();
 
-    // Final duplicate check
-    const { data: existing } = await supabase.from("patients").select("id").eq("email", normalizedEmail).eq("clinic_id", clinicId).maybeSingle();
-    if (existing) { setLoading(false); setErrors((p) => ({ ...p, email: "This email is already registered with this clinic. Please login or use a different email." })); return; }
+    // Check patients table for this clinic
+    const { data: existing } = await supabase
+      .from("patients")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+
+    if (existing) {
+      setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." }));
+      setLoading(false);
+      return;
+    }
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: normalizedEmail,
@@ -116,6 +88,13 @@ const Register = () => {
         data: { full_name: form.fullName.trim() }
       },
     });
+
+    // Handle existing unconfirmed users (identities is empty)
+    if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
+      setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." }));
+      setLoading(false);
+      return;
+    }
 
     if (authError) {
       setLoading(false);
@@ -129,19 +108,6 @@ const Register = () => {
       }
       setErrors((p) => ({ ...p, email: msg }));
       toast({ title: "Registration failed", description: msg, variant: "destructive" });
-      return;
-    }
-
-    // Check if user was returned but already existed (identities field is empty for existing emails)
-    if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
-      setLoading(false);
-      const msg = "This email is already registered. Please login instead.";
-      setErrors((p) => ({ ...p, email: msg }));
-      toast({
-        title: "Registration failed",
-        description: msg,
-        variant: "destructive"
-      });
       return;
     }
 
@@ -172,7 +138,7 @@ const Register = () => {
   };
 
   const pwStrength = getPasswordStrength(form.password);
-  const hasEmailError = !!errors.email || emailStatus === "taken";
+  const hasEmailError = !!errors.email;
 
   return (
     <div className="flex min-h-screen">
@@ -237,23 +203,11 @@ const Register = () => {
             <div className="space-y-1">
               <Label htmlFor="regEmail">Email</Label>
               <Input id="regEmail" type="email" placeholder="you@example.com" maxLength={255} value={form.email}
-                onChange={(e) => { set("email", e.target.value); setEmailStatus("idle"); }}
+                onChange={(e) => set("email", e.target.value)}
                 onBlur={() => handleBlur("email")}
-                className={hasEmailError ? "border-destructive" : emailStatus === "available" ? "border-green-500" : ""}
+                className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-              {!errors.email && emailStatus === "checking" && (
-                <p className="flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Checking availability...</p>
-              )}
-              {!errors.email && emailStatus === "available" && (
-                <p className="flex items-center gap-1 text-xs text-green-600"><Check className="h-3 w-3" /> Email is available</p>
-              )}
-              {!errors.email && emailStatus === "taken" && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <X className="h-3 w-3" /> This email is already registered.{" "}
-                  <ClinicLink to="/login" className="font-medium underline text-primary">Login here →</ClinicLink>
-                </p>
-              )}
             </div>
 
             {/* Password */}
@@ -276,7 +230,7 @@ const Register = () => {
               {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
             </div>
 
-            <Button variant="hero" className="w-full" type="submit" disabled={loading || emailStatus === "taken"}>
+            <Button variant="hero" className="w-full" type="submit" disabled={loading}>
               <UserPlus className="mr-2 h-4 w-4" />
               {loading ? "Registering..." : "Register"}
             </Button>
