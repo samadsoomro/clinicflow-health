@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, Download, LogIn, Eye } from "lucide-react";
+import { CreditCard, Download, LogIn, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { generatePatientCardPDF } from "@/lib/patientCardPdf";
@@ -96,20 +96,42 @@ const PatientCard = () => {
     createdAt: patient.created_at?.split("T")[0] || "",
   };
 
-  const handleDownload = async () => {
+  const [generating, setGenerating] = useState(false);
+
+  const handleDownloadPDF = async () => {
     try {
-      const pdfBytes = await generatePatientCardPDF(patientData as any, clinicInfo);
-      const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `patient-card-${patient.formatted_patient_id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      setGenerating(true);
+
+      // Fetch patient data fresh
+      const { data: patientData, error: patientError } = await supabase
+        .from("patients")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("clinic_id", clinicId)
+        .single();
+
+      if (patientError || !patientData) {
+        throw new Error("Patient data not found");
+      }
+
+      // Fetch clinic data fresh
+      const { data: clinicData, error: clinicError } = await supabase
+        .from("clinics")
+        .select("*")
+        .eq("id", clinicId)
+        .single();
+
+      if (clinicError || !clinicData) {
+        throw new Error("Clinic data not found");
+      }
+
+      await generatePatientCardPDF(patientData, clinicData);
       toast.success("Your patient card has been downloaded!");
-    } catch (err) {
-      toast.error("Failed to generate PDF");
-      console.error(err);
+    } catch (err: any) {
+      console.error("PDF error:", err);
+      toast.error(err.message || "Failed to generate PDF");
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -179,8 +201,16 @@ const PatientCard = () => {
           </div>
 
           <div className="mt-6 text-center">
-            <Button variant="hero" size="lg" onClick={handleDownload}>
-              <Download className="mr-2 h-5 w-5" /> Download My Card (PDF)
+            <Button variant="hero" size="lg" onClick={handleDownloadPDF} disabled={generating}>
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-5 w-5" /> Download My Card (PDF)
+                </>
+              )}
             </Button>
           </div>
         </motion.div>

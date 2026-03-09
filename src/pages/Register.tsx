@@ -40,38 +40,55 @@ const Register = () => {
     if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
   };
 
-  // Debounced email check
-  const checkEmail = useCallback(async (email: string) => {
-    const normalized = email.toLowerCase().trim();
-    const err = validateEmail(normalized);
+  const checkEmailAvailability = useCallback(async (email: string) => {
+    const formatted = email.toLowerCase().trim();
+    const err = validateEmail(formatted);
     if (err) { setEmailStatus("idle"); return; }
 
     setEmailStatus("checking");
     try {
-      // Check patients table scoped by clinic_id
-      const { data, error } = await supabase
+      // Check 1: patients table for this clinic
+      const { data: existingPatient } = await supabase
         .from("patients")
         .select("id")
-        .eq("email", normalized)
+        .eq("email", formatted)
         .eq("clinic_id", clinicId)
         .maybeSingle();
 
-      if (data) {
+      if (existingPatient) {
         setEmailStatus("taken");
+        return;
+      }
+
+      // Check 2: try OTP method to detect if email exists in auth
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: formatted,
+        options: { shouldCreateUser: false }
+      });
+
+      if (!otpError) {
+        // OTP sent means email EXISTS in auth
+        setEmailStatus("taken");
+      } else if (otpError.message.includes("Email not found") || otpError.message.includes("email_not_found")) {
+        // Email does NOT exist
+        setEmailStatus("available");
       } else {
+        // Other error — assume available to not block registration
         setEmailStatus("available");
       }
     } catch {
-      setEmailStatus("idle");
+      setEmailStatus("available");
+    } finally {
+      setEmailStatus((prev) => (prev === "checking" ? "idle" : prev));
     }
   }, [clinicId]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!form.email) { setEmailStatus("idle"); return; }
-    debounceRef.current = setTimeout(() => checkEmail(form.email), 600);
+    debounceRef.current = setTimeout(() => checkEmailAvailability(form.email), 600);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [form.email, checkEmail]);
+  }, [form.email, checkEmailAvailability]);
 
   const validateField = (field: string): string | null => {
     const v = form[field as keyof typeof form];
