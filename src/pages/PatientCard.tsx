@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { generatePatientCardPDF } from '@/lib/patientCardPdf';
 
 export default function PatientCard() {
   const [patient, setPatient] = useState<any>(null);
@@ -85,7 +86,7 @@ export default function PatientCard() {
             width: '40px',
             height: '40px',
             border: '4px solid #e2e8f0',
-            borderTop: '4px solid #0d9488',
+            borderTop: '4px solid #0ea5e9',
             borderRadius: '50%',
             margin: '0 auto 16px',
             animation: 'spin 1s linear infinite'
@@ -109,12 +110,12 @@ export default function PatientCard() {
           <Link to="/login" style={{
             display: 'inline-block',
             padding: '14px 32px',
-            background: '#0d9488',
+            background: '#0ea5e9',
             color: 'white',
             borderRadius: '12px',
             textDecoration: 'none',
             fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)',
+            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)',
             transition: 'transform 0.2s'
           }}>
             Go to Login
@@ -124,7 +125,7 @@ export default function PatientCard() {
     );
   }
 
-  // Safety fallback — should never reach here but prevents blank page
+  // Safety fallback
   if (!patient || !clinic) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
@@ -133,99 +134,117 @@ export default function PatientCard() {
     );
   }
 
-  // MAIN CARD — render everything inline here, do NOT delegate to a child component
+  // Use clinic's saved colors, fallback to defaults
+  const bgColor = clinic.card_bg_color || '#1e293b';
+  const accentColor = clinic.card_accent_color || '#0ea5e9';
+  const clinicInitials = clinic.clinic_name?.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f0fdfa', padding: '40px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{
-        maxWidth: '500px',
-        margin: '0 auto',
-        background: 'white',
-        borderRadius: '28px',
-        overflow: 'hidden',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(13, 148, 136, 0.1)'
-      }}>
-        {/* Card Header */}
-        <div style={{ background: '#0d9488', padding: '32px', color: 'white', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em' }}>
-            {clinic.clinic_name}
-          </h1>
-          <div style={{
-            display: 'inline-block',
-            marginTop: '12px',
-            padding: '4px 16px',
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-          }}>
-            Official Patient Identity Card
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+        {/* CARD UI */}
+        <div style={{
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+        }}>
+          {/* Top section — dark background */}
+          <div style={{ background: bgColor, padding: '24px', color: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {clinic.logo_url ? (
+                  <img src={clinic.logo_url} alt="logo" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '48px', height: '48px', background: accentColor, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>
+                    {clinicInitials}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{clinicInitials}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7 }}>Health Identity Card</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px' }}>
+              <div>
+                <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Patient Name</div>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', marginTop: '4px' }}>{patient.full_name}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Patient ID</div>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', color: accentColor, marginTop: '4px' }}>{patient.formatted_patient_id || patient.patient_id || patient.id}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Age</div>
+                <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{patient.age}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Gender</div>
+                <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{patient.gender}</div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: '11px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Registered</div>
+                <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{new Date(patient.created_at).toLocaleDateString('en-GB')}</div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Card Body */}
-        <div style={{ padding: '32px' }}>
-          <div style={{ display: 'grid', gap: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-              <span style={{ color: '#64748b', fontWeight: '500' }}>Patient ID</span>
-              <span style={{ color: '#0f172a', fontWeight: '700', fontFamily: 'monospace', fontSize: '16px' }}>{patient.formatted_patient_id || patient.patient_id || patient.id}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-              <span style={{ color: '#64748b', fontWeight: '500' }}>Full Name</span>
-              <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.full_name}</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Gender</span>
-                <span style={{ color: '#0f172a', fontWeight: '600', textTransform: 'capitalize' }}>{patient.gender}</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Age</span>
-                <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.age} Years</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Contact Email</span>
-              <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.email}</span>
-            </div>
-
-            {patient.phone && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Phone Number</span>
-                <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.phone}</span>
+          {/* Bottom section — white */}
+          <div style={{ background: 'white', padding: '20px' }}>
+            {clinic.terms_conditions && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' }}>Terms & Conditions</div>
+                <p style={{ fontSize: '12px', color: '#555', lineHeight: 1.5, margin: 0 }}>{clinic.terms_conditions}</p>
               </div>
             )}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '15px', borderTop: '2px dashed #e2e8f0' }}>
-              <span style={{ color: '#94a3b8', fontSize: '12px' }}>Issued On</span>
-              <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>{new Date(patient.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+            <div style={{ fontSize: '12px', color: '#555', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+              {clinic.address && <div>📍 {clinic.address}</div>}
+              {clinic.phone && <div style={{ marginTop: '4px' }}>📞 {clinic.phone}</div>}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '10px', color: '#aaa', letterSpacing: '2px', textTransform: 'uppercase' }}>
+              Validated Digital Health Record
             </div>
           </div>
         </div>
 
-        {/* Card Footer */}
-        <div style={{ background: '#f8fafc', padding: '24px 32px', borderTop: '1px solid #f1f5f9' }}>
-          <div style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
-            <div style={{ fontWeight: '700', color: '#0d9488', marginBottom: '4px' }}>{clinic.clinic_name}</div>
-            {clinic.address && <div style={{ display: 'flex', gap: '8px' }}>📍 <span>{clinic.address}</span></div>}
-            {clinic.phone && <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>📞 <span>{clinic.phone}</span></div>}
-          </div>
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Validated Digital Health Record
-            </p>
-          </div>
+        {/* Action Button */}
+        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <button
+            onClick={() => generatePatientCardPDF(patient, clinic)}
+            style={{
+              background: '#0d9488',
+              color: 'white',
+              border: 'none',
+              padding: '16px 40px',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 10px 15px -3px rgba(13, 148, 136, 0.4)',
+              transition: 'all 0.2s',
+              width: '100%',
+              justifyContent: 'center'
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>⬇️</span> Download Patient Card PDF
+          </button>
+
+          <Link to="/" style={{
+            display: 'block',
+            marginTop: '20px',
+            color: '#64748b',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}>
+            ← Back to Home
+          </Link>
         </div>
       </div>
-
-      <p style={{ marginTop: '32px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-        Powered by <strong style={{ color: '#64748b' }}>ClinicToken CMS Pro</strong>
-      </p>
     </div>
   );
 }

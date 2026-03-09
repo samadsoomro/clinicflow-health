@@ -32,11 +32,12 @@ const Register = () => {
   const [form, setForm] = useState({ fullName: "", age: "", gender: "", phone: "", email: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
     if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
+    if (formError) setFormError(null);
   };
 
   const validateField = (field: string): string | null => {
@@ -55,29 +56,6 @@ const Register = () => {
 
   const handleBlur = (field: string) => {
     setErrors((p) => ({ ...p, [field]: validateField(field) }));
-    if (field === 'email') {
-      checkEmailOnBlur();
-    }
-  };
-
-  const checkEmailOnBlur = async () => {
-    const email = form.email.toLowerCase().trim();
-    if (!email || validateEmail(email) || !clinicId) return;
-
-    setEmailStatus('checking');
-
-    try {
-      const { data } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('email', email)
-        .eq('clinic_id', clinicId)
-        .maybeSingle();
-
-      setEmailStatus(data ? 'taken' : 'available');
-    } catch {
-      setEmailStatus('idle');
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,18 +66,19 @@ const Register = () => {
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
     setLoading(true);
+    setFormError(null);
     const normalizedEmail = form.email.toLowerCase().trim();
 
     // Check patients table for this clinic
-    const { data: existing } = await supabase
+    const { data: existingPatient } = await supabase
       .from("patients")
       .select("id")
       .eq("email", normalizedEmail)
       .eq("clinic_id", clinicId)
       .maybeSingle();
 
-    if (existing) {
-      setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." }));
+    if (existingPatient) {
+      setFormError("This email is already registered with another account. Please use a different email or login instead.");
       setLoading(false);
       return;
     }
@@ -115,7 +94,7 @@ const Register = () => {
 
     // Handle existing unconfirmed users (identities is empty)
     if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
-      setErrors((p) => ({ ...p, email: "This email is already registered. Please login instead." }));
+      setFormError("This email is already registered with another account. Please use a different email or login instead.");
       setLoading(false);
       return;
     }
@@ -128,9 +107,9 @@ const Register = () => {
         msg.toLowerCase().includes("already exists") ||
         msg.toLowerCase().includes("user already")
       ) {
-        msg = "This email is already registered. Please login instead.";
+        msg = "This email is already registered with another account. Please use a different email or login instead.";
       }
-      setErrors((p) => ({ ...p, email: msg }));
+      setFormError(msg);
       toast({ title: "Registration failed", description: msg, variant: "destructive" });
       return;
     }
@@ -187,6 +166,21 @@ const Register = () => {
             <h1 className="mb-2 font-display text-2xl font-bold text-foreground">Create Account</h1>
             <p className="text-sm text-muted-foreground">Register as a new patient</p>
           </div>
+
+          {formError && (
+            <div style={{
+              background: '#fee2e2',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              color: '#b91c1c',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              ❌ {formError}
+            </div>
+          )}
+
           <form className="space-y-3" onSubmit={handleSubmit} noValidate>
             {/* Full Name */}
             <div className="space-y-1">
@@ -227,23 +221,11 @@ const Register = () => {
             <div className="space-y-1">
               <Label htmlFor="regEmail">Email</Label>
               <Input id="regEmail" type="email" placeholder="you@example.com" maxLength={255} value={form.email}
-                onChange={(e) => {
-                  set("email", e.target.value);
-                  setEmailStatus('idle');
-                }}
+                onChange={(e) => set("email", e.target.value)}
                 onBlur={() => handleBlur("email")}
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-              {emailStatus === 'checking' && (
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>Checking availability...</p>
-              )}
-              {emailStatus === 'available' && !errors.email && (
-                <p style={{ color: 'green', fontSize: '13px', marginTop: '4px' }}>✅ Email is available</p>
-              )}
-              {emailStatus === 'taken' && !errors.email && (
-                <p style={{ color: 'red', fontSize: '13px', marginTop: '4px' }}>❌ This email is already taken. Use a different email.</p>
-              )}
             </div>
 
             {/* Password */}
