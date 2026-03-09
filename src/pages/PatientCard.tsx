@@ -1,85 +1,122 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { CreditCard, Download, LogIn, Eye, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { generatePatientCardPDF } from "@/lib/patientCardPdf";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { usePublicClinicId } from "@/hooks/useClinic";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
-const PatientCard = () => {
-  const { user, loading: authLoading } = useAuth();
-  const clinicId = usePublicClinicId();
+export default function PatientCard() {
   const [patient, setPatient] = useState<any>(null);
   const [clinic, setClinic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const load = async () => {
+    async function fetchData() {
       try {
         setLoading(true);
         setError(null);
 
-        // Get session directly
-        const { data: { session } } = await supabase.auth.getSession();
+        // Step 1: get session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (!session?.user) {
-          setError("Please login to view your patient card.");
+        if (sessionError || !session?.user) {
+          setError('You are not logged in. Please login to view your patient card.');
+          setLoading(false);
           return;
         }
 
-        // Fetch patient by user_id only — no clinic_id dependency
-        const { data: patientData, error: patientErr } = await supabase
-          .from("patients")
-          .select("*")
-          .eq("user_id", session.user.id)
+        const userId = session.user.id;
+
+        // Step 2: fetch patient record
+        const { data: patientData, error: patientError } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('user_id', userId)
           .maybeSingle();
 
-        if (patientErr || !patientData) {
-          setError("No patient record found. Please register first.");
+        if (patientError) {
+          setError('Error loading patient data: ' + patientError.message);
+          setLoading(false);
           return;
         }
 
-        // Fetch clinic using patient own clinic_id
-        const { data: clinicData, error: clinicErr } = await supabase
-          .from("clinics")
-          .select("*")
-          .eq("id", patientData.clinic_id)
+        if (!patientData) {
+          setError('No patient record found for your account. Please register as a patient first.');
+          setLoading(false);
+          return;
+        }
+
+        // Step 3: fetch clinic using patient's own clinic_id
+        const { data: clinicData, error: clinicError } = await supabase
+          .from('clinics')
+          .select('*')
+          .eq('id', patientData.clinic_id)
           .maybeSingle();
 
-        if (clinicErr || !clinicData) {
-          setError("Clinic data could not be loaded.");
+        if (clinicError) {
+          setError('Error loading clinic data: ' + clinicError.message);
+          setLoading(false);
           return;
         }
 
+        if (!clinicData) {
+          setError('Clinic not found.');
+          setLoading(false);
+          return;
+        }
+
+        // Step 4: set both — this triggers the card render
         setPatient(patientData);
         setClinic(clinicData);
       } catch (err: any) {
-        setError("Something went wrong: " + err.message);
+        setError('Unexpected error: ' + (err?.message || 'Unknown'));
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    load();
+    fetchData();
   }, []);
 
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-lg">Loading your patient card...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #e2e8f0',
+            borderTop: '4px solid #0d9488',
+            borderRadius: '50%',
+            margin: '0 auto 16px',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <p style={{ fontSize: '18px', color: '#64748b', fontWeight: '500' }}>Loading your patient card...</p>
+          <style>{`
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+        </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8">
-          <p className="text-red-500 text-lg mb-4">{error}</p>
-          <Link to="/login" className="px-6 py-3 bg-primary text-white rounded-lg inline-block">
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff1f2' }}>
+        <div style={{ textAlign: 'center', padding: '40px', maxWidth: '400px', background: 'white', borderRadius: '24px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <p style={{ color: '#be123c', fontSize: '18px', marginBottom: '24px', fontWeight: '600', lineHeight: '1.4' }}>{error}</p>
+          <Link to="/login" style={{
+            display: 'inline-block',
+            padding: '14px 32px',
+            background: '#0d9488',
+            color: 'white',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            fontWeight: '600',
+            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)',
+            transition: 'transform 0.2s'
+          }}>
             Go to Login
           </Link>
         </div>
@@ -87,191 +124,108 @@ const PatientCard = () => {
     );
   }
 
+  // Safety fallback — should never reach here but prevents blank page
   if (!patient || !clinic) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">No patient data available.</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <p style={{ color: '#94a3b8', fontSize: '16px' }}>Patient data unavailable.</p>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <section className="py-20 md:py-28">
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-lg text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-secondary">
-              <CreditCard className="h-10 w-10 text-primary" />
-            </div>
-            <h1 className="mb-4 font-display text-3xl font-bold text-foreground">Patient Card</h1>
-            <p className="mb-8 text-muted-foreground">Please log in to access your patient card.</p>
-            <Link to="/login">
-              <Button variant="hero" size="lg" className="px-8">
-                <LogIn className="mr-2 h-5 w-5" /> Log In to Continue
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!patient) {
-    return (
-      <section className="py-20 md:py-28">
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-lg text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-secondary">
-              <CreditCard className="h-10 w-10 text-primary" />
-            </div>
-            <h1 className="mb-4 font-display text-3xl font-bold text-foreground">Patient Card</h1>
-            <p className="mb-8 text-muted-foreground">Your patient profile was not found. Please contact the clinic.</p>
-          </motion.div>
-        </div>
-      </section>
-    );
-  }
-
-  const clinicInfo = {
-    name: clinic?.clinic_name || "Clinic",
-    address: clinic?.address || "",
-    phone: clinic?.contact_phone || "",
-    email: clinic?.contact_email || "",
-    workingHours: clinic?.working_hours || "",
-    emergencyContact: clinic?.emergency_contact || "",
-    termsConditions: clinic?.terms_conditions || "",
-    qrBaseUrl: clinic?.qr_base_url || window.location.origin,
-  };
-
-  const patientData = {
-    fullName: patient.full_name,
-    formattedPatientId: patient.formatted_patient_id,
-    age: patient.age,
-    gender: patient.gender,
-    createdAt: patient.created_at?.split("T")[0] || "",
-  };
-
-  const [generating, setGenerating] = useState(false);
-
-  const handleDownloadPDF = async () => {
-    try {
-      setGenerating(true);
-
-      // Fetch patient data fresh
-      const { data: patientData, error: patientError } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("clinic_id", clinicId)
-        .single();
-
-      if (patientError || !patientData) {
-        throw new Error("Patient data not found");
-      }
-
-      // Fetch clinic data fresh
-      const { data: clinicData, error: clinicError } = await supabase
-        .from("clinics")
-        .select("*")
-        .eq("id", clinicId)
-        .single();
-
-      if (clinicError || !clinicData) {
-        throw new Error("Clinic data not found");
-      }
-
-      await generatePatientCardPDF(patientData, clinicData);
-      toast.success("Your patient card has been downloaded!");
-    } catch (err: any) {
-      console.error("PDF error:", err);
-      toast.error(err.message || "Failed to generate PDF");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
+  // MAIN CARD — render everything inline here, do NOT delegate to a child component
   return (
-    <section className="py-16 md:py-24">
-      <div className="container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-md">
-          <div className="mb-8 text-center">
-            <h1 className="mb-2 font-display text-3xl font-bold text-foreground">Your Patient Card</h1>
-            <p className="text-muted-foreground">Preview and download your health identity card</p>
+    <div style={{ minHeight: '100vh', background: '#f0fdfa', padding: '40px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{
+        maxWidth: '500px',
+        margin: '0 auto',
+        background: 'white',
+        borderRadius: '28px',
+        overflow: 'hidden',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(13, 148, 136, 0.1)'
+      }}>
+        {/* Card Header */}
+        <div style={{ background: '#0d9488', padding: '32px', color: 'white', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em' }}>
+            {clinic.clinic_name}
+          </h1>
+          <div style={{
+            display: 'inline-block',
+            marginTop: '12px',
+            padding: '4px 16px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: '700',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Official Patient Identity Card
           </div>
+        </div>
 
-          <p className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-            <Eye className="h-4 w-4" /> Card Preview
-          </p>
+        {/* Card Body */}
+        <div style={{ padding: '32px' }}>
+          <div style={{ display: 'grid', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <span style={{ color: '#64748b', fontWeight: '500' }}>Patient ID</span>
+              <span style={{ color: '#0f172a', fontWeight: '700', fontFamily: 'monospace', fontSize: '16px' }}>{patient.formatted_patient_id || patient.patient_id || patient.id}</span>
+            </div>
 
-          <div className="rounded-t-2xl border border-border gradient-hero p-6 text-primary-foreground">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/10 backdrop-blur-sm">
-                <CreditCard className="h-6 w-6" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <span style={{ color: '#64748b', fontWeight: '500' }}>Full Name</span>
+              <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.full_name}</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Gender</span>
+                <span style={{ color: '#0f172a', fontWeight: '600', textTransform: 'capitalize' }}>{patient.gender}</span>
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold">{clinicInfo.name}</h3>
-                <p className="text-xs text-primary-foreground/60">Health Identity Card</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Age</span>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.age} Years</span>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary-foreground/50">Patient Name</p>
-                  <p className="font-display font-semibold">{patientData.fullName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary-foreground/50">Patient ID</p>
-                  <p className="font-display text-xl font-bold">{patientData.formattedPatientId}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary-foreground/50">Age</p>
-                  <p className="font-medium">{patientData.age}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary-foreground/50">Gender</p>
-                  <p className="font-medium capitalize">{patientData.gender}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary-foreground/50">Registered</p>
-                  <p className="font-medium">{patientData.createdAt}</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="rounded-b-2xl border border-t-0 border-border bg-card p-6">
-            <h4 className="mb-2 font-display text-sm font-semibold text-foreground">Terms & Conditions</h4>
-            <div className="mb-4 space-y-1">
-              {clinicInfo.termsConditions.split("\n").map((line, i) => (
-                <p key={i} className="text-[11px] leading-relaxed text-muted-foreground">{line}</p>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Contact Email</span>
+              <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.email}</span>
             </div>
-            <div className="space-y-1 border-t border-border pt-3">
-              <p className="text-[11px] text-muted-foreground">📍 {clinicInfo.address}</p>
-              <p className="text-[11px] text-muted-foreground">📞 {clinicInfo.phone} | ✉️ {clinicInfo.email}</p>
-              <p className="text-[11px] text-muted-foreground">🕐 {clinicInfo.workingHours}</p>
-            </div>
-          </div>
 
-          <div className="mt-6 text-center">
-            <Button variant="hero" size="lg" onClick={handleDownloadPDF} disabled={generating}>
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-5 w-5" /> Download My Card (PDF)
-                </>
-              )}
-            </Button>
+            {patient.phone && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ color: '#64748b', fontWeight: '500', fontSize: '13px' }}>Phone Number</span>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{patient.phone}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '15px', borderTop: '2px dashed #e2e8f0' }}>
+              <span style={{ color: '#94a3b8', fontSize: '12px' }}>Issued On</span>
+              <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>{new Date(patient.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+            </div>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Card Footer */}
+        <div style={{ background: '#f8fafc', padding: '24px 32px', borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
+            <div style={{ fontWeight: '700', color: '#0d9488', marginBottom: '4px' }}>{clinic.clinic_name}</div>
+            {clinic.address && <div style={{ display: 'flex', gap: '8px' }}>📍 <span>{clinic.address}</span></div>}
+            {clinic.phone && <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>📞 <span>{clinic.phone}</span></div>}
+          </div>
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Validated Digital Health Record
+            </p>
+          </div>
+        </div>
       </div>
-    </section>
-  );
-};
 
-export default PatientCard;
+      <p style={{ marginTop: '32px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+        Powered by <strong style={{ color: '#64748b' }}>ClinicToken CMS Pro</strong>
+      </p>
+    </div>
+  );
+}

@@ -32,6 +32,7 @@ const Register = () => {
   const [form, setForm] = useState({ fullName: "", age: "", gender: "", phone: "", email: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -54,6 +55,29 @@ const Register = () => {
 
   const handleBlur = (field: string) => {
     setErrors((p) => ({ ...p, [field]: validateField(field) }));
+    if (field === 'email') {
+      checkEmailOnBlur();
+    }
+  };
+
+  const checkEmailOnBlur = async () => {
+    const email = form.email.toLowerCase().trim();
+    if (!email || validateEmail(email) || !clinicId) return;
+
+    setEmailStatus('checking');
+
+    try {
+      const { data } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('email', email)
+        .eq('clinic_id', clinicId)
+        .maybeSingle();
+
+      setEmailStatus(data ? 'taken' : 'available');
+    } catch {
+      setEmailStatus('idle');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,11 +227,23 @@ const Register = () => {
             <div className="space-y-1">
               <Label htmlFor="regEmail">Email</Label>
               <Input id="regEmail" type="email" placeholder="you@example.com" maxLength={255} value={form.email}
-                onChange={(e) => set("email", e.target.value)}
+                onChange={(e) => {
+                  set("email", e.target.value);
+                  setEmailStatus('idle');
+                }}
                 onBlur={() => handleBlur("email")}
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              {emailStatus === 'checking' && (
+                <p style={{ color: '#888', fontSize: '13px', marginTop: '4px' }}>Checking availability...</p>
+              )}
+              {emailStatus === 'available' && !errors.email && (
+                <p style={{ color: 'green', fontSize: '13px', marginTop: '4px' }}>✅ Email is available</p>
+              )}
+              {emailStatus === 'taken' && !errors.email && (
+                <p style={{ color: 'red', fontSize: '13px', marginTop: '4px' }}>❌ This email is already taken. Use a different email.</p>
+              )}
             </div>
 
             {/* Password */}
