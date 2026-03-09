@@ -6,6 +6,7 @@ interface ClinicLinkProps {
     children: React.ReactNode;
     className?: string;
     id?: string;
+    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
 const ClinicLink = ({ to, children, className, id }: ClinicLinkProps) => {
