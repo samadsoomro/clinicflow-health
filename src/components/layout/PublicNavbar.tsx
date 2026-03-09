@@ -57,7 +57,7 @@ const PublicNavbar = () => {
               <Activity className="h-5 w-5 text-primary-foreground" />
             </div>
           )}
-          <span className="font-display text-xl font-bold text-foreground">
+          <span className="font-display text-lg md:text-xl font-bold text-foreground truncate max-w-[140px] md:max-w-none">
             {clinicName}
           </span>
         </ClinicLink>
