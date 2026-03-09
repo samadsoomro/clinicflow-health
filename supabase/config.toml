@@ -1,1 +1,9 @@
 project_id = "fvcpbtdizekeoniyswwl"
+
+[auth]
+site_url = "https://health-tau-ebon.vercel.app"
+additional_redirect_urls = ["https://health-tau-ebon.vercel.app", "https://*.health.vercel.app"]
+
+[auth.email]
+enable_confirmations = false
+double_confirm_changes = false

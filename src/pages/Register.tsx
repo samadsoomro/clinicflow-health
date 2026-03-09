@@ -45,9 +45,25 @@ const Register = () => {
     const normalized = email.toLowerCase().trim();
     const err = validateEmail(normalized);
     if (err) { setEmailStatus("idle"); return; }
+
     setEmailStatus("checking");
-    const { data } = await supabase.from("patients").select("id").eq("email", normalized).eq("clinic_id", clinicId).maybeSingle();
-    setEmailStatus(data ? "taken" : "available");
+    try {
+      // Check patients table scoped by clinic_id
+      const { data, error } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("email", normalized)
+        .eq("clinic_id", clinicId)
+        .maybeSingle();
+
+      if (data) {
+        setEmailStatus("taken");
+      } else {
+        setEmailStatus("available");
+      }
+    } catch {
+      setEmailStatus("idle");
+    }
   }, [clinicId]);
 
   useEffect(() => {
@@ -92,13 +108,24 @@ const Register = () => {
     if (existing) { setLoading(false); setErrors((p) => ({ ...p, email: "This email is already registered with this clinic. Please login or use a different email." })); return; }
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: normalizedEmail, password: form.password,
-      options: { emailRedirectTo: window.location.origin, data: { full_name: form.fullName.trim() } },
+      email: normalizedEmail,
+      password: form.password,
+      options: {
+        emailRedirectTo: undefined,
+        data: { full_name: form.fullName.trim() }
+      },
     });
 
     if (authError) {
       setLoading(false);
-      const msg = authError.message.toLowerCase().includes("already registered") ? "This email is already registered. Please login instead." : authError.message;
+      let msg = authError.message;
+      if (
+        msg.toLowerCase().includes("already registered") ||
+        msg.toLowerCase().includes("already exists") ||
+        msg.toLowerCase().includes("email address is already")
+      ) {
+        msg = "This email is already registered. Please login instead.";
+      }
       toast({ title: "Registration failed", description: msg, variant: "destructive" });
       return;
     }
@@ -116,11 +143,14 @@ const Register = () => {
       await supabase.from("user_roles").insert({ user_id: authData.user.id, role: "patient" as const, clinic_id: clinicId });
 
       setLoading(false);
-      toast({ title: "✓ Registration successful!", description: `Your Patient ID is: ${formattedId}. Please check your email to verify, then sign in.` });
+      toast({
+        title: "✓ Registration successful!",
+        description: `Your Patient ID is: ${formattedId}. Redirecting to login...`
+      });
 
       const params = new URLSearchParams(location.search);
       const clinic = params.get('clinic');
-      setTimeout(() => navigate(clinic ? `/login?clinic=${clinic}` : "/login"), 3000);
+      setTimeout(() => navigate(clinic ? `/login?clinic=${clinic}` : "/login"), 2000);
       return;
     }
     setLoading(false);
