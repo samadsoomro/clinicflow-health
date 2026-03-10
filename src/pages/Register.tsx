@@ -35,6 +35,8 @@ const Register = () => {
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const emailDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
