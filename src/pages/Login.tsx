@@ -17,6 +17,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { clinic } = useClinicContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
