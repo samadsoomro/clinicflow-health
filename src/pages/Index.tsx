@@ -344,7 +344,7 @@ const Index = () => {
                   </div>
                 )}
               </div>
-              {mapsEmbedUrl && mapsEmbedUrl.startsWith('https://www.google.com/maps/embed') && (
+              {mapsEmbedUrl && (mapsEmbedUrl.includes('google.com/maps/embed') || mapsEmbedUrl.includes('maps.google.com') || mapsEmbedUrl.includes('google.com/maps')) && (
                 <div className="overflow-hidden rounded-2xl border border-border shadow-soft mt-4">
                   <iframe
                     src={mapsEmbedUrl}
