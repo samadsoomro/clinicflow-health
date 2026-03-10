@@ -183,7 +183,7 @@ const AdminPatients = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
+                <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
               </TableRow>
             )}
           </TableBody>
