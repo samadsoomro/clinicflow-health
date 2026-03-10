@@ -29,6 +29,8 @@ const AdminTokens = () => {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [urlSaveMsg, setUrlSaveMsg] = useState<string | null>(null);
+  const [clinic, setClinic] = useState<any>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -47,8 +49,9 @@ const AdminTokens = () => {
 
     if (clinicId) {
       fetchDoctors();
-      supabase.from("clinics").select("short_name, clinic_name, qr_base_url").eq("id", clinicId).single()
+      supabase.from("clinics").select("*").eq("id", clinicId).single()
         .then(({ data }) => {
+          setClinic(data);
           setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
           setWebsiteUrl((data as any)?.qr_base_url || "");
         });
@@ -231,10 +234,91 @@ const AdminTokens = () => {
     setTimeout(() => setUrlSaveMsg(null), 2000);
   };
 
+  const handleTokenLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !clinicId) return;
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${clinicId}/logo/logo-${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase storage bucket 'clinic-assets'
+      const { error: uploadError } = await supabase.storage
+        .from('clinic-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('clinic-assets')
+        .getPublicUrl(filePath);
+
+      // Save to clinics table logo_url column
+      const { error: updateError } = await supabase
+        .from('clinics')
+        .update({ logo_url: publicUrl } as any)
+        .eq('id', clinicId);
+
+      if (updateError) throw updateError;
+
+      // Refresh clinic data so preview updates immediately
+      setClinic((prev: any) => ({ ...prev, logo_url: publicUrl }));
+
+      toast.success('Logo updated! Token receipt logo saved successfully.');
+
+    } catch (err: any) {
+      toast.error('Upload failed: ' + err.message);
+    } finally {
+      setUploadingLogo(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Website URL + Export bar */}
       <div className="flex flex-col gap-3">
+        {/* Logo Upload in Token Settings */}
+        <div className="flex flex-col gap-2 max-w-xs">
+          <label className="text-sm font-medium">Token Receipt Logo</label>
+
+          {/* Preview of current logo */}
+          {clinic?.logo_url && (
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50/50">
+              <img
+                src={clinic.logo_url}
+                alt="Current token logo"
+                className="w-16 h-16 object-contain rounded border bg-white p-1"
+              />
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Current logo</p>
+                <p className="text-[10px] text-gray-400">This appears on printed token receipts</p>
+              </div>
+            </div>
+          )}
+
+          {/* Upload button */}
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+              id="token-logo-upload"
+              className="hidden"
+              onChange={handleTokenLogoUpload}
+            />
+            <label
+              htmlFor="token-logo-upload"
+              className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg text-sm hover:border-primary hover:text-primary transition-colors bg-white/50"
+            >
+              {uploadingLogo ? '⏳ Uploading...' : '📁 Upload Logo'}
+            </label>
+            <span className="text-xs text-gray-400">PNG, JPG or SVG</span>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex flex-1 items-center gap-2">
             <Label className="shrink-0 text-xs text-muted-foreground">Website URL</Label>
@@ -342,9 +426,9 @@ const AdminTokens = () => {
                               <tr key={token.id} className={`hover:bg-muted/30 transition-colors ${token.status === 'serving' ? 'bg-primary/5' : ''}`}>
                                 <td className="px-4 py-3">
                                   <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${token.status === "serving" ? "bg-primary text-white" :
-                                      token.status === "waiting" ? "bg-yellow-500 text-white" :
-                                        token.status === "unavailable" ? "bg-destructive/20 text-destructive" :
-                                          "bg-secondary text-muted-foreground"
+                                    token.status === "waiting" ? "bg-yellow-500 text-white" :
+                                      token.status === "unavailable" ? "bg-destructive/20 text-destructive" :
+                                        "bg-secondary text-muted-foreground"
                                     }`}>
                                     {token.token_number}
                                   </span>
@@ -354,9 +438,9 @@ const AdminTokens = () => {
                                     {token.patient_name || 'Walk-in'}
                                   </p>
                                   <Badge variant="outline" className={`mt-1 text-[10px] px-1.5 py-0 capitalize ${token.status === 'serving' ? 'bg-primary/10 text-primary border-primary/20' :
-                                      token.status === 'waiting' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' :
-                                        token.status === 'completed' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
-                                          'bg-destructive/10 text-destructive border-destructive/20'
+                                    token.status === 'waiting' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' :
+                                      token.status === 'completed' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
+                                        'bg-destructive/10 text-destructive border-destructive/20'
                                     }`}>
                                     {token.status}
                                   </Badge>
