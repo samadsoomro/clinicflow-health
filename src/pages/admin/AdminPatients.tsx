@@ -58,7 +58,8 @@ const AdminPatients = () => {
 
   const filtered = patients.filter((p) =>
     p.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    p.formatted_patient_id.toLowerCase().includes(search.toLowerCase())
+    p.formatted_patient_id.toLowerCase().includes(search.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(search.toLowerCase()))
   );
 
   const getTimestamp = () => {
