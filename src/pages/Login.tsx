@@ -8,6 +8,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ClinicLink from "@/components/ClinicLink";
+import { useClinicContext } from "@/hooks/useClinicContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");

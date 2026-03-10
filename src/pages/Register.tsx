@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 import ClinicLink from "@/components/ClinicLink";
+import { useClinicContext } from "@/hooks/useClinicContext";
 
 const validateEmail = (email: string) => {
   if (!email) return "Email is required";
