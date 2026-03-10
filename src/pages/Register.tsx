@@ -164,10 +164,14 @@ const Register = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
           <div className="mb-8 text-center lg:text-left">
             <ClinicLink to="/" className="mb-6 inline-flex items-center gap-2 lg:hidden">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-                <Activity className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-display text-xl font-bold text-foreground">ClinicToken</span>
+              {clinic?.logo_url ? (
+                <img src={clinic.logo_url} alt={clinic.clinic_name} className="h-9 w-9 rounded-lg object-cover" />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+                  <span className="text-sm font-bold text-primary-foreground">{clinic?.clinic_name?.charAt(0) || 'C'}</span>
+                </div>
+              )}
+              <span className="font-display text-xl font-bold text-foreground">{clinic?.clinic_name || 'ClinicToken'}</span>
             </ClinicLink>
             <h1 className="mb-2 font-display text-2xl font-bold text-foreground">Create Account</h1>
             <p className="text-sm text-muted-foreground">Register as a new patient</p>
