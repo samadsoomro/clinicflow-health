@@ -58,7 +58,8 @@ const AdminPatients = () => {
 
   const filtered = patients.filter((p) =>
     p.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    p.formatted_patient_id.toLowerCase().includes(search.toLowerCase())
+    p.formatted_patient_id.toLowerCase().includes(search.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(search.toLowerCase()))
   );
 
   const getTimestamp = () => {
@@ -72,6 +73,7 @@ const AdminPatients = () => {
     Age: p.age,
     Gender: p.gender,
     Phone: p.phone || "—",
+    Email: p.email || "—",
     "Registration Date": p.created_at ? new Date(p.created_at).toLocaleDateString() : "—",
   }));
 
@@ -90,8 +92,8 @@ const AdminPatients = () => {
     doc.text(`Exported: ${getTimestamp()}`, 14, 22);
     autoTable(doc, {
       startY: 28,
-      head: [["Patient ID", "Full Name", "Age", "Gender", "Phone", "Registered"]],
-      body: exportRows.map((r) => [r["Patient ID"], r["Full Name"], r.Age, r.Gender, r.Phone, r["Registration Date"]]),
+      head: [["Patient ID", "Full Name", "Age", "Gender", "Phone", "Email", "Registered"]],
+      body: exportRows.map((r) => [r["Patient ID"], r["Full Name"], r.Age, r.Gender, r.Phone, r.Email, r["Registration Date"]]),
     });
     doc.save(`Patients - ${clinicShortName} - ${getTimestamp()}.pdf`);
   };
@@ -126,6 +128,7 @@ const AdminPatients = () => {
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Registered</TableHead>
               <TableHead className="w-16">Actions</TableHead>
             </TableRow>
@@ -149,6 +152,7 @@ const AdminPatients = () => {
                 <TableCell>{patient.age}</TableCell>
                 <TableCell className="capitalize">{patient.gender}</TableCell>
                 <TableCell className="text-muted-foreground">{patient.phone || "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{patient.email || "—"}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {patient.created_at ? new Date(patient.created_at).toLocaleDateString() : "—"}
                 </TableCell>
@@ -179,7 +183,7 @@ const AdminPatients = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
+                <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">No patients found</TableCell>
               </TableRow>
             )}
           </TableBody>
