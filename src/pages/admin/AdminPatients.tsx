@@ -128,6 +128,7 @@ const AdminPatients = () => {
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Registered</TableHead>
               <TableHead className="w-16">Actions</TableHead>
             </TableRow>
