@@ -35,11 +35,38 @@ const Register = () => {
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const emailDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
     if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
     if (formError) setFormError(null);
+
+    if (field === "email") {
+      setEmailStatus('idle');
+      if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && emailRegex.test(value) && clinicId) {
+        emailDebounceRef.current = setTimeout(async () => {
+          setEmailStatus('checking');
+          try {
+            const response = await fetch(
+              'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/check-email-availability',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: value.toLowerCase().trim(), clinic_id: clinicId })
+              }
+            );
+            const result = await response.json();
+            setEmailStatus(result.available ? 'available' : 'taken');
+          } catch {
+            setEmailStatus('idle');
+          }
+        }, 600);
+      }
+    }
   };
 
   const validateField = (field: string): string | null => {
@@ -67,6 +94,14 @@ const Register = () => {
     fields.forEach((f) => { newErrors[f] = validateField(f); });
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
+    if (emailStatus === 'taken') {
+      setFormError('This email is already registered. Please use a different email.');
+      return;
+    }
+    if (emailStatus === 'checking') {
+      setFormError('Please wait while we verify your email.');
+      return;
+    }
     setLoading(true);
     setFormError(null);
     const normalizedEmail = form.email.toLowerCase().trim();
@@ -236,6 +271,24 @@ const Register = () => {
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              {emailStatus === 'checking' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Checking availability...</span>
+                </div>
+              )}
+              {emailStatus === 'available' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600">Email is available</span>
+                </div>
+              )}
+              {emailStatus === 'taken' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <X className="h-3 w-3 text-destructive" />
+                  <span className="text-xs text-destructive">This email is already taken. Use a different email.</span>
+                </div>
+              )}
             </div>
 
             {/* Password */}
