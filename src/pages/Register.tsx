@@ -42,6 +42,31 @@ const Register = () => {
     setForm((p) => ({ ...p, [field]: value }));
     if (errors[field]) setErrors((p) => ({ ...p, [field]: null }));
     if (formError) setFormError(null);
+
+    if (field === "email") {
+      setEmailStatus('idle');
+      if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && emailRegex.test(value) && clinicId) {
+        emailDebounceRef.current = setTimeout(async () => {
+          setEmailStatus('checking');
+          try {
+            const response = await fetch(
+              'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/check-email-availability',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: value.toLowerCase().trim(), clinic_id: clinicId })
+              }
+            );
+            const result = await response.json();
+            setEmailStatus(result.available ? 'available' : 'taken');
+          } catch {
+            setEmailStatus('idle');
+          }
+        }, 600);
+      }
+    }
   };
 
   const validateField = (field: string): string | null => {
