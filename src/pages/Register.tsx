@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 import ClinicLink from "@/components/ClinicLink";
+import { useClinicContext } from "@/hooks/useClinicContext";
 
 const validateEmail = (email: string) => {
   if (!email) return "Email is required";
@@ -25,6 +26,7 @@ const getPasswordStrength = (pw: string): { label: string; color: string } => {
 
 const Register = () => {
   const clinicId = usePublicClinicId();
+  const { clinic } = useClinicContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -147,10 +149,14 @@ const Register = () => {
     <div className="flex min-h-screen">
       <div className="hidden w-1/2 gradient-hero lg:flex lg:items-center lg:justify-center">
         <div className="max-w-md text-center px-8">
-          <ClinicLink to="/" className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
-            <Activity className="h-8 w-8 text-primary-foreground" />
-          </ClinicLink>
-          <h2 className="mb-3 font-display text-3xl font-bold text-primary-foreground">Join ClinicToken</h2>
+          {clinic?.logo_url ? (
+            <img src={clinic.logo_url} alt={clinic.clinic_name} className="mb-6 mx-auto h-20 w-20 rounded-2xl object-cover shadow-lg" />
+          ) : (
+            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
+              <span className="font-display text-2xl font-bold text-primary-foreground">{clinic?.clinic_name?.charAt(0) || 'C'}</span>
+            </div>
+          )}
+          <h2 className="mb-3 font-display text-3xl font-bold text-primary-foreground">Join {clinic?.clinic_name || 'ClinicToken'}</h2>
           <p className="text-primary-foreground/70">Register as a patient and get your unique health ID card instantly.</p>
         </div>
       </div>
@@ -158,10 +164,14 @@ const Register = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
           <div className="mb-8 text-center lg:text-left">
             <ClinicLink to="/" className="mb-6 inline-flex items-center gap-2 lg:hidden">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-                <Activity className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-display text-xl font-bold text-foreground">ClinicToken</span>
+              {clinic?.logo_url ? (
+                <img src={clinic.logo_url} alt={clinic.clinic_name} className="h-9 w-9 rounded-lg object-cover" />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+                  <span className="text-sm font-bold text-primary-foreground">{clinic?.clinic_name?.charAt(0) || 'C'}</span>
+                </div>
+              )}
+              <span className="font-display text-xl font-bold text-foreground">{clinic?.clinic_name || 'ClinicToken'}</span>
             </ClinicLink>
             <h1 className="mb-2 font-display text-2xl font-bold text-foreground">Create Account</h1>
             <p className="text-sm text-muted-foreground">Register as a new patient</p>
