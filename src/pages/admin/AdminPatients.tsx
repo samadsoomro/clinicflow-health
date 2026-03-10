@@ -152,6 +152,7 @@ const AdminPatients = () => {
                 <TableCell>{patient.age}</TableCell>
                 <TableCell className="capitalize">{patient.gender}</TableCell>
                 <TableCell className="text-muted-foreground">{patient.phone || "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{patient.email || "—"}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {patient.created_at ? new Date(patient.created_at).toLocaleDateString() : "—"}
                 </TableCell>
