@@ -73,6 +73,7 @@ const AdminPatients = () => {
     Age: p.age,
     Gender: p.gender,
     Phone: p.phone || "—",
+    Email: p.email || "—",
     "Registration Date": p.created_at ? new Date(p.created_at).toLocaleDateString() : "—",
   }));
 
