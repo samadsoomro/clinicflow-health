@@ -322,11 +322,9 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
               >
                 {/* WHITE HEADER WITH ICON + CLINIC NAME */}
                 <div className="w-full bg-white text-black p-[8px_10px_7px_10px] border-b-2 border-black flex items-center justify-start gap-[8px]">
-                  <svg className="w-[52px] h-[52px] shrink-0 block" xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M50 35 C50 35 50 18 38 18 C26 18 22 30 22 38 C22 50 34 60 50 72 C66 60 78 50 78 38 C78 30 74 18 62 18 C50 18 50 35 50 35 Z" />
-                    <polyline points="31,42 37,42 41,32 45,52 48,38 52,38 55,42 61,42" strokeWidth="3" />
-                    <path d="M28 78 C26 90 34 94 42 94 L58 94 C66 94 74 90 72 78 L76 66 C78 60 74 56 70 58 L68 62 L67 46 C67 40 62 40 60 44 L59 50 L58 36 C58 30 52 30 50 34 L49 50 L48 40 C48 34 42 34 40 38 L39 62 C36 58 30 56 26 60 Z" />
-                  </svg>
+                  <div className="w-[52px] h-[52px] shrink-0 flex items-center justify-center">
+                    <i className="fas fa-heartbeat text-[42px] text-black"></i>
+                  </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="text-[12px] font-bold leading-tight uppercase line-clamp-2">{data.clinicName}</div>
                     <div className="text-[8px] text-[#555] mt-[1px]">Healthcare Token System</div>
