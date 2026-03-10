@@ -94,6 +94,14 @@ const Register = () => {
     fields.forEach((f) => { newErrors[f] = validateField(f); });
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
+    if (emailStatus === 'taken') {
+      setFormError('This email is already registered. Please use a different email.');
+      return;
+    }
+    if (emailStatus === 'checking') {
+      setFormError('Please wait while we verify your email.');
+      return;
+    }
     setLoading(true);
     setFormError(null);
     const normalizedEmail = form.email.toLowerCase().trim();
