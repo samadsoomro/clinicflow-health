@@ -84,6 +84,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
       <head>
         <meta charset="UTF-8"/>
         <title>Token-${token}-${patient}-${date}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
         <style>
         @page {
           size: 80mm auto;
@@ -111,11 +112,17 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
           border-bottom: 2px solid #000;
           width: 100%;
         }
-        .health-icon {
+        .icon-wrap {
           width: 52px;
           height: 52px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           flex-shrink: 0;
-          display: block;
+        }
+        .icon-wrap i {
+          font-size: 42px;
+          color: #000;
         }
         .header-text {
           flex: 1;
@@ -216,11 +223,9 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
       <body>
         <!-- WHITE HEADER WITH ICON + CLINIC NAME -->
         <div class="receipt-header">
-          <svg class="health-icon" xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" fill="none" stroke="#000000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M50 35 C50 35 50 18 38 18 C26 18 22 30 22 38 C22 50 34 60 50 72 C66 60 78 50 78 38 C78 30 74 18 62 18 C50 18 50 35 50 35 Z"/>
-            <polyline points="31,42 37,42 41,32 45,52 48,38 52,38 55,42 61,42" stroke-width="3"/>
-            <path d="M28 78 C26 90 34 94 42 94 L58 94 C66 94 74 90 72 78 L76 66 C78 60 74 56 70 58 L68 62 L67 46 C67 40 62 40 60 44 L59 50 L58 36 C58 30 52 30 50 34 L49 50 L48 40 C48 34 42 34 40 38 L39 62 C36 58 30 56 26 60 Z"/>
-          </svg>
+          <div class="icon-wrap">
+            <i class="fas fa-heartbeat"></i>
+          </div>
           <div class="header-text">
             <div class="clinic-name-header">${data.clinicName?.toUpperCase() || 'CLINIC'}</div>
             <div class="clinic-sub">Healthcare Token System</div>
