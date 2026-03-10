@@ -26,6 +26,7 @@ const getPasswordStrength = (pw: string): { label: string; color: string } => {
 
 const Register = () => {
   const clinicId = usePublicClinicId();
+  const { clinic } = useClinicContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
