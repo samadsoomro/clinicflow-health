@@ -33,8 +33,6 @@ const formatDateTime = (iso: string) => {
   return `${date}  ${time}`;
 };
 
-const HEALTHCARE_ICON = `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSEhIWFRUVFRgWFRUVGBgYFRUVFRIXFhUXFRUYHSggGBolGxUVITEhJSkrLi4uFx8zODMtNygtLisBCgoKBQUFDgUFDisZExkrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrK//AABEIAioCKgMBIgACEQEDEQH/xAAcAAACAgMBAQAAAAAAAAAAAAADBAACAQcIBgX/xABWEAABAgMEBwYDBAQLBAkDBQEBAAIDESEEEjFRBRMUMkFhcQY//+11v/656N/2+y/10P8AErkJRB1/F7caMII/6Rsv9cz/ABS//XPRv+32X+uh/wCK5CUQdId6vbWxuxUeFZ7XBiRYlyGGw4jXOumI0vo04XA4ea50e3iMOIy/yQlZjpYIN9/o72C7ZbRHl/GRmsBzbCZP0nEPoty3hmvJd1eitm0VZmESc6HrXToZxiYkiOQcB5L7wCA1oxWIG8jWbd81LTuoCXhmk3CppxVJJ5mA6IA2ak5osRwkehQrXw80FmI6/FCEuSbYf9U9+izH+ke7e9X6Sfevov8UnH/AKUv3nvExXrx4ifV998XvvXxHr779T4j1979SfUX/Gfj96fvd/xH0Y8R+L1fifUj4pXq9X3vUn6vVD+6T6o4gfevV68fA+9fSpWp//Z`;
-
 const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps) => {
   const [data, setData] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,234 +72,229 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
     fetchData();
   }, [open, token, clinicId]);
 
-  const handlePrint = () => {
-    if (!data) return;
+  const buildReceiptHTML = () => {
+    if (!data) return "";
     const token = data.tokenNumber || "";
     const patient = (data.patientName || "walkin").replace(/\s+/g, "");
     const date = data.dateTime?.split("  ")[0] || "";
 
-    const html = `
+    return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8"/>
         <title>Token-${token}-${patient}-${date}</title>
         <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        html, body {
+          width: 100%;
+          max-width: 302px;
+          background: #fff;
+          color: #000;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 11px;
+          overflow-x: hidden;
+        }
+        .receipt-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 10px 7px 10px;
+          border-bottom: 2px solid #000;
+          width: 100%;
+        }
+        .health-icon {
+          width: 52px;
+          height: 52px;
+          flex-shrink: 0;
+          display: block;
+        }
+        .header-text {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+        }
+        .clinic-name-header {
+          font-size: 12px;
+          font-weight: bold;
+          color: #000;
+          line-height: 1.2;
+          word-break: break-word;
+        }
+        .clinic-sub {
+          font-size: 8px;
+          color: #555;
+          margin-top: 1px;
+        }
+        .website-line {
+          text-align: center;
+          font-size: 9px;
+          color: #555;
+          padding: 4px 10px;
+          word-break: break-all;
+          width: 100%;
+        }
+        .divider {
+          border: none;
+          border-top: 1px dashed #000;
+          width: calc(100% - 20px);
+          margin: 3px 10px;
+          display: block;
+        }
+        .section-title {
+          text-align: center;
+          font-size: 11px;
+          font-weight: bold;
+          letter-spacing: 2px;
+          padding: 4px 0;
+          width: 100%;
+        }
+        .token-number {
+          font-size: 44px;
+          font-weight: bold;
+          text-align: center;
+          line-height: 1.1;
+          padding: 3px 0;
+          width: 100%;
+        }
+        .data-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          width: 100%;
+          padding: 2px 10px;
+          font-size: 11px;
+        }
+        .data-row .lbl {
+          color: #444;
+          white-space: nowrap;
+          flex-shrink: 0;
+          margin-right: 6px;
+          min-width: 55px;
+        }
+        .data-row .val {
+          font-weight: bold;
+          text-align: right;
+          word-break: break-word;
+          flex: 1;
+        }
+        .msg {
+          text-align: center;
+          font-size: 10px;
+          padding: 4px 10px;
+          line-height: 1.4;
+          width: 100%;
+          word-break: break-word;
+        }
+        .footer-line {
+          text-align: center;
+          font-size: 9px;
+          color: #777;
+          padding: 5px 0 10px 0;
+          width: 100%;
+        }
+        @media print {
+          html, body {
+            width: 100%;
+            max-width: 302px;
+          }
           @page {
             size: 80mm auto;
             margin: 0;
           }
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          html {
-            width: 80mm;
-          }
-          body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
-            color: #000;
-            background: #fff;
-            width: 80mm;
-            max-width: 80mm;
-            min-width: 80mm;
-            overflow-x: hidden;
-            word-wrap: break-word;
-          }
-          .receipt-header {
-            width: 80mm;
-            background: #fff;
-            color: #000;
-            padding: 3mm 4mm 2mm 4mm;
-            border-bottom: 1.5px solid #000;
-            box-sizing: border-box;
-          }
-          .icon-row {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 3mm;
-          }
-          .health-icon {
-            width: 14mm;
-            height: 14mm;
-            object-fit: contain;
-            flex-shrink: 0;
-          }
-          .header-text {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            max-width: 52mm;
-          }
-          .clinic-name-header {
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            color: #000;
-            line-height: 1.2;
-            word-break: break-word;
-          }
-          .clinic-sub {
-            font-size: 8px;
-            color: #555;
-            margin-top: 1px;
-          }
-          .website {
-            font-size: 9px;
-            text-align: center;
-            color: #555;
-            padding: 2px 4mm;
-            word-break: break-all;
-            width: 80mm;
-            box-sizing: border-box;
-          }
-          .divider {
-            border: none;
-            border-top: 1px dashed #000;
-            margin: 3px 4mm;
-            width: calc(80mm - 8mm);
-          }
-          .receipt-title {
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin: 3px 0;
-            width: 80mm;
-          }
-          .token-number {
-            font-size: 44px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1;
-            margin: 3px 0;
-            width: 80mm;
-          }
-          .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 1.5px 4mm;
-            font-size: 11px;
-            width: 80mm;
-            box-sizing: border-box;
-          }
-          .row .label {
-            color: #333;
-            white-space: nowrap;
-            flex-shrink: 0;
-            min-width: 16mm;
-            margin-right: 2mm;
-          }
-          .row .value {
-            font-weight: bold;
-            text-align: right;
-            word-break: break-word;
-            max-width: 48mm;
-          }
-          .message {
-            text-align: center;
-            font-size: 10px;
-            padding: 2px 4mm;
-            line-height: 1.4;
-            word-break: break-word;
-            width: 80mm;
-            box-sizing: border-box;
-          }
-          .footer {
-            text-align: center;
-            font-size: 9px;
-            color: #666;
-            padding: 4px 0 5mm 0;
-            width: 80mm;
-          }
-          @media print {
-            html, body { width: 80mm; max-width: 80mm; }
-            @page { size: 80mm auto; margin: 0; }
-          }
+        }
         </style>
       </head>
       <body>
         <!-- WHITE HEADER WITH ICON + CLINIC NAME -->
         <div class="receipt-header">
-          <div class="icon-row">
-            <img class="health-icon" src="${HEALTHCARE_ICON}" alt="healthcare icon" />
-            <div class="header-text">
-              <div class="clinic-name-header">${data.clinicName?.toUpperCase() || 'CLINIC'}</div>
-              <div class="clinic-sub">Healthcare Token System</div>
-            </div>
+          <svg class="health-icon" xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" fill="none" stroke="#000000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M50 35 C50 35 50 18 38 18 C26 18 22 30 22 38 C22 50 34 60 50 72 C66 60 78 50 78 38 C78 30 74 18 62 18 C50 18 50 35 50 35 Z"/>
+            <polyline points="31,42 37,42 41,32 45,52 48,38 52,38 55,42 61,42" stroke-width="3"/>
+            <path d="M28 78 C26 90 34 94 42 94 L58 94 C66 94 74 90 72 78 L76 66 C78 60 74 56 70 58 L68 62 L67 46 C67 40 62 40 60 44 L59 50 L58 36 C58 30 52 30 50 34 L49 50 L48 40 C48 34 42 34 40 38 L39 62 C36 58 30 56 26 60 Z"/>
+          </svg>
+          <div class="header-text">
+            <div class="clinic-name-header">${data.clinicName?.toUpperCase() || 'CLINIC'}</div>
+            <div class="clinic-sub">Healthcare Token System</div>
           </div>
         </div>
 
-        ${data.clinicUrl ? `<div class="website">${data.clinicUrl}</div>` : ''}
+        ${data.clinicUrl ? `<div class="website-line">${data.clinicUrl}</div>` : ''}
 
         <div class="divider"></div>
-        <div class="receipt-title">TOKEN RECEIPT</div>
+        <div class="section-title">TOKEN RECEIPT</div>
         <div class="divider"></div>
 
         <div class="token-number">#${token}</div>
 
         <div class="divider"></div>
 
-        <div class="row">
-          <span class="label">Patient</span>
-          <span class="value">${data.patientName || "Walk-in"}</span>
+        <div class="data-row">
+          <span class="lbl">Patient</span>
+          <span class="val">${data.patientName || "Walk-in"}</span>
         </div>
-        <div class="row">
-          <span class="label">Doctor</span>
-          <span class="value">${data.doctorName || "—"}</span>
+        <div class="data-row">
+          <span class="lbl">Doctor</span>
+          <span class="val">${data.doctorName || "—"}</span>
         </div>
-        <div class="row">
-          <span class="label">Spec</span>
-          <span class="value">${data.specialization || "—"}</span>
+        <div class="data-row">
+          <span class="lbl">Spec</span>
+          <span class="val">${data.specialization || "—"}</span>
         </div>
-        <div class="row">
-          <span class="label">Date</span>
-          <span class="value">${data.dateTime || "—"}</span>
+        <div class="data-row">
+          <span class="lbl">Date</span>
+          <span class="val">${data.dateTime || "—"}</span>
         </div>
-        <div class="row">
-          <span class="label">Status</span>
-          <span class="value" style="text-transform:capitalize;">${data.status || "—"}</span>
+        <div class="data-row">
+          <span class="lbl">Status</span>
+          <span class="val" style="text-transform:capitalize;">${data.status || "—"}</span>
         </div>
 
         <div class="divider"></div>
 
-        <div class="message">
+        <div class="msg">
           Please wait for your token number to be called.
           ${data.clinicUrl ? `<div style="margin-top:4px;">Live status: <strong>${data.clinicUrl}</strong></div>` : ''}
         </div>
 
         <div class="divider"></div>
 
-        <div class="row">
-          <span class="label">Contact</span>
-          <span class="value">${data.phone || "Not provided"}</span>
+        <div class="data-row">
+          <span class="lbl">Contact</span>
+          <span class="val">${data.phone || "Not provided"}</span>
         </div>
-        <div class="row">
-          <span class="label">Address</span>
-          <span class="value">${data.address || "Not provided"}</span>
+        <div class="data-row">
+          <span class="lbl">Address</span>
+          <span class="val">${data.address || "Not provided"}</span>
         </div>
-        ${data.hours ? `<div class="row"><span class="label">Hours</span><span class="value">${data.hours}</span></div>` : ''}
+        ${data.hours ? `<div class="data-row"><span class="lbl">Hours</span><span class="val">${data.hours}</span></div>` : ''}
 
         <div class="divider"></div>
-        <div class="footer">Powered by ClinicToken CMS</div>
+        <div class="footer-line">Powered by ClinicToken CMS</div>
       </body>
       </html>
     `;
-
-    const printWindow = window.open('', '_blank', 'width=340,height=750');
-    if (!printWindow) return;
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 800);
   };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank', 'width=302,height=800,scrollbars=no')
+    if (!printWindow) return
+    printWindow.document.write(buildReceiptHTML())
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.close()
+    }, 800)
+  }
 
   const handleDownload = handlePrint;
 
@@ -323,84 +316,88 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
                 style={{ width: "80mm", minHeight: "100mm", height: "auto" }}
               >
                 {/* WHITE HEADER WITH ICON + CLINIC NAME */}
-                <div className="w-[80mm] bg-white text-black p-[3mm_4mm_2mm_4mm] mb-[2px] border-b-[1.5px] border-black flex items-center justify-start gap-[3mm]">
-                  <img className="w-[14mm] h-[14mm] object-contain shrink-0" src={HEALTHCARE_ICON} alt="healthcare icon" />
-                  <div className="flex flex-col justify-center max-w-[52mm]">
-                    <div className="text-[12px] font-bold tracking-[0.5px] leading-tight uppercase line-clamp-2">{data.clinicName}</div>
-                    <div className="text-[8px] text-gray-500 mt-[1px]">Healthcare Token System</div>
+                <div className="w-full bg-white text-black p-[8px_10px_7px_10px] border-b-2 border-black flex items-center justify-start gap-[8px]">
+                  <svg className="w-[52px] h-[52px] shrink-0 block" xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" fill="none" stroke="#000000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M50 35 C50 35 50 18 38 18 C26 18 22 30 22 38 C22 50 34 60 50 72 C66 60 78 50 78 38 C78 30 74 18 62 18 C50 18 50 35 50 35 Z" />
+                    <polyline points="31,42 37,42 41,32 45,52 48,38 52,38 55,42 61,42" strokeWidth="3" />
+                    <path d="M28 78 C26 90 34 94 42 94 L58 94 C66 94 74 90 72 78 L76 66 C78 60 74 56 70 58 L68 62 L67 46 C67 40 62 40 60 44 L59 50 L58 36 C58 30 52 30 50 34 L49 50 L48 40 C48 34 42 34 40 38 L39 62 C36 58 30 56 26 60 Z" />
+                  </svg>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="text-[12px] font-bold leading-tight uppercase line-clamp-2">{data.clinicName}</div>
+                    <div className="text-[8px] text-[#555] mt-[1px]">Healthcare Token System</div>
                   </div>
                 </div>
 
-                <div className="px-[4mm] pb-[4mm]">
+                <div className="w-full">
                   {data.clinicUrl && (
-                    <p className="text-[9px] text-gray-400 break-all leading-normal text-center mt-2">
+                    <p className="text-[9px] text-[#555] break-all leading-normal text-center p-[4px_10px] w-full">
                       {data.clinicUrl}
                     </p>
                   )}
 
-                  <div className="border-t border-dashed border-black my-3" />
-                  <p className="text-center font-bold text-[11px] tracking-[2px]">TOKEN RECEIPT</p>
-                  <div className="border-t border-dashed border-black my-3" />
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
+                  <p className="text-center font-bold text-[11px] tracking-[2px] py-[4px] w-full">TOKEN RECEIPT</p>
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
 
                   {/* Token number */}
-                  <p className="text-center font-bold text-[44px] my-3 leading-none">#{data.tokenNumber}</p>
-                  <div className="border-t border-dashed border-black my-3" />
+                  <p className="text-center font-bold text-[44px] py-[3px] leading-[1.1] w-full">#{data.tokenNumber}</p>
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
 
                   {/* Details */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Patient</span>
-                      <span className="font-bold text-right flex-1">{data.patientName}</span>
+                  <div className="space-y-0.5 w-full">
+                    <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Patient</span>
+                      <span className="font-bold text-right flex-1 break-words">{data.patientName}</span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Doctor</span>
-                      <span className="font-bold text-right flex-1">{data.doctorName}</span>
+                    <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Doctor</span>
+                      <span className="font-bold text-right flex-1 break-words">{data.doctorName}</span>
                     </div>
-                    <div className="flex justify-between items-start text-[11px]">
-                      <span className="text-gray-500 pr-2 min-w-[16mm]">Spec</span>
-                      <span className="text-right flex-1">{data.specialization}</span>
+                    <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Spec</span>
+                      <span className="font-bold text-right flex-1">{data.specialization}</span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Date</span>
-                      <span className="text-right flex-1">{data.dateTime}</span>
+                    <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Date</span>
+                      <span className="font-bold text-right flex-1">{data.dateTime}</span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Status</span>
+                    <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Status</span>
                       <span className="capitalize font-bold text-right flex-1">{data.status}</span>
                     </div>
                   </div>
 
-                  <div className="border-t border-dashed border-black my-3" />
-                  <div className="text-center text-[10px] space-y-1">
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
+                  <div className="text-center text-[10px] py-[4px] px-[10px] leading-[1.4] w-full space-y-1">
                     <p>Please wait for your token number to be called.</p>
                     {data.clinicUrl && (
                       <div className="pt-1">
-                        <p className="text-[9px] text-gray-400">Live status: <strong>{data.clinicUrl}</strong></p>
+                        <p className="text-[9px] text-[#555]">Live status: <strong>{data.clinicUrl}</strong></p>
                       </div>
                     )}
                   </div>
-                  <div className="border-t border-dashed border-black my-3" />
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
 
                   {/* Contact */}
-                  <div className="space-y-1 text-[10px]">
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Contact</span>
-                      <span className="font-bold text-right flex-1">{data.phone}</span>
+                  <div className="space-y-0.5 text-[10px] w-full">
+                    <div className="flex justify-between items-start px-[10px] py-[2px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Contact</span>
+                      <span className="font-bold text-right flex-1 break-words">{data.phone}</span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 pr-2">Address</span>
-                      <span className="text-right flex-1">{data.address}</span>
+                    <div className="flex justify-between items-start px-[10px] py-[2px] w-full">
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Address</span>
+                      <span className="font-bold text-right flex-1 break-words">{data.address}</span>
                     </div>
                     {data.hours && (
-                      <div className="flex justify-between items-start">
-                        <span className="text-gray-500 pr-2">Hours</span>
-                        <span className="text-right flex-1">{data.hours}</span>
+                      <div className="flex justify-between items-start px-[10px] py-[2px] w-full">
+                        <span className="text-[#444] pr-[2px] min-w-[55px]">Hours</span>
+                        <span className="font-bold text-right flex-1 break-words">{data.hours}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="border-t border-dashed border-black mt-4 mb-2" />
-                  <p className="text-center text-[9px] text-gray-400">Powered by ClinicToken CMS</p>
+                  <div className="border-t border-dashed border-black mx-[10px] my-[3px] w-[calc(100%-20px)]" />
+                  <p className="text-center text-[9px] text-[#777] py-[5px] pb-[10px] w-full">Powered by ClinicToken CMS</p>
                 </div>
               </div>
             </div>
