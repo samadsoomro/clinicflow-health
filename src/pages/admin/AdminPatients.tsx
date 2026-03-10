@@ -92,8 +92,8 @@ const AdminPatients = () => {
     doc.text(`Exported: ${getTimestamp()}`, 14, 22);
     autoTable(doc, {
       startY: 28,
-      head: [["Patient ID", "Full Name", "Age", "Gender", "Phone", "Registered"]],
-      body: exportRows.map((r) => [r["Patient ID"], r["Full Name"], r.Age, r.Gender, r.Phone, r["Registration Date"]]),
+      head: [["Patient ID", "Full Name", "Age", "Gender", "Phone", "Email", "Registered"]],
+      body: exportRows.map((r) => [r["Patient ID"], r["Full Name"], r.Age, r.Gender, r.Phone, r.Email, r["Registration Date"]]),
     });
     doc.save(`Patients - ${clinicShortName} - ${getTimestamp()}.pdf`);
   };
