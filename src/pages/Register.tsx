@@ -271,6 +271,24 @@ const Register = () => {
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              {emailStatus === 'checking' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Checking availability...</span>
+                </div>
+              )}
+              {emailStatus === 'available' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600">Email is available</span>
+                </div>
+              )}
+              {emailStatus === 'taken' && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <X className="h-3 w-3 text-destructive" />
+                  <span className="text-xs text-destructive">This email is already taken. Use a different email.</span>
+                </div>
+              )}
             </div>
 
             {/* Password */}
