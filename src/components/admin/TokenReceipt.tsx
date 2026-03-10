@@ -251,7 +251,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
           <span class="val">${data.doctorName || "—"}</span>
         </div>
         <div class="data-row">
-          <span class="lbl">Spec</span>
+          <span class="lbl">Specialization</span>
           <span class="val">${data.specialization || "—"}</span>
         </div>
         <div class="data-row">
@@ -357,7 +357,7 @@ const TokenReceipt = ({ open, onOpenChange, token, clinicId }: TokenReceiptProps
                       <span className="font-bold text-right flex-1 break-words">{data.doctorName}</span>
                     </div>
                     <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
-                      <span className="text-[#444] pr-[2px] min-w-[55px]">Spec</span>
+                      <span className="text-[#444] pr-[2px] min-w-[55px]">Specialization</span>
                       <span className="font-bold text-right flex-1">{data.specialization}</span>
                     </div>
                     <div className="flex justify-between items-start px-[10px] py-[2px] text-[11px] w-full">
