@@ -21,18 +21,38 @@ interface ContactPreviewProps {
 
 export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewProps) => {
   const [clinic, setClinic] = useState<any>(null);
+  const [prefilled, setPrefilled] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("address, contact_phone, contact_email, working_hours, emergency_contact")
+        .select("address, contact_phone, contact_email, working_hours, emergency_contact, maps_embed_url")
         .eq("id", clinicId)
         .single();
       setClinic(data);
     };
     fetch();
   }, [clinicId]);
+
+  // Pre-fill empty content fields from clinic data once loaded
+  useEffect(() => {
+    if (!clinic || prefilled) return;
+    const needsFill = !content.phone && !content.email && !content.address && !content.working_hours && !content.maps_embed_url;
+    if (needsFill) {
+      onChange({
+        ...content,
+        title: content.title || "Contact Us",
+        subtitle: content.subtitle || "Get in touch with our team",
+        address: content.address || clinic.address || "",
+        phone: content.phone || clinic.contact_phone || "",
+        email: content.email || clinic.contact_email || "",
+        working_hours: content.working_hours || clinic.working_hours || "",
+        maps_embed_url: content.maps_embed_url || clinic.maps_embed_url || "",
+      });
+    }
+    setPrefilled(true);
+  }, [clinic]);
 
   return (
     <div className="space-y-6">
