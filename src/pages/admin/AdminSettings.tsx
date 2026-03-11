@@ -115,8 +115,8 @@ const AdminSettings = () => {
   };
 
   const handleResetDefault = async () => {
-    const defaultTheme = '#0ea5e9';
-    const defaultSecondary = '#0f172a';
+    const defaultTheme = '#218a6b';
+    const defaultSecondary = '#162a30';
 
     // Update local state so the color pickers show reset values instantly
     setForm((prev) => ({

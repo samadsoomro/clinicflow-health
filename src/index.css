@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    --theme-color: #0ea5e9;
-    --secondary-theme-color: #0f172a;
+    --theme-color: #218a6b;
+    --secondary-theme-color: #162a30;
 
     --background: 160 20% 98%;
     --foreground: 200 30% 12%;
