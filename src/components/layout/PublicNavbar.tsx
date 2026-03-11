@@ -53,8 +53,11 @@ const PublicNavbar = () => {
           {logoUrl ? (
             <img src={logoUrl} alt={clinicName} className="h-9 w-9 rounded-lg object-cover" />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-              <Activity className="h-5 w-5 text-primary-foreground" />
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-lg"
+              style={{ background: 'var(--theme-color)' }}
+            >
+              <Activity className="h-5 w-5 text-white" />
             </div>
           )}
           <span className="font-display text-lg md:text-xl font-bold text-foreground truncate max-w-[140px] md:max-w-none">

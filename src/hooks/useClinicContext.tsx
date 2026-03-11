@@ -153,6 +153,16 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
     resolveClinic();
   }, [resolveClinic]);
 
+  // Inject clinic theme colors as CSS variables whenever clinic data changes
+  useEffect(() => {
+    if (clinic?.theme_color) {
+      document.documentElement.style.setProperty('--theme-color', clinic.theme_color);
+    }
+    if (clinic?.secondary_theme_color) {
+      document.documentElement.style.setProperty('--secondary-theme-color', clinic.secondary_theme_color);
+    }
+  }, [clinic?.theme_color, clinic?.secondary_theme_color]);
+
   const refreshClinic = useCallback(async () => {
     if (!clinic?.id) return;
     const { data } = await supabase

@@ -105,10 +105,45 @@ const AdminSettings = () => {
     if (error) {
       toast.error("Failed to save: " + error.message);
     } else {
+      // Apply colors immediately so public site updates without a page refresh
+      document.documentElement.style.setProperty('--theme-color', form.themeColor);
+      document.documentElement.style.setProperty('--secondary-theme-color', form.secondaryThemeColor);
       await refreshClinic();
       toast.success("Clinic settings saved!");
     }
     setSaving(false);
+  };
+
+  const handleResetDefault = async () => {
+    const defaultTheme = '#0ea5e9';
+    const defaultSecondary = '#0f172a';
+
+    // Update local state so the color pickers show reset values instantly
+    setForm((prev) => ({
+      ...prev,
+      themeColor: defaultTheme,
+      secondaryThemeColor: defaultSecondary,
+    }));
+
+    // Save to DB
+    const { error } = await supabase
+      .from('clinics')
+      .update({
+        theme_color: defaultTheme,
+        secondary_theme_color: defaultSecondary,
+      } as any)
+      .eq('id', clinicId);
+
+    if (error) {
+      toast.error('Failed to reset theme: ' + error.message);
+      return;
+    }
+
+    // Apply to page immediately
+    document.documentElement.style.setProperty('--theme-color', defaultTheme);
+    document.documentElement.style.setProperty('--secondary-theme-color', defaultSecondary);
+    await refreshClinic();
+    toast.success('Theme colors reset to defaults!');
   };
 
   if (loading) {
@@ -232,14 +267,7 @@ const AdminSettings = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setForm((prev) => ({
-                  ...prev,
-                  themeColor: "#218a6b",
-                  secondaryThemeColor: "#162a30",
-                }));
-                toast.info("Theme colors reset to defaults. Click 'Save Settings' to apply.");
-              }}
+              onClick={handleResetDefault}
             >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Reset Default

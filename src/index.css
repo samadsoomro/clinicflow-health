@@ -6,6 +6,9 @@
 
 @layer base {
   :root {
+    --theme-color: #0ea5e9;
+    --secondary-theme-color: #0f172a;
+
     --background: 160 20% 98%;
     --foreground: 200 30% 12%;
 
@@ -53,8 +56,8 @@
     --info: 205 75% 50%;
     --info-foreground: 0 0% 100%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(168, 60%, 32%), hsl(175, 55%, 38%));
-    --gradient-hero: linear-gradient(135deg, hsl(168, 50%, 14%) 0%, hsl(175, 45%, 22%) 50%, hsl(168, 60%, 32%) 100%);
+    --gradient-primary: linear-gradient(135deg, var(--theme-color), color-mix(in srgb, var(--theme-color) 80%, white));
+    --gradient-hero: linear-gradient(135deg, var(--secondary-theme-color) 0%, color-mix(in srgb, var(--secondary-theme-color) 70%, var(--theme-color)) 50%, var(--theme-color) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(12, 80%, 60%), hsl(25, 85%, 55%));
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(160, 20%, 97%) 100%);
 
