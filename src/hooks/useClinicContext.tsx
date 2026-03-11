@@ -36,6 +36,7 @@ interface ClinicContextType {
   loading: boolean;
   error: string | null;
   refreshClinic: () => Promise<void>;
+  clearClinicCache: () => void;
 }
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
@@ -95,25 +96,38 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
     const clinicParam = urlParams.get("clinic");
     const subdomain = extractSubdomain();
 
-    let query = supabase.from("clinics").select("*");
     let activeSubdomain = subdomain;
 
     if (clinicParam) {
-      // Save to sessionStorage for persistence
       sessionStorage.setItem('clinic_subdomain', clinicParam);
       activeSubdomain = clinicParam;
-      query = query.eq("subdomain", clinicParam);
     } else {
-      // Fallback to sessionStorage if URL param missing
       const sessionSubdomain = sessionStorage.getItem('clinic_subdomain');
       if (sessionSubdomain) {
         activeSubdomain = sessionSubdomain;
-        query = query.eq("subdomain", sessionSubdomain);
-      } else if (subdomain) {
-        query = query.eq("subdomain", subdomain);
-      } else {
-        query = query.eq("id", DEFAULT_CLINIC_ID);
       }
+    }
+
+    // --- OPT 4: sessionStorage cache ---
+    const cacheKey = `clinic_data_${activeSubdomain || DEFAULT_CLINIC_ID}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setClinic(JSON.parse(cached) as ClinicData);
+        setLoading(false);
+        return;
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+    // ------------------------------------
+
+    let query = supabase.from("clinics").select("*");
+
+    if (activeSubdomain) {
+      query = query.eq("subdomain", activeSubdomain);
+    } else {
+      query = query.eq("id", DEFAULT_CLINIC_ID);
     }
 
     const { data, error: fetchError } = await query.maybeSingle();
@@ -126,6 +140,7 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
 
     if (data) {
       setClinic(data as ClinicData);
+      sessionStorage.setItem(cacheKey, JSON.stringify(data));
     } else {
       const isCustomAccess = clinicParam || sessionStorage.getItem('clinic_subdomain') || subdomain;
       if (!isCustomAccess) {
@@ -138,6 +153,8 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
         if (firstClinic) {
           setClinic(firstClinic as ClinicData);
+          const fallbackKey = `clinic_data_${(firstClinic as ClinicData).subdomain}`;
+          sessionStorage.setItem(fallbackKey, JSON.stringify(firstClinic));
         } else {
           setError("No clinic found");
         }
@@ -163,8 +180,17 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
     }
   }, [clinic?.theme_color, clinic?.secondary_theme_color]);
 
+  const clearClinicCache = useCallback(() => {
+    // Clear any cached clinic data so next load re-fetches fresh data
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith("clinic_data_"))
+      .forEach((k) => sessionStorage.removeItem(k));
+  }, []);
+
   const refreshClinic = useCallback(async () => {
     if (!clinic?.id) return;
+    // Clear cache so refreshed data is persisted fresh
+    clearClinicCache();
     const { data } = await supabase
       .from("clinics")
       .select("*")
@@ -172,10 +198,13 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
       .single();
     if (data) {
       setClinic(data as ClinicData);
+      const key = `clinic_data_${(data as ClinicData).subdomain}`;
+      sessionStorage.setItem(key, JSON.stringify(data));
     }
-  }, [clinic?.id]);
+  }, [clinic?.id, clearClinicCache]);
 
   const clinicId = clinic?.id || DEFAULT_CLINIC_ID;
+
   const location = useLocation();
 
   // Dynamic favicon and page title logic
@@ -214,7 +243,7 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   }, [clinic, location.pathname]);
 
   return (
-    <ClinicContext.Provider value={{ clinic, clinicId, loading, error, refreshClinic }}>
+    <ClinicContext.Provider value={{ clinic, clinicId, loading, error, refreshClinic, clearClinicCache }}>
       {children}
     </ClinicContext.Provider>
   );

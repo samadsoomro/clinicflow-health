@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageUtils";
 
 interface CertificationsContent {
   title: string;
@@ -44,8 +45,11 @@ export const CertificationsEditor = ({ content, onChange, clinicId }: Certificat
     if (!file) return;
     setUploading(true);
 
-    const path = `${clinicId}/certifications/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage.from("clinic-assets").upload(path, file, { upsert: true });
+    // OPT 5: Compress image before upload
+    const compressed = await compressImage(file, 1200, 0.82);
+
+    const path = `${clinicId}/certifications/${Date.now()}-${file.name.replace(/\.[^.]+$/, '.jpg')}`;
+    const { error } = await supabase.storage.from("clinic-assets").upload(path, compressed, { upsert: true });
     if (error) {
       toast.error("Upload failed: " + error.message);
       setUploading(false);

@@ -42,7 +42,7 @@ const Index = () => {
     const fetchAll = async () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("*").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact").eq("id", clinicId).single(),
         supabase.from("doctors").select("id, name, specialization, image_url, status").eq("clinic_id", clinicId).eq("status", "active"),
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),

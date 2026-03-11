@@ -9,10 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useClinicId } from "@/hooks/useClinic";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageUtils";
 
 const AdminSettings = () => {
   const { clinicId } = useClinicId();
-  const { refreshClinic } = useClinicContext();
+  const { refreshClinic, clearClinicCache } = useClinicContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -32,7 +33,7 @@ const AdminSettings = () => {
     const fetchClinic = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("*")
+        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url")
         .eq("id", clinicId)
         .single();
       if (data) {
@@ -55,9 +56,21 @@ const AdminSettings = () => {
 
   const handleLogoUpload = async (file: File) => {
     setUploadingLogo(true);
-    const ext = file.name.split(".").pop();
+
+    // OPT 1: Delete the old logo file from storage before uploading new one
+    if (form.logoUrl) {
+      const oldPath = form.logoUrl.split('/clinic-assets/')[1];
+      if (oldPath) {
+        await supabase.storage.from('clinic-assets').remove([oldPath]);
+      }
+    }
+
+    // OPT 5: Compress image before upload
+    const compressed = await compressImage(file);
+
+    const ext = "jpg";
     const path = `${clinicId}/logo/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("clinic-assets").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("clinic-assets").upload(path, compressed, { upsert: true });
     if (error) {
       toast.error("Upload failed: " + error.message);
       setUploadingLogo(false);
@@ -73,6 +86,7 @@ const AdminSettings = () => {
       toast.error("Failed to save logo: " + updateErr.message);
     } else {
       setForm((prev) => ({ ...prev, logoUrl: newUrl }));
+      clearClinicCache();
       await refreshClinic();
       toast.success("Logo uploaded and saved!");
     }
@@ -108,6 +122,7 @@ const AdminSettings = () => {
       // Apply colors immediately so public site updates without a page refresh
       document.documentElement.style.setProperty('--theme-color', form.themeColor);
       document.documentElement.style.setProperty('--secondary-theme-color', form.secondaryThemeColor);
+      clearClinicCache();
       await refreshClinic();
       toast.success("Clinic settings saved!");
     }
@@ -142,6 +157,7 @@ const AdminSettings = () => {
     // Apply to page immediately
     document.documentElement.style.setProperty('--theme-color', defaultTheme);
     document.documentElement.style.setProperty('--secondary-theme-color', defaultSecondary);
+    clearClinicCache();
     await refreshClinic();
     toast.success('Theme colors reset to defaults!');
   };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle, Printer } from "lucide-react";
+import { Ticket, RotateCcw, FileSpreadsheet, FileText, UserCheck, UserX, CheckCircle, Printer, Trash2, Loader2 } from "lucide-react";
 import TokenReceipt from "@/components/admin/TokenReceipt";
 import IssueTokenModal from "@/components/admin/IssueTokenModal";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const AdminTokens = () => {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [urlSaveMsg, setUrlSaveMsg] = useState<string | null>(null);
+  const [clearingOld, setClearingOld] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -71,7 +72,7 @@ const AdminTokens = () => {
       fetchTodayTokens();
       const channel = supabase
         .channel("admin-tokens")
-        .on("postgres_changes", { event: "*", schema: "public", table: "tokens" }, () => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchTodayTokens();
         })
         .subscribe();
@@ -231,6 +232,27 @@ const AdminTokens = () => {
     setTimeout(() => setUrlSaveMsg(null), 2000);
   };
 
+  const handleClearOldTokens = async () => {
+    if (!confirm("Delete all completed/unavailable tokens older than 7 days? This cannot be undone.")) return;
+    setClearingOld(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cleanup-old-tokens`,
+        { method: "POST", headers: { Authorization: `Bearer ${session?.access_token || ""}` } }
+      );
+      const json = await res.json();
+      if (json.success) {
+        toast.success(`Cleared ${json.deleted ?? 0} old token(s).`);
+      } else {
+        toast.error("Cleanup failed: " + (json.error || "Unknown error"));
+      }
+    } catch (e: any) {
+      toast.error("Cleanup error: " + e.message);
+    }
+    setClearingOld(false);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Website URL + Export bar */}
@@ -258,6 +280,10 @@ const AdminTokens = () => {
             </Button>
             <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || todayTokens.length === 0}>
               <RotateCcw className="mr-1.5 h-4 w-4" /> {resetting ? "Resetting..." : "Reset Today"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleClearOldTokens} disabled={clearingOld} className="border-destructive text-destructive hover:bg-destructive/10">
+              {clearingOld ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
+              {clearingOld ? "Clearing..." : "Clear Old Tokens"}
             </Button>
           </div>
         </div>
