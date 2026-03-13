@@ -11,6 +11,7 @@ interface ContactContent {
   address: string;
   working_hours: string;
   maps_embed_url: string;
+  location_heading?: string;
   second_branch_address?: string;
   second_branch_working_hours?: string;
   second_branch_maps_embed_url?: string;
@@ -30,7 +31,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("address, contact_phone, contact_email, working_hours, emergency_contact, maps_embed_url, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url")
+        .select("address, contact_phone, contact_email, working_hours, emergency_contact, maps_embed_url, location_heading, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url")
         .eq("id", clinicId)
         .single();
       setClinic(data);
@@ -41,7 +42,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
   // Pre-fill empty content fields from clinic data once loaded
   useEffect(() => {
     if (!clinic || prefilled) return;
-    const needsFill = !content.phone && !content.email && !content.address && !content.working_hours && !content.maps_embed_url && !content.second_branch_address && !content.second_branch_working_hours && !content.second_branch_maps_embed_url;
+    const needsFill = !content.phone && !content.email && !content.address && !content.working_hours && !content.maps_embed_url && !content.location_heading && !content.second_branch_address && !content.second_branch_working_hours && !content.second_branch_maps_embed_url;
     if (needsFill) {
       onChange({
         ...content,
@@ -51,6 +52,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
         phone: content.phone || clinic.contact_phone || "",
         email: content.email || clinic.contact_email || "",
         working_hours: content.working_hours || clinic.working_hours || "",
+        location_heading: content.location_heading || clinic.location_heading || "",
         second_branch_address: content.second_branch_address || clinic.second_branch_address || "",
         second_branch_working_hours: content.second_branch_working_hours || clinic.second_branch_working_hours || "",
         second_branch_maps_embed_url: content.second_branch_maps_embed_url || clinic.second_branch_maps_embed_url || "",
@@ -94,34 +96,51 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
           <Label>Working Hours</Label>
           <Input value={content.working_hours || ""} onChange={(e) => onChange({ ...content, working_hours: e.target.value })} placeholder={clinic?.working_hours || "From settings"} />
         </div>
-        <div className="space-y-2">
-          <Label>Google Maps Embed URL</Label>
-          <Input value={content.maps_embed_url || ""} onChange={(e) => onChange({ ...content, maps_embed_url: e.target.value })} placeholder="https://www.google.com/maps/embed?pb=..." />
-          <p className="text-xs text-muted-foreground">Paste the embed URL from Google Maps to show a map on the homepage.</p>
+        <div className="space-y-4 pt-4 border-t border-border">
+          <div className="space-y-2">
+            <Label>Map Heading (Optional)</Label>
+            <Input
+              value={content.location_heading || ""}
+              onChange={(e) => onChange({ ...content, location_heading: e.target.value })}
+              placeholder="e.g. Our Main Branch Location (leave empty for no heading)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Google Maps Embed URL</Label>
+            <Input
+              value={content.maps_embed_url || ""}
+              onChange={(e) => onChange({ ...content, maps_embed_url: e.target.value })}
+              placeholder="Paste Google Maps embed URL"
+            />
+            <p className="text-xs text-muted-foreground">Paste the embed URL from Google Maps to show a map on the homepage.</p>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label>Second Branch Address (Optional)</Label>
-          <Input
-            value={content.second_branch_address || ""}
-            onChange={(e) => onChange({ ...content, second_branch_address: e.target.value })}
-            placeholder={clinic?.second_branch_address || "Enter second branch address (leave empty if none)"}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Second Branch Working Hours (Optional)</Label>
-          <Input
-            value={content.second_branch_working_hours || ""}
-            onChange={(e) => onChange({ ...content, second_branch_working_hours: e.target.value })}
-            placeholder={clinic?.second_branch_working_hours || "e.g. Mon-Sat 10AM-5PM (leave empty if none)"}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Second Branch Google Maps Embed URL (Optional)</Label>
-          <Input
-            value={content.second_branch_maps_embed_url || ""}
-            onChange={(e) => onChange({ ...content, second_branch_maps_embed_url: e.target.value })}
-            placeholder={clinic?.second_branch_maps_embed_url || "Paste Google Maps embed URL for second branch"}
-          />
+
+        <div className="space-y-4 pt-4 border-t border-border">
+          <div className="space-y-2">
+            <Label>Second Branch Address (Optional)</Label>
+            <Input
+              value={content.second_branch_address || ""}
+              onChange={(e) => onChange({ ...content, second_branch_address: e.target.value })}
+              placeholder="Enter second branch address (leave empty if none)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Second Branch Working Hours (Optional)</Label>
+            <Input
+              value={content.second_branch_working_hours || ""}
+              onChange={(e) => onChange({ ...content, second_branch_working_hours: e.target.value })}
+              placeholder="e.g. Mon-Sat 10AM-5PM (leave empty if none)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Second Branch Google Maps Embed URL (Optional)</Label>
+            <Input
+              value={content.second_branch_maps_embed_url || ""}
+              onChange={(e) => onChange({ ...content, second_branch_maps_embed_url: e.target.value })}
+              placeholder="Paste Google Maps embed URL for second branch"
+            />
+          </div>
         </div>
       </div>
 

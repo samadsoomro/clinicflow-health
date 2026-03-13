@@ -114,6 +114,7 @@ const AdminHomepage = () => {
             second_branch_address: section.content_json.second_branch_address || null,
             second_branch_working_hours: section.content_json.second_branch_working_hours || null,
             second_branch_maps_embed_url: section.content_json.second_branch_maps_embed_url || null,
+            location_heading: section.content_json.location_heading || null,
           } as any)
           .eq("id", clinicId);
       }

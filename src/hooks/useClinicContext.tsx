@@ -28,6 +28,10 @@ interface ClinicData {
   short_name: string | null;
   maps_embed_url: string | null;
   secondary_theme_color: string | null;
+  second_branch_address?: string | null;
+  second_branch_working_hours?: string | null;
+  second_branch_maps_embed_url?: string | null;
+  location_heading?: string | null;
 }
 
 interface ClinicContextType {

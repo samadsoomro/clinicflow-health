@@ -42,7 +42,7 @@ const Index = () => {
     const fetchAll = async () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading").eq("id", clinicId).single(),
         (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
@@ -368,52 +368,38 @@ const Index = () => {
                 )}
               </div>
               {mapsEmbedUrl && (mapsEmbedUrl.includes('google.com/maps/embed') || mapsEmbedUrl.includes('maps.google.com') || mapsEmbedUrl.includes('google.com/maps')) && (
-                <div className="space-y-6 mt-6">
-                  {clinic.second_branch_maps_embed_url ? (
-                    <>
-                      <div className="space-y-4">
-                        <h3 className="font-display text-lg font-bold text-foreground px-1">Main Branch</h3>
-                        <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
-                          <iframe
-                            src={mapsEmbedUrl}
-                            width="100%"
-                            height="300"
-                            style={{ border: 0 }}
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                            title="Main Branch Location"
-                          />
-                        </div>
+                <div className="mt-6">
+                  {clinic.location_heading && (
+                    <h3 className="text-lg font-semibold text-foreground mb-2 px-1">{clinic.location_heading}</h3>
+                  )}
+                  <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
+                    <iframe
+                      src={mapsEmbedUrl}
+                      width="100%"
+                      height="300"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Main Location"
+                    />
+                  </div>
+
+                  {clinic.second_branch_maps_embed_url && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-foreground mb-2 px-1">Second Branch Location</h3>
+                      <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
+                        <iframe
+                          src={clinic.second_branch_maps_embed_url}
+                          width="100%"
+                          height="300"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title="Second Branch Location"
+                        />
                       </div>
-                      <div className="space-y-4">
-                        <h3 className="font-display text-lg font-bold text-foreground px-1">Second Branch</h3>
-                        <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
-                          <iframe
-                            src={clinic.second_branch_maps_embed_url}
-                            width="100%"
-                            height="300"
-                            style={{ border: 0 }}
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                            title="Second Branch Location"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
-                      <iframe
-                        src={mapsEmbedUrl}
-                        width="100%"
-                        height="300"
-                        style={{ border: 0 }}
-                        allowFullScreen
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        title="Clinic Location"
-                      />
                     </div>
                   )}
                 </div>
