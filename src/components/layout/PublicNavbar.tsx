@@ -155,9 +155,10 @@ const PublicNavbar = () => {
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
-                  <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
+                  <ClinicLink key={link.path} to={link.path}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
+                      onClick={closeMenu}
                       className={cn(
                         "w-full justify-start",
                         isActive ? "text-orange-500 font-bold" : "text-foreground/70"
@@ -176,8 +177,8 @@ const PublicNavbar = () => {
                     )}
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1" onClick={closeMenu}>
-                          <Button variant="outline" className="w-full">Dashboard</Button>
+                        <ClinicLink to="/admin" className="flex-1">
+                          <Button variant="outline" className="w-full" onClick={closeMenu}>Dashboard</Button>
                         </ClinicLink>
                       )}
                       <Button variant="destructive" className="flex-1" onClick={handleLogout}>
@@ -188,11 +189,11 @@ const PublicNavbar = () => {
                   </>
                 ) : (
                   <>
-                    <ClinicLink to="/login" className="flex-1" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full">Log in</Button>
+                    <ClinicLink to="/login" className="flex-1">
+                      <Button variant="outline" className="w-full" onClick={closeMenu}>Log in</Button>
                     </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1" onClick={closeMenu}>
-                      <Button variant="hero" className="w-full">Register</Button>
+                    <ClinicLink to="/register" className="flex-1">
+                      <Button variant="hero" className="w-full" onClick={closeMenu}>Register</Button>
                     </ClinicLink>
                   </>
                 )}
