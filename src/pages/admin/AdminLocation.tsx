@@ -16,6 +16,7 @@ const AdminLocation = () => {
   const [form, setForm] = useState({
     address: "",
     mapsEmbedUrl: "",
+    locationHeading: "",
     phone: "",
     email: "",
     workingHours: "",
@@ -26,17 +27,19 @@ const AdminLocation = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("address, maps_embed_url, contact_phone, contact_email, working_hours, emergency_contact")
+        .select("address, maps_embed_url, location_heading, contact_phone, contact_email, working_hours, emergency_contact")
         .eq("id", clinicId)
         .single();
       if (data) {
+        const d = data as any;
         setForm({
-          address: data.address || "",
-          mapsEmbedUrl: (data as any).maps_embed_url || "",
-          phone: data.contact_phone || "",
-          email: data.contact_email || "",
-          workingHours: data.working_hours || "",
-          emergencyContact: data.emergency_contact || "",
+          address: d.address || "",
+          mapsEmbedUrl: d.maps_embed_url || "",
+          locationHeading: d.location_heading || "",
+          phone: d.contact_phone || "",
+          email: d.contact_email || "",
+          workingHours: d.working_hours || "",
+          emergencyContact: d.emergency_contact || "",
         });
       }
       setLoading(false);
@@ -55,6 +58,7 @@ const AdminLocation = () => {
     const { error } = await supabase.from("clinics").update({
       address: form.address,
       maps_embed_url: form.mapsEmbedUrl,
+      location_heading: form.locationHeading || null,
       contact_phone: form.phone,
       contact_email: form.email,
       working_hours: form.workingHours,
@@ -87,6 +91,14 @@ const AdminLocation = () => {
           <div className="space-y-2">
             <Label>Full Address</Label>
             <Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} />
+          </div>
+          <div className="space-y-2">
+            <Label>Map Heading (Optional)</Label>
+            <Input
+              value={form.locationHeading}
+              onChange={(e) => setForm({ ...form, locationHeading: e.target.value })}
+              placeholder="e.g. Our Main Branch Location (leave empty for no heading)"
+            />
           </div>
           <div className="space-y-2">
             <Label>Google Maps Embed URL</Label>

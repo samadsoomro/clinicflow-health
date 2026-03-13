@@ -369,9 +369,11 @@ const Index = () => {
               </div>
               {mapsEmbedUrl && (mapsEmbedUrl.includes('google.com/maps/embed') || mapsEmbedUrl.includes('maps.google.com') || mapsEmbedUrl.includes('google.com/maps')) && (
                 <div className="mt-6">
-                  {clinic.location_heading && (
-                    <h3 className="text-lg font-semibold text-foreground mb-2 px-1">{clinic.location_heading}</h3>
+                  {/* Auto heading: appears ONLY when second branch map URL exists */}
+                  {clinic.second_branch_maps_embed_url && (
+                    <h3 className="text-lg font-semibold mb-2">Main Branch Location</h3>
                   )}
+
                   <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
                     <iframe
                       src={mapsEmbedUrl}
@@ -385,9 +387,10 @@ const Index = () => {
                     />
                   </div>
 
+                  {/* Second branch map + heading — only when URL exists */}
                   {clinic.second_branch_maps_embed_url && (
                     <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-foreground mb-2 px-1">Second Branch Location</h3>
+                      <h3 className="text-lg font-semibold mb-2">Second Branch Location</h3>
                       <div className="overflow-hidden rounded-2xl border border-border shadow-soft">
                         <iframe
                           src={clinic.second_branch_maps_embed_url}

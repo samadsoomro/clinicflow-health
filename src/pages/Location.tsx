@@ -14,7 +14,7 @@ const Location = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("clinic_name, address, contact_phone, working_hours, maps_embed_url")
+        .select("clinic_name, address, contact_phone, working_hours, maps_embed_url, location_heading")
         .eq("id", clinicId)
         .single();
       setClinic(data);
@@ -32,6 +32,7 @@ const Location = () => {
   }
 
   const mapsUrl = (clinic as any)?.maps_embed_url;
+  const locationHeading = (clinic as any)?.location_heading;
 
   return (
     <section className="py-16 md:py-20">
@@ -51,17 +52,22 @@ const Location = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="overflow-hidden rounded-2xl border border-border shadow-card"
+              className="space-y-4"
             >
-              <iframe
-                title="Clinic Location"
-                className="w-full h-80 md:h-96"
-                src={mapsUrl}
-                loading="lazy"
-                allowFullScreen
-                style={{ border: 0 }}
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              {locationHeading && (
+                <h3 className="text-lg font-semibold text-foreground mb-2">{locationHeading}</h3>
+              )}
+              <div className="overflow-hidden rounded-2xl border border-border shadow-card">
+                <iframe
+                  title="Clinic Location"
+                  className="w-full h-80 md:h-96"
+                  src={mapsUrl}
+                  loading="lazy"
+                  allowFullScreen
+                  style={{ border: 0 }}
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </motion.div>
           ) : !mapsUrl ? (
             <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
