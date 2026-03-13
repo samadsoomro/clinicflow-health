@@ -185,7 +185,7 @@ const Register = () => {
       <div className="hidden w-1/2 gradient-hero lg:flex lg:items-center lg:justify-center">
         <div className="max-w-md text-center px-8">
           {clinic?.logo_url ? (
-            <img src={clinic.logo_url} alt={clinic.clinic_name} className="mb-6 mx-auto h-20 w-20 rounded-2xl object-cover shadow-lg" />
+            <img src={clinic.logo_url} alt={clinic.clinic_name} className="mb-6 mx-auto h-20 w-20 rounded-2xl object-cover shadow-lg" loading="lazy" />
           ) : (
             <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
               <span className="font-display text-2xl font-bold text-primary-foreground">{clinic?.clinic_name?.charAt(0) || 'C'}</span>
@@ -200,7 +200,7 @@ const Register = () => {
           <div className="mb-8 text-center lg:text-left">
             <ClinicLink to="/" className="mb-6 inline-flex items-center gap-2 lg:hidden">
               {clinic?.logo_url ? (
-                <img src={clinic.logo_url} alt={clinic.clinic_name} className="h-9 w-9 rounded-lg object-cover" />
+                <img src={clinic.logo_url} alt={clinic.clinic_name} className="h-9 w-9 rounded-lg object-cover" loading="lazy" />
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
                   <span className="text-sm font-bold text-primary-foreground">{clinic?.clinic_name?.charAt(0) || 'C'}</span>

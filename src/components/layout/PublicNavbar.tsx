@@ -73,7 +73,7 @@ const PublicNavbar = () => {
             <span className="font-display text-sm font-bold text-primary">{shortName}</span>
           )}
           {logoUrl ? (
-            <img src={logoUrl} alt={clinicName} className="h-9 w-9 rounded-lg object-cover" />
+            <img src={logoUrl} alt={clinicName} className="h-9 w-9 rounded-lg object-cover" loading="eager" />
           ) : (
             <div
               className="flex h-9 w-9 items-center justify-center rounded-lg"

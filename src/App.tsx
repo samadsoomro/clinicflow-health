@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ClinicProvider } from "@/hooks/useClinicContext";
 import PublicLayout from "./components/layout/PublicLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy-loaded routes
 const Index = lazy(() => import("./pages/Index"));
@@ -55,44 +56,46 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <ClinicProvider>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route element={<PublicLayout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/tokens" element={<LiveTokens />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/location" element={<Location />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/patient-card" element={<PatientCard />} />
-                  </Route>
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route element={<PublicLayout />}>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/tokens" element={<LiveTokens />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/location" element={<Location />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/patient-card" element={<PatientCard />} />
+                    </Route>
 
-                  <Route path="/token" element={<TokenDisplay />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                    <Route path="/token" element={<TokenDisplay />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
-                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
-                    <Route index element={<AdminOverview />} />
-                    <Route path="homepage" element={<AdminHomepage />} />
-                    <Route path="doctors" element={<AdminDoctors />} />
-                    <Route path="tokens" element={<AdminTokens />} />
-                    <Route path="patients" element={<AdminPatients />} />
-                    <Route path="notifications" element={<AdminNotifications />} />
-                    <Route path="cards" element={<AdminPatientCards />} />
-                    <Route path="location" element={<AdminLocation />} />
-                    <Route path="contact-messages" element={<AdminContactMessages />} />
-                    <Route path="settings" element={<AdminSettings />} />
-                  </Route>
+                    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
+                      <Route index element={<AdminOverview />} />
+                      <Route path="homepage" element={<AdminHomepage />} />
+                      <Route path="doctors" element={<AdminDoctors />} />
+                      <Route path="tokens" element={<AdminTokens />} />
+                      <Route path="patients" element={<AdminPatients />} />
+                      <Route path="notifications" element={<AdminNotifications />} />
+                      <Route path="cards" element={<AdminPatientCards />} />
+                      <Route path="location" element={<AdminLocation />} />
+                      <Route path="contact-messages" element={<AdminContactMessages />} />
+                      <Route path="settings" element={<AdminSettings />} />
+                    </Route>
 
-                  <Route path="/superadmin" element={<SuperAdminLayout />}>
-                    <Route index element={<SuperAdminOverview />} />
-                    <Route path="clinics" element={<SuperAdminClinics />} />
-                    <Route path="admins" element={<SuperAdminAdmins />} />
-                    <Route path="settings" element={<SuperAdminSettings />} />
-                  </Route>
+                    <Route path="/superadmin" element={<SuperAdminLayout />}>
+                      <Route index element={<SuperAdminOverview />} />
+                      <Route path="clinics" element={<SuperAdminClinics />} />
+                      <Route path="admins" element={<SuperAdminAdmins />} />
+                      <Route path="settings" element={<SuperAdminSettings />} />
+                    </Route>
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </ClinicProvider>
           </AuthProvider>
         </BrowserRouter>

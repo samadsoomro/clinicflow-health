@@ -17,29 +17,35 @@ const LiveTokens = () => {
   const clinicId = usePublicClinicId();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const today = new Date().toISOString().split("T")[0];
 
-  const fetchData = async () => {
-    const { data: docData } = await supabase
-      .from("doctors")
-      .select("id, name, specialization, status")
-      .eq("clinic_id", clinicId);
+  const fetchData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    try {
+      const { data: docData } = await supabase
+        .from("doctors")
+        .select("id, name, specialization, status")
+        .eq("clinic_id", clinicId);
 
-    const { data: tokenData } = await supabase
-      .from("tokens")
-      .select("id, token_number, patient_name, doctor_id, status")
-      .eq("clinic_id", clinicId)
-      .gte("created_at", today + "T00:00:00")
-      .lte("created_at", today + "T23:59:59")
-      .order("token_number", { ascending: true });
+      const { data: tokenData } = await supabase
+        .from("tokens")
+        .select("id, token_number, patient_name, doctor_id, status")
+        .eq("clinic_id", clinicId)
+        .gte("created_at", today + "T00:00:00")
+        .lte("created_at", today + "T23:59:59")
+        .order("token_number", { ascending: true });
 
-    setDoctors((docData as any[]) || []);
-    setAllTokens((tokenData as TokenRow[]) || []);
+      setDoctors((docData as any[]) || []);
+      setAllTokens((tokenData as TokenRow[]) || []);
+    } finally {
+      if (isInitial) setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
 
     const channel = supabase
       .channel("live-tokens-" + clinicId)
@@ -63,19 +69,27 @@ const LiveTokens = () => {
         } else {
           // Fallback polling if realtime drops
           if (!pollingRef.current) {
-            pollingRef.current = setInterval(fetchData, 5000);
+            pollingRef.current = setInterval(() => fetchData(), 5000);
           }
         }
       });
 
     // Start polling as backup initially
-    pollingRef.current = setInterval(fetchData, 5000);
+    pollingRef.current = setInterval(() => fetchData(), 5000);
 
     return () => {
       supabase.removeChannel(channel);
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [clinicId]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   const getGridCols = (count: number) => {
     if (count <= 1) return "";

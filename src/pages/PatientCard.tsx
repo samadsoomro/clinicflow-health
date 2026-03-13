@@ -153,7 +153,7 @@ export default function PatientCard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 {clinic.logo_url ? (
-                  <img src={clinic.logo_url} alt="logo" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
+                  <img src={clinic.logo_url} alt="logo" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} loading="lazy" />
                 ) : (
                   <div style={{ width: '48px', height: '48px', background: accentColor, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>
                     {clinicInitials}
@@ -170,6 +170,7 @@ export default function PatientCard() {
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(clinic.qr_base_url)}`}
                   alt="QR Code"
                   style={{ width: '64px', height: '64px', borderRadius: '4px', background: 'white', padding: '2px' }}
+                  loading="lazy"
                 />
               )}
             </div>

@@ -105,7 +105,7 @@ const Index = () => {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-32" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+      <section className="relative overflow-x-hidden py-24 md:py-32" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="absolute inset-0 gradient-hero opacity-85" />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
@@ -114,7 +114,7 @@ const Index = () => {
         <div className="container relative z-10">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="mx-auto max-w-3xl text-center">
             {heroSubtitle && (
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary-foreground/80">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary-foreground/80 overflow-hidden text-ellipsis whitespace-nowrap max-w-full">
                 <Activity className="h-4 w-4" />
                 {heroSubtitle}
               </div>
@@ -125,12 +125,12 @@ const Index = () => {
             {heroDesc && (
               <p className="mb-8 text-lg leading-relaxed text-primary-foreground/70 md:text-xl">{heroDesc}</p>
             )}
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link to={heroBtnLink}>
-                <Button variant="accent" size="lg" className="px-8">{heroBtnText}</Button>
+            <div className="flex flex-wrap items-center gap-3 justify-center sm:flex-row sm:justify-center">
+              <Link to={heroBtnLink} className="w-full sm:w-auto">
+                <Button variant="accent" size="lg" className="w-full px-8">{heroBtnText}</Button>
               </Link>
-              <Link to="/tokens">
-                <Button size="lg" className="bg-card text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 px-8">
+              <Link to="/tokens" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full bg-card text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 px-8">
                   See Live Tokens
                 </Button>
               </Link>
@@ -139,7 +139,7 @@ const Index = () => {
 
           {/* Stats */}
           {statsItems.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.6 }} className="mx-auto mt-16 grid max-w-3xl gap-4 sm:grid-cols-3">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.6 }} className="mx-auto mt-16 grid max-w-3xl gap-4 grid-cols-1 sm:grid-cols-3">
               {statsItems.map((stat: any, i: number) => {
                 const IconComp = ICON_MAP[stat.icon] || Activity;
                 return (
@@ -157,7 +157,7 @@ const Index = () => {
 
       {/* Doctors */}
       {(doctorsSection || !hasCustomSections) && featuredDoctors.length > 0 && (
-        <section className="py-20 md:py-28">
+        <section className="py-20 md:py-28 overflow-hidden">
           <div className="container">
             <div className="mx-auto mb-14 max-w-2xl text-center">
               <h2 className="mb-4 font-display text-3xl font-bold text-foreground md:text-4xl">
@@ -167,28 +167,37 @@ const Index = () => {
                 {doctorsSection?.content_json?.subtitle || "Our team of experienced professionals"}
               </p>
             </div>
-            <div className={`mx-auto max-w-4xl ${featuredDoctors.length < 3 ? 'flex flex-wrap justify-center gap-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
-              {featuredDoctors.map((doc, i) => (
-                <motion.div
-                  key={doc.id}
-                  custom={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-50px" }}
-                  variants={fadeUp}
-                  className="group flex flex-col items-center text-center rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card hover:-translate-y-1 w-full sm:w-72"
-                >
-                  {doc.image_url ? (
-                    <img src={doc.image_url} alt={doc.name} className="mx-auto mb-4 h-24 w-24 rounded-full object-cover border-4 border-secondary" />
-                  ) : (
-                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-secondary text-primary/40">
-                      <User className="h-12 w-12" />
-                    </div>
-                  )}
-                  <h3 className="font-display text-lg font-semibold text-foreground">{doc.name}</h3>
-                  <p className="text-sm text-muted-foreground">{doc.specialization}</p>
-                </motion.div>
-              ))}
+            <div className={`mx-auto max-w-4xl ${featuredDoctors.length === 0 ? 'text-center py-12' : featuredDoctors.length < 3 ? 'flex flex-wrap justify-center gap-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
+              {featuredDoctors.length === 0 ? (
+                <div className="text-muted-foreground italic">Coming soon</div>
+              ) : (
+                featuredDoctors.map((doc, i) => (
+                  <motion.div
+                    key={doc.id}
+                    custom={i}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={fadeUp}
+                    className="group flex flex-col items-center text-center rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card hover:-translate-y-1 w-full sm:w-72"
+                  >
+                    {doc.image_url ? (
+                      <img 
+                        src={doc.image_url} 
+                        alt={doc.name} 
+                        className="mx-auto mb-4 h-24 w-24 rounded-full object-cover border-4 border-secondary" 
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-secondary text-primary/40">
+                        <User className="h-12 w-12" />
+                      </div>
+                    )}
+                    <h3 className="font-display text-lg font-semibold text-foreground">{doc.name}</h3>
+                    <p className="text-sm text-muted-foreground">{doc.specialization}</p>
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -196,7 +205,7 @@ const Index = () => {
 
       {/* Certifications */}
       {certsSection && certs.length > 0 && (
-        <section className="py-20 bg-secondary/30">
+        <section className="py-20 bg-secondary/30 overflow-hidden">
           <div className="container">
             <div className="mx-auto mb-14 max-w-2xl text-center">
               <h2 className="mb-4 font-display text-3xl font-bold text-foreground md:text-4xl">
@@ -217,7 +226,12 @@ const Index = () => {
                   className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
                 >
                   <div className="aspect-[210/297] overflow-hidden">
-                    <img src={certs[0].image_url} alt={certs[0].title} className="h-full w-full object-cover" />
+                    <img 
+                      src={certs[0].image_url} 
+                      alt={certs[0].title} 
+                      className="h-full w-full object-cover" 
+                      loading="lazy"
+                    />
                   </div>
                   <div className="p-4 text-center">
                     <h3 className="font-display font-semibold text-foreground">{certs[0].title}</h3>
@@ -237,7 +251,12 @@ const Index = () => {
                     className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden"
                   >
                     <div className="aspect-[210/297] overflow-hidden">
-                      <img src={cert.image_url} alt={cert.title} className="h-full w-full object-cover" />
+                      <img 
+                        src={cert.image_url} 
+                        alt={cert.title} 
+                        className="h-full w-full object-cover" 
+                        loading="lazy"
+                      />
                     </div>
                     <div className="p-4 text-center">
                       <h3 className="font-display font-semibold text-foreground">{cert.title}</h3>
@@ -263,32 +282,36 @@ const Index = () => {
               </p>
             </div>
             <div className="mx-auto max-w-2xl space-y-4">
-              {displayNotifs.map((n, i) => (
-                <motion.div
-                  key={n.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`rounded-2xl border p-5 shadow-soft ${n.priority === "urgent" ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
-                    }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
-                      }`}>
-                      {n.priority === "urgent" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
-                        {n.is_pinned && <span className="text-primary" title="Pinned">📌</span>}
-                        {n.priority === "urgent" && <Badge variant="destructive" className="text-[10px]">Urgent</Badge>}
+              {displayNotifs.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground italic">No announcements at this time</div>
+              ) : (
+                displayNotifs.map((n, i) => (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`rounded-2xl border p-5 shadow-soft ${n.priority === "urgent" ? "border-destructive/30 bg-destructive/5" : "border-border bg-card"
+                      }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${n.priority === "urgent" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary"
+                        }`}>
+                        {n.priority === "urgent" ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display font-semibold text-foreground">{n.title}</h3>
+                          {n.is_pinned && <span className="text-primary" title="Pinned">📌</span>}
+                          {n.priority === "urgent" && <Badge variant="destructive" className="text-[10px]">Urgent</Badge>}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </section>

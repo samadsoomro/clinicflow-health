@@ -74,12 +74,12 @@ const Contact = () => {
           <p className="text-muted-foreground">Have a question? We'd love to hear from you.</p>
         </motion.div>
 
-        <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-5">
+        <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-5">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="space-y-6 md:col-span-2"
+            className="space-y-6 lg:col-span-2"
           >
             {contactItems.map((item) => (
               <div key={item.label} className="flex items-start gap-3">
@@ -98,7 +98,7 @@ const Contact = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card md:col-span-3"
+            className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card lg:col-span-3"
             onSubmit={handleSubmit}
           >
             {submitted && (
