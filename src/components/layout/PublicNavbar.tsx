@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -43,12 +43,10 @@ const PublicNavbar = () => {
     setIsOpen(false);
   }, []);
 
-  // In-render location change detection — more reliable than useEffect
-  const prevLocationRef = useRef(location.pathname + location.search);
-  if (prevLocationRef.current !== location.pathname + location.search) {
-    prevLocationRef.current = location.pathname + location.search;
-    if (isOpen) setIsOpen(false);
-  }
+  // Close menu whenever the page pathname changes
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await signOut();
