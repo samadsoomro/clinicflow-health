@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Activity, Users, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info } from "lucide-react";
+import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
@@ -181,8 +181,8 @@ const Index = () => {
                   {doc.image_url ? (
                     <img src={doc.image_url} alt={doc.name} className="mx-auto mb-4 h-24 w-24 rounded-full object-cover border-4 border-secondary" />
                   ) : (
-                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-secondary text-primary">
-                      <Stethoscope className="h-10 w-10" />
+                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-secondary text-primary/40">
+                      <User className="h-12 w-12" />
                     </div>
                   )}
                   <h3 className="font-display text-lg font-semibold text-foreground">{doc.name}</h3>

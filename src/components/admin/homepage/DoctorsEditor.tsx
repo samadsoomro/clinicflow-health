@@ -47,11 +47,9 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
     fetchDoctors();
   }, [clinicId]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!newName || !newSpecialization) {
-      toast.error("Please enter doctor name and specialization first");
+  const handleSave = async (file?: File) => {
+    if (!newName.trim() || !newSpecialization.trim()) {
+      toast.error("Please enter doctor name and specialization");
       return;
     }
 
@@ -60,10 +58,10 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
     try {
       let imageUrl = null;
 
-      // OPTIONAL: Compress and upload if file exists
       if (file) {
         const compressed = await compressImage(file, 800, 0.8);
-        const filename = `${Date.now()}-${file.name.replace(/\.[^.]+$/, '.jpg')}`;
+        const timestamp = Date.now();
+        const filename = `${timestamp}-${file.name.replace(/\.[^.]+$/, '.jpg')}`;
         const path = `${clinicId}/homepage-doctors/${filename}`;
         
         const { error: uploadErr } = await supabase.storage
@@ -78,9 +76,9 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
 
       const { error: insertErr } = await (supabase as any).from("homepage_doctors").insert({
         clinic_id: clinicId,
-        name: newName,
-        specialization: newSpecialization,
-        image_url: imageUrl,
+        name: newName.trim(),
+        specialization: newSpecialization.trim(),
+        image_url: imageUrl || null,
         display_order: doctors.length,
       });
 
@@ -91,6 +89,7 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
       setNewSpecialization("");
       fetchDoctors();
     } catch (error: any) {
+      console.error("Failed to add homepage doctor:", error);
       toast.error("Failed to add doctor: " + error.message);
     } finally {
       setUploading(false);
@@ -100,6 +99,7 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
   const handleDelete = async (id: string) => {
     const { error } = await (supabase as any).from("homepage_doctors").delete().eq("id", id);
     if (error) {
+      console.error("Delete failed:", error);
       toast.error("Delete failed");
     } else {
       toast.success("Doctor removed from homepage");
@@ -159,21 +159,21 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
               <input 
                 type="file" 
                 accept="image/*" 
-                onChange={handleUpload} 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleSave(file);
+                }} 
                 className="hidden" 
-                disabled={uploading || !newName || !newSpecialization} 
+                disabled={uploading || !newName.trim() || !newSpecialization.trim()} 
               />
             </label>
             <p className="text-[10px] text-muted-foreground">Select a file to automatically save the doctor. Fill Name and Specialization first.</p>
           </div>
-          {!uploading && newName && newSpecialization && (
+          {!uploading && newName.trim() && newSpecialization.trim() && (
             <Button 
               className="w-full" 
               variant="outline"
-              onClick={() => {
-                const fakeEvent = { target: { files: [] } } as any;
-                handleUpload(fakeEvent);
-              }}
+              onClick={() => handleSave()}
             >
               Save Without Photo
             </Button>
