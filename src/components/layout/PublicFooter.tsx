@@ -92,14 +92,16 @@ const PublicFooter = () => {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-border">
-          <div className="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground text-center">
-            <p className="flex items-center justify-center gap-1">
-              Made with <Heart className="h-3.5 w-3.5 text-accent fill-accent" /> by {name} | Developed by Abdul Samad
-            </p>
-            <p>
-              {name} 2026 All rights reserved.
-            </p>
+          <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-muted-foreground">
+            <span className="text-sm text-center whitespace-nowrap flex items-center gap-1">
+              Made with <Heart className="h-3.5 w-3.5 text-accent fill-accent" /> by {name}
+            </span>
+            <span className="hidden sm:inline">•</span>
+            <span className="text-sm text-center whitespace-nowrap">Developed by Abdul Samad</span>
           </div>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            &copy; {name} 2026 All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
