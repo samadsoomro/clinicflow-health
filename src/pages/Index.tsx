@@ -43,7 +43,7 @@ const Index = () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact").eq("id", clinicId).single(),
-        supabase.from("doctors").select("id, name, specialization, image_url, status").eq("clinic_id", clinicId).eq("status", "active"),
+        (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
       ]);
@@ -90,12 +90,7 @@ const Index = () => {
 
   const statsItems = statsSection?.content_json?.items || [];
 
-  const featuredDoctorIds = doctorsSection?.content_json?.featured_ids || [];
-  const doctorsMaxDisplay = doctorsSection?.content_json?.max_display;
-  let featuredDoctors = featuredDoctorIds.length > 0
-    ? doctors.filter((d) => featuredDoctorIds.includes(d.id))
-    : doctors;
-  if (doctorsMaxDisplay) featuredDoctors = featuredDoctors.slice(0, doctorsMaxDisplay);
+  const featuredDoctors = doctors;
 
   const notifsMaxDisplay = notifsSection?.content_json?.max_display || 3;
   const displayNotifs = notifs.slice(0, notifsMaxDisplay);
