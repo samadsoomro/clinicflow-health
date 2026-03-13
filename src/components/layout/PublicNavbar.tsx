@@ -46,7 +46,7 @@ const PublicNavbar = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
-        <ClinicLink to="/" className="flex items-center gap-2">
+        <ClinicLink to="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
           {shortName && (
             <span className="font-display text-sm font-bold text-primary">{shortName}</span>
           )}
