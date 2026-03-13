@@ -97,8 +97,9 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
           <Input value={content.working_hours || ""} onChange={(e) => onChange({ ...content, working_hours: e.target.value })} placeholder={clinic?.working_hours || "From settings"} />
         </div>
         <div className="space-y-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-semibold text-foreground">Location</h4>
           <div className="space-y-2">
-            <Label>Map Heading (Optional)</Label>
+            <Label>Location Heading (Optional)</Label>
             <Input
               value={content.location_heading || ""}
               onChange={(e) => onChange({ ...content, location_heading: e.target.value })}
