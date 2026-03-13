@@ -42,7 +42,7 @@ const Index = () => {
     const fetchAll = async () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours").eq("id", clinicId).single(),
         (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
@@ -307,35 +307,63 @@ const Index = () => {
               </p>
             </div>
             <div className="mx-auto max-w-xl space-y-6">
-              <div className="rounded-2xl border border-border bg-card p-8 shadow-soft space-y-4">
-                {contactAddress && (
+              <div className="rounded-2xl border border-border bg-card p-8 shadow-soft space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-foreground">{contactAddress}</p>
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground">Main Address</h4>
+                      <p className="text-foreground">{contactAddress || clinic.address}</p>
+                    </div>
                   </div>
-                )}
-                {contactPhone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{contactPhone}</p>
+
+                  {(contactSection.content_json?.second_branch_address || clinic.second_branch_address) && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-sm text-foreground">Second Branch</h4>
+                        <p className="text-foreground">{contactSection.content_json?.second_branch_address || clinic.second_branch_address}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(contactPhone || clinic.contact_phone) && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-foreground">{contactPhone || clinic.contact_phone}</p>
+                    </div>
+                  )}
+
+                  {(contactEmail || clinic.contact_email) && (
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-foreground">{contactEmail || clinic.contact_email}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground">Main Working Hours</h4>
+                      <p className="text-foreground">{contactHours || clinic.working_hours}</p>
+                    </div>
                   </div>
-                )}
-                {contactEmail && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{contactEmail}</p>
-                  </div>
-                )}
-                {contactHours && (
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-foreground">{contactHours}</p>
-                  </div>
-                )}
+
+                  {(contactSection.content_json?.second_branch_working_hours || clinic.second_branch_working_hours) && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-sm text-foreground">Second Branch Hours</h4>
+                        <p className="text-foreground">{contactSection.content_json?.second_branch_working_hours || clinic.second_branch_working_hours}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {clinic?.emergency_contact && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 pt-4 border-t border-border">
                     <Bell className="h-5 w-5 text-destructive flex-shrink-0" />
-                    <p className="text-foreground">Emergency: {clinic.emergency_contact}</p>
+                    <p className="text-foreground font-semibold">Emergency: {clinic.emergency_contact}</p>
                   </div>
                 )}
               </div>

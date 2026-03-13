@@ -105,6 +105,17 @@ const AdminHomepage = () => {
         const { data } = await supabase.from("homepage_sections").insert(payload).select("id").single();
         if (data) section.id = data.id;
       }
+
+      // Special case: Update clinics table for contact section to persist branch info
+      if (section.section_name === "contact") {
+        await supabase
+          .from("clinics")
+          .update({
+            second_branch_address: section.content_json.second_branch_address || null,
+            second_branch_working_hours: section.content_json.second_branch_working_hours || null,
+          } as any)
+          .eq("id", clinicId);
+      }
     }
     toast.success("Homepage saved successfully!");
     setSaving(false);
