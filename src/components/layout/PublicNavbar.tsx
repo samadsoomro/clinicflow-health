@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,6 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
 import { cn } from "@/lib/utils";
+
+// Outside component — survives remounts completely
+let _mobileMenuOpen = false;
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -23,7 +26,7 @@ const PublicNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(_mobileMenuOpen);
   const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
   const { clinic } = useClinicContext();
 
@@ -34,19 +37,23 @@ const PublicNavbar = () => {
   const logoUrl = clinic?.logo_url;
   const clinicName = clinic?.clinic_name || "ClinicToken";
 
-  // Stable callbacks that survive re-renders
-  const toggleMenu = useCallback(() => {
-    setIsOpen(prev => !prev);
-  }, []);
+  const openMenu = () => {
+    _mobileMenuOpen = true;
+    setIsOpen(true);
+  };
 
-  const closeMenu = useCallback(() => {
+  const closeMenu = () => {
+    _mobileMenuOpen = false;
     setIsOpen(false);
-  }, []);
+  };
 
-  // Close menu whenever the page pathname changes
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
+  const toggleMenu = () => {
+    if (_mobileMenuOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
