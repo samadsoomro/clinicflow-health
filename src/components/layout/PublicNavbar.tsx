@@ -1,13 +1,14 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -43,6 +44,11 @@ const PublicNavbar = () => {
     navigate(clinicParam ? `/?clinic=${clinicParam}` : "/");
   };
 
+  // Fix 1: Mobile menu auto close on navigation
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, location.search]);
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
@@ -66,17 +72,23 @@ const PublicNavbar = () => {
         </ClinicLink>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <ClinicLink key={link.path} to={link.path}>
-              <Button
-                variant={location.pathname === link.path ? "secondary" : "ghost"}
-                size="sm"
-                className="font-medium"
-              >
-                {link.label}
-              </Button>
-            </ClinicLink>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
+            return (
+              <ClinicLink key={link.path} to={link.path}>
+                <Button
+                  variant={isActive ? "secondary" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "font-medium",
+                    isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                   )}
+                >
+                  {link.label}
+                </Button>
+              </ClinicLink>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-1 md:flex">
@@ -129,16 +141,22 @@ const PublicNavbar = () => {
             className="overflow-hidden border-t border-border bg-card md:hidden"
           >
             <div className="container flex flex-col gap-2 py-4">
-              {navLinks.map((link) => (
-                <ClinicLink key={link.path} to={link.path} onClick={() => setMobileOpen(false)}>
-                  <Button
-                    variant={location.pathname === link.path ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                  >
-                    {link.label}
-                  </Button>
-                </ClinicLink>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
+                return (
+                  <ClinicLink key={link.path} to={link.path} onClick={() => setMobileOpen(false)}>
+                    <Button
+                      variant={isActive ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start",
+                        isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                      )}
+                    >
+                      {link.label}
+                    </Button>
+                  </ClinicLink>
+                );
+              })}
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {user ? (
                   <>
