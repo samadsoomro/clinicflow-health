@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -23,7 +23,7 @@ const PublicNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
   const { clinic } = useClinicContext();
 
@@ -34,11 +34,25 @@ const PublicNavbar = () => {
   const logoUrl = clinic?.logo_url;
   const clinicName = clinic?.clinic_name || "ClinicToken";
 
-  const isMounted = useRef(false);
+  // Stable callbacks that survive re-renders
+  const toggleMenu = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  // In-render location change detection — more reliable than useEffect
+  const prevLocationRef = useRef(location.pathname + location.search);
+  if (prevLocationRef.current !== location.pathname + location.search) {
+    prevLocationRef.current = location.pathname + location.search;
+    if (isOpen) setIsOpen(false);
+  }
 
   const handleLogout = async () => {
     await signOut();
-    setMobileOpen(false);
+    closeMenu();
     toast({ title: "Logged out", description: "You have been signed out." });
 
     const params = new URLSearchParams(location.search);
@@ -46,19 +60,10 @@ const PublicNavbar = () => {
     navigate(clinicParam ? `/?clinic=${clinicParam}` : "/");
   };
 
-  // Fix 1: Mobile menu auto close on navigation
-  useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
-      return;
-    }
-    setMobileOpen(false);
-  }, [location.pathname, location.search]);
-
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
-        <ClinicLink to="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+        <ClinicLink to="/" className="flex items-center gap-2" onClick={closeMenu}>
           {shortName && (
             <span className="font-display text-sm font-bold text-primary">{shortName}</span>
           )}
@@ -131,15 +136,15 @@ const PublicNavbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setMobileOpen(!mobileOpen)}
+            onClick={toggleMenu}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
       <AnimatePresence>
-        {mobileOpen && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -150,7 +155,7 @@ const PublicNavbar = () => {
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
-                  <ClinicLink key={link.path} to={link.path} onClick={() => setMobileOpen(false)}>
+                  <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
@@ -171,7 +176,7 @@ const PublicNavbar = () => {
                     )}
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
+                        <ClinicLink to="/admin" className="flex-1" onClick={closeMenu}>
                           <Button variant="outline" className="w-full">Dashboard</Button>
                         </ClinicLink>
                       )}
@@ -183,10 +188,10 @@ const PublicNavbar = () => {
                   </>
                 ) : (
                   <>
-                    <ClinicLink to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    <ClinicLink to="/login" className="flex-1" onClick={closeMenu}>
                       <Button variant="outline" className="w-full">Log in</Button>
                     </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
+                    <ClinicLink to="/register" className="flex-1" onClick={closeMenu}>
                       <Button variant="hero" className="w-full">Register</Button>
                     </ClinicLink>
                   </>
