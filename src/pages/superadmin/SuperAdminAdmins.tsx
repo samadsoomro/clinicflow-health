@@ -110,11 +110,37 @@ const SuperAdminAdmins = () => {
     setSaving(false);
   };
 
-  const handleRemove = async (id: string) => {
-    if (!confirm("Remove this role assignment?")) return;
-    await supabase.from("user_roles").delete().eq("id", id);
-    toast.success("Role removed");
-    fetchAdmins();
+  const handleDeleteAdmin = async (userId: string) => {
+    try {
+      if (!confirm("Are you sure you want to completely delete this admin? This will remove their account and free up their email for reuse.")) return;
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/delete-clinic-admin',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error ?? 'Failed to delete admin');
+      }
+
+      toast.success("Admin deleted successfully");
+      await fetchAdmins();
+
+    } catch (error: any) {
+      console.error('Delete admin error:', error);
+      toast.error(error.message || "Failed to delete admin");
+    }
   };
 
   return (
@@ -204,7 +230,7 @@ const SuperAdminAdmins = () => {
                   {admin.clinic?.clinic_name || "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => handleRemove(admin.id)} className="text-destructive hover:text-destructive">
+                  <Button variant="ghost" size="icon" onClick={() => handleDeleteAdmin(admin.user_id)} className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
