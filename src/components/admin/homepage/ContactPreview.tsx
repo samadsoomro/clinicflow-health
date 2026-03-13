@@ -13,6 +13,7 @@ interface ContactContent {
   maps_embed_url: string;
   second_branch_address?: string;
   second_branch_working_hours?: string;
+  second_branch_maps_embed_url?: string;
 }
 
 interface ContactPreviewProps {
@@ -29,7 +30,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("address, contact_phone, contact_email, working_hours, emergency_contact, maps_embed_url, second_branch_address, second_branch_working_hours")
+        .select("address, contact_phone, contact_email, working_hours, emergency_contact, maps_embed_url, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url")
         .eq("id", clinicId)
         .single();
       setClinic(data);
@@ -40,7 +41,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
   // Pre-fill empty content fields from clinic data once loaded
   useEffect(() => {
     if (!clinic || prefilled) return;
-    const needsFill = !content.phone && !content.email && !content.address && !content.working_hours && !content.maps_embed_url && !content.second_branch_address && !content.second_branch_working_hours;
+    const needsFill = !content.phone && !content.email && !content.address && !content.working_hours && !content.maps_embed_url && !content.second_branch_address && !content.second_branch_working_hours && !content.second_branch_maps_embed_url;
     if (needsFill) {
       onChange({
         ...content,
@@ -52,6 +53,7 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
         working_hours: content.working_hours || clinic.working_hours || "",
         second_branch_address: content.second_branch_address || clinic.second_branch_address || "",
         second_branch_working_hours: content.second_branch_working_hours || clinic.second_branch_working_hours || "",
+        second_branch_maps_embed_url: content.second_branch_maps_embed_url || clinic.second_branch_maps_embed_url || "",
         maps_embed_url: content.maps_embed_url || clinic.maps_embed_url || "",
       });
     }
@@ -111,6 +113,14 @@ export const ContactPreview = ({ content, onChange, clinicId }: ContactPreviewPr
             value={content.second_branch_working_hours || ""}
             onChange={(e) => onChange({ ...content, second_branch_working_hours: e.target.value })}
             placeholder={clinic?.second_branch_working_hours || "e.g. Mon-Sat 10AM-5PM (leave empty if none)"}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Second Branch Google Maps Embed URL (Optional)</Label>
+          <Input
+            value={content.second_branch_maps_embed_url || ""}
+            onChange={(e) => onChange({ ...content, second_branch_maps_embed_url: e.target.value })}
+            placeholder={clinic?.second_branch_maps_embed_url || "Paste Google Maps embed URL for second branch"}
           />
         </div>
       </div>
