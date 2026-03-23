@@ -48,7 +48,7 @@ const AdminPatients = () => {
   }, [clinicId]);
 
   const handleDelete = async (patient: PatientRow) => {
-    const { error } = await supabase.from("patients").delete().eq("id", patient.id);
+    const { error } = await supabase.from("patients").delete().eq("user_id", patient.user_id);
     if (error) {
       toast.error("Failed to delete: " + error.message);
     } else {
