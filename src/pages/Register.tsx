@@ -152,9 +152,12 @@ const Register = () => {
     }
 
     if (authData.user) {
-      const genderPrefix = form.gender === "male" ? "M" : form.gender === "female" ? "F" : "O";
-      const { count } = await supabase.from("patients").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId);
-      const formattedId = `${genderPrefix}-${(count || 0) + 1}`;
+      const { data: idData } = await supabase
+        .rpc('generate_patient_id', { 
+          p_clinic_id: clinicId, 
+          p_gender: form.gender 
+        });
+      const formattedId = idData as string;
 
       await supabase.from("patients").insert({
         clinic_id: clinicId, user_id: authData.user.id, full_name: form.fullName.trim(),
