@@ -49,17 +49,15 @@ const AdminPatients = () => {
 
   const handleDeletePatient = async (patient: PatientRow) => {
     try {
-      // Step 1 — delete using RPC function that handles UUID cast correctly
-      const { error: deleteError } = await supabase
-        .rpc('delete_patient_by_id', { p_patient_id: patient.id });
+      const { error: deleteError } = await supabase.rpc('delete_patient_by_id', {
+        p_patient_id: String(patient.id)
+      });
 
       if (deleteError) {
-        console.error('Delete error:', deleteError);
         toast.error('Failed to delete: ' + deleteError.message);
         return;
       }
 
-      // Step 2 — delete from auth so email is free to reuse
       try {
         const { data: { session } } = await supabase.auth.getSession();
         await fetch(
@@ -77,13 +75,11 @@ const AdminPatients = () => {
         console.error('Auth delete error:', e);
       }
 
-      // Step 3 — refresh list
+      toast.success('Patient deleted successfully');
       await fetchData();
 
-      toast.success('Patient deleted successfully');
-
     } catch (err: any) {
-      toast.error('Failed to delete: ' + err.message);
+      toast.error('Failed to delete: ' + (err?.message ?? 'Unknown error'));
     }
   };
 
