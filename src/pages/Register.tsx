@@ -153,18 +153,17 @@ const Register = () => {
     }
 
     if (authData.user) {
-      const { data: idData } = await supabase
-        .rpc('generate_patient_id', { 
-          p_clinic_id: clinicId, 
-          p_gender: form.gender 
-        });
-      const formattedId = idData as string;
-
       await supabase.from("patients").insert({
         clinic_id: clinicId, user_id: authData.user.id, full_name: form.fullName.trim(),
         age: parseInt(form.age), gender: form.gender, phone: form.phone.trim(),
-        email: normalizedEmail, formatted_patient_id: formattedId,
+        email: normalizedEmail
       });
+
+      const { data: patient } = await supabase
+        .from('patients')
+        .select('formatted_patient_id')
+        .eq('user_id', authData.user.id)
+        .single();
       await supabase.from("user_roles").insert({ user_id: authData.user.id, role: "patient" as const, clinic_id: clinicId });
 
       setLoading(false);
