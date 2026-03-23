@@ -21,6 +21,7 @@ interface PatientRow {
   phone: string | null;
   email: string | null;
   created_at: string | null;
+  user_id: string;
 }
 
 const AdminPatients = () => {
@@ -33,7 +34,7 @@ const AdminPatients = () => {
     const [{ data: pts }, { data: clinic }] = await Promise.all([
       supabase
         .from("patients")
-        .select("id, full_name, formatted_patient_id, age, gender, phone, email, created_at")
+        .select("id, full_name, formatted_patient_id, age, gender, phone, email, created_at, user_id")
         .eq("clinic_id", clinicId)
         .order("created_at", { ascending: false }),
       supabase.from("clinics").select("short_name, clinic_name").eq("id", clinicId).single(),
@@ -51,8 +52,25 @@ const AdminPatients = () => {
     if (error) {
       toast.error("Failed to delete: " + error.message);
     } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(
+          'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/delete-clinic-admin',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ user_id: patient.user_id }),
+          }
+        );
+      } catch (e) {
+        console.error('Auth cleanup error:', e);
+      }
+      
       toast.success(`Patient ${patient.formatted_patient_id} deleted`);
-      setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+      fetchData(); // Use refetch to stay consistent with the user's request
     }
   };
 
