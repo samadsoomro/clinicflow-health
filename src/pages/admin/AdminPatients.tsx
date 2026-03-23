@@ -47,11 +47,19 @@ const AdminPatients = () => {
     fetchData();
   }, [clinicId]);
 
-  const handleDelete = async (patient: PatientRow) => {
-    const { error } = await supabase.from("patients").delete().eq("id", patient.id);
-    if (error) {
-      toast.error("Failed to delete: " + error.message);
-    } else {
+  const handleDeletePatient = async (patient: PatientRow) => {
+    try {
+      // Step 1 — delete using RPC function that handles UUID cast correctly
+      const { error: deleteError } = await supabase
+        .rpc('delete_patient_by_id', { p_patient_id: patient.id });
+
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        toast.error('Failed to delete: ' + deleteError.message);
+        return;
+      }
+
+      // Step 2 — delete from auth so email is free to reuse
       try {
         const { data: { session } } = await supabase.auth.getSession();
         await fetch(
@@ -66,11 +74,16 @@ const AdminPatients = () => {
           }
         );
       } catch (e) {
-        console.error('Auth cleanup error:', e);
+        console.error('Auth delete error:', e);
       }
-      
-      toast.success(`Patient ${patient.formatted_patient_id} deleted`);
-      fetchData(); // Use refetch to stay consistent with the user's request
+
+      // Step 3 — refresh list
+      await fetchData();
+
+      toast.success('Patient deleted successfully');
+
+    } catch (err: any) {
+      toast.error('Failed to delete: ' + err.message);
     }
   };
 
@@ -190,7 +203,7 @@ const AdminPatients = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(patient)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        <AlertDialogAction onClick={() => handleDeletePatient(patient)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
