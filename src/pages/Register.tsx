@@ -37,6 +37,7 @@ const Register = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const emailDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -167,14 +168,7 @@ const Register = () => {
       await supabase.from("user_roles").insert({ user_id: authData.user.id, role: "patient" as const, clinic_id: clinicId });
 
       setLoading(false);
-      toast({
-        title: "✓ Registration successful!",
-        description: `Your Patient ID is: ${formattedId}. Redirecting to login...`
-      });
-
-      const params = new URLSearchParams(location.search);
-      const clinic = params.get('clinic');
-      setTimeout(() => navigate(clinic ? `/login?clinic=${clinic}` : "/login"), 2000);
+      setRegistrationSuccess(true);
       return;
     }
     setLoading(false);
@@ -215,7 +209,7 @@ const Register = () => {
             <p className="text-sm text-muted-foreground">Register as a new patient</p>
           </div>
 
-          {formError && (
+          {formError && !registrationSuccess && (
             <div style={{
               background: '#fee2e2',
               border: '1px solid #ef4444',
@@ -229,7 +223,24 @@ const Register = () => {
             </div>
           )}
 
-          <form className="space-y-3" onSubmit={handleSubmit} noValidate>
+          {registrationSuccess ? (
+            <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
+              <div className="text-green-500 text-6xl">✅</div>
+              <h2 className="text-2xl font-bold">Registration Successful!</h2>
+              <p className="text-gray-600 text-lg">
+                Please check your email inbox and click the confirmation link to activate your account.
+              </p>
+              <p className="text-gray-400 text-sm">
+                After confirming your email, you will be automatically redirected to your patient account.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                <p className="text-blue-700 font-medium">📧 Confirmation sent to:</p>
+                <p className="text-blue-900 font-bold">{form.email}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <form className="space-y-3" onSubmit={handleSubmit} noValidate>
             {/* Full Name */}
             <div className="space-y-1">
               <Label htmlFor="fullName">Full Name</Label>
@@ -329,6 +340,8 @@ const Register = () => {
               Back to Home
             </ClinicLink>
           </div>
+            </>
+          )}
         </motion.div>
       </div>
     </div>
