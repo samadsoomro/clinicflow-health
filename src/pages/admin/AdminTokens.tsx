@@ -410,11 +410,12 @@ const AdminTokens = () => {
 
 
             return (
-              <div key={doctor.id} className={`border rounded-2xl p-6 transition-all duration-300 flex flex-col ${
+              <div key={doctor.id} className={`rounded-2xl p-6 transition-all duration-300 flex flex-col ${
                 isStartFromOne 
-                  ? "bg-blue-50 border-blue-400 shadow-md ring-1 ring-blue-400/20" 
-                  : "bg-card border-border shadow-soft"
+                  ? "bg-blue-50 dark:bg-gray-900 border-2 border-blue-400 dark:border-blue-500 shadow-md" 
+                  : "border border-gray-200 dark:border-gray-700 bg-card shadow-soft"
               }`}>
+
                 {/* Doctor header */}
                 <div className="flex flex-col gap-4 mb-6">
                   <div className="flex items-center justify-between">
@@ -436,7 +437,11 @@ const AdminTokens = () => {
                       variant={isStartFromOne ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleToggleStartFromOne(doctor)}
-                      className={isStartFromOne ? "bg-blue-600 hover:bg-blue-700 text-white border-none" : ""}
+                      className={isStartFromOne 
+                        ? "bg-blue-500 dark:bg-blue-600 text-white border-blue-500" 
+                        : "border border-gray-300 dark:border-gray-600 dark:text-gray-200"
+                      }
+
                     >
                       <RotateCcw className={`mr-1.5 h-3.5 w-3.5 ${isStartFromOne ? "animate-pulse" : ""}`} />
                       {isStartFromOne ? "Starting from 1" : "Start from 1"}
