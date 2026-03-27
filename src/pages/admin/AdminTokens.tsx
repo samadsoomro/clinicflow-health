@@ -29,6 +29,9 @@ const AdminTokens = () => {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [urlSaveMsg, setUrlSaveMsg] = useState<string | null>(null);
+  const [doctorSettings, setDoctorSettings] = useState<Record<string, boolean>>({});
+  const [batchIssuing, setBatchIssuing] = useState<Record<string, boolean>>({});
+
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -66,23 +69,54 @@ const AdminTokens = () => {
     setTodayTokens((data as any[]) || []);
   };
 
+  const fetchDoctorSettings = async () => {
+    if (!clinicId) return;
+    const { data } = await (supabase as any)
+      .from("doctor_token_settings")
+      .select("doctor_id, start_from_one")
+      .eq("clinic_id", clinicId)
+      .eq("setting_date", today);
+
+    
+    const settingsMap: Record<string, boolean> = {};
+    data?.forEach(s => {
+      settingsMap[s.doctor_id] = s.start_from_one;
+    });
+    setDoctorSettings(settingsMap);
+  };
+
+
   useEffect(() => {
     if (clinicId) {
       fetchTodayTokens();
+      fetchDoctorSettings();
       const channel = supabase
         .channel("admin-tokens")
         .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchTodayTokens();
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "doctor_token_settings", filter: `clinic_id=eq.${clinicId}` }, () => {
+          fetchDoctorSettings();
+        })
+
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     }
+
   }, [clinicId]);
 
-  const getNextTokenNumber = () => {
+  const getNextTokenNumber = (doctorId?: string) => {
+    if (doctorId && doctorSettings[doctorId]) {
+      // For this specific doctor only — count their own tokens today
+      const doctorTokensCount = todayTokens.filter(t => t.doctor_id === doctorId).length;
+      return doctorTokensCount + 1;
+    }
+    
+    // Global continuity — get MAX across all doctors today
     if (todayTokens.length === 0) return 1;
     return Math.max(...todayTokens.map((t) => t.token_number)) + 1;
   };
+
 
   const handleOpenIssueModal = (doctorId?: string) => {
     setSelectedDoctorId(doctorId);
@@ -91,7 +125,7 @@ const AdminTokens = () => {
 
   const handleIssueToken = async (doctorId: string, patientName: string) => {
     setIssuing(true);
-    const tokenNumber = getNextTokenNumber();
+    const tokenNumber = getNextTokenNumber(doctorId);
     const { error } = await supabase.from("tokens").insert({
       clinic_id: clinicId,
       doctor_id: doctorId,
@@ -163,6 +197,79 @@ const AdminTokens = () => {
     }
     fetchTodayTokens();
   };
+
+  const handleToggleStartFromOne = async (doctor: any) => {
+    const isCurrentlyOn = doctorSettings[doctor.id] === true;
+    const action = isCurrentlyOn ? "disable" : "enable";
+    const msg = `This will ${action} 'Start from 1' for Dr. ${doctor.name}. ${!isCurrentlyOn ? "It will also delete all of today's tokens for this doctor. " : ""}Are you sure?`;
+    
+    if (!confirm(msg)) return;
+
+    // Toggle setting
+    const { error: settingsError } = await (supabase as any).from('doctor_token_settings').upsert({
+      clinic_id: clinicId,
+      doctor_id: doctor.id,
+      start_from_one: !isCurrentlyOn,
+      setting_date: today
+    }, { onConflict: 'clinic_id,doctor_id,setting_date' });
+
+
+    if (settingsError) {
+      toast.error("Failed to update setting: " + settingsError.message);
+      return;
+    }
+
+    // If enabling, delete today's tokens for this doctor
+    if (!isCurrentlyOn) {
+      const { error: deleteError } = await supabase.from('tokens')
+        .delete()
+        .eq('clinic_id', clinicId)
+        .eq('doctor_id', doctor.id)
+        .gte('created_at', today + 'T00:00:00')
+        .lte('created_at', today + 'T23:59:59');
+      
+      if (deleteError) {
+        toast.error("Setting updated, but failed to reset tokens: " + deleteError.message);
+      } else {
+        toast.success(`'Start from 1' mode is now ON for Dr. ${doctor.name}`);
+      }
+    } else {
+      toast.success(`'Start from 1' mode is now OFF for Dr. ${doctor.name}`);
+    }
+
+    fetchDoctorSettings();
+    fetchTodayTokens();
+  };
+
+  const handleIssueBatch = async (doctor: any) => {
+    if (!confirm(`This will issue 100 tokens for Dr. ${doctor.name}. Are you sure?`)) return;
+
+    setBatchIssuing(prev => ({ ...prev, [doctor.id]: true }));
+    
+    try {
+      const startNumber = getNextTokenNumber(doctor.id);
+      
+      const tokens = Array.from({ length: 100 }, (_, i) => ({
+        clinic_id: clinicId,
+        doctor_id: doctor.id,
+        token_number: startNumber + i,
+        patient_name: null,
+        status: 'waiting',
+      }));
+
+      const { error } = await supabase.from('tokens').insert(tokens as any);
+
+      if (error) {
+        toast.error("Failed to issue batch: " + error.message);
+      } else {
+        toast.success(`100 tokens issued for Dr. ${doctor.name}`);
+        fetchTodayTokens();
+      }
+    } finally {
+      setBatchIssuing(prev => ({ ...prev, [doctor.id]: false }));
+    }
+  };
+
 
   const handleResetToday = async () => {
     if (!confirm("Reset all of today's tokens? This action cannot be undone.")) return;
@@ -299,23 +406,58 @@ const AdminTokens = () => {
             const doctorTokens = todayTokens.filter(t => t.doctor_id === doctor.id);
             const servingToken = doctorTokens.find(t => t.status === 'serving');
             const waitingCount = doctorTokens.filter(t => t.status === 'waiting').length;
+            const isStartFromOne = doctorSettings[doctor.id] === true;
+
 
             return (
-              <div key={doctor.id} className="border border-border rounded-2xl p-6 bg-card shadow-soft flex flex-col">
+              <div key={doctor.id} className={`border rounded-2xl p-6 transition-all duration-300 flex flex-col ${
+                isStartFromOne 
+                  ? "bg-blue-50 border-blue-400 shadow-md ring-1 ring-blue-400/20" 
+                  : "bg-card border-border shadow-soft"
+              }`}>
                 {/* Doctor header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold font-display">{doctor.name}</h3>
-                    <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+                <div className="flex flex-col gap-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold font-display">{doctor.name}</h3>
+                      <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+                    </div>
+                    <Button
+                      onClick={() => handleOpenIssueModal(doctor.id)}
+                      variant="hero"
+                      size="sm"
+                    >
+                      <Ticket className="mr-2 h-4 w-4" /> Issue Token
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => handleOpenIssueModal(doctor.id)}
-                    variant="hero"
-                    size="sm"
-                  >
-                    <Ticket className="mr-2 h-4 w-4" /> Issue Token
-                  </Button>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={isStartFromOne ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleStartFromOne(doctor)}
+                      className={isStartFromOne ? "bg-blue-600 hover:bg-blue-700 text-white border-none" : ""}
+                    >
+                      <RotateCcw className={`mr-1.5 h-3.5 w-3.5 ${isStartFromOne ? "animate-pulse" : ""}`} />
+                      {isStartFromOne ? "Starting from 1" : "Start from 1"}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleIssueBatch(doctor)}
+                      disabled={batchIssuing[doctor.id]}
+                    >
+                      {batchIssuing[doctor.id] ? (
+                        <div className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      ) : (
+                        <FileText className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Issue 100 Tokens
+                    </Button>
+                  </div>
                 </div>
+
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -461,8 +603,9 @@ const AdminTokens = () => {
         initialDoctorId={selectedDoctorId}
         onIssue={handleIssueToken}
         isIssuing={issuing}
-        nextTokenNumber={getNextTokenNumber()}
+        nextTokenNumber={getNextTokenNumber(selectedDoctorId)}
       />
+
 
       <TokenReceipt open={receiptOpen} onOpenChange={setReceiptOpen} token={receiptToken} clinicId={clinicId} />
     </motion.div>
