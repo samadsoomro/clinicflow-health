@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 import heroPattern from "@/assets/hero-pattern.jpg";
-import { subscribeToPushNotifications, checkPushPermission } from "@/hooks/usePushNotifications";
+import { subscribeToPushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
 interface SectionData {
@@ -62,15 +62,35 @@ const Index = () => {
 
     // Check if we should show the notification banner
     const checkBanner = async () => {
-      const dismissed = localStorage.getItem('notif_banner_dismissed');
-      if (dismissed) return;
+      // Check if VAPID key is available
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return; // VAPID key not set — don't show banner
 
+      // Check browser support
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+      // If permission already granted — don't show banner
+      if (Notification.permission === 'granted') {
+        localStorage.removeItem('notif_banner_dismissed'); // reset for future devices
+        return;
+      }
+
+      // If permission denied — don't bother showing
+      if (Notification.permission === 'denied') return;
+
+      // Check if user is logged in as a patient
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return; // only for logged-in patients
+      if (!session?.user) return;
 
-      const permission = await checkPushPermission();
-      if (permission === 'granted') return; // already enabled
+      // Check user is not a clinic admin
+      const { data: roleData } = await (supabase as any)
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      if (roleData?.role === 'clinic_admin' || roleData?.role === 'super_admin') return;
 
+      // Show banner regardless of localStorage — permission is 'default' (not yet asked)
       setShowNotifBanner(true);
     };
     checkBanner();
@@ -494,6 +514,8 @@ const Index = () => {
                       localStorage.setItem('notif_banner_dismissed', 'true');
                       setShowNotifBanner(false);
                       toast.success('Notifications enabled! You will be notified of clinic replies.');
+                    } else {
+                      toast.error('Could not enable notifications. Please allow notifications in your browser settings.');
                     }
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
