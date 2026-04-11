@@ -41,16 +41,13 @@ const PatientMessages = () => {
         setMessages(data || []);
         
         // Mark all unread replies as read
-        const unreadReplyIds = data
-          ?.flatMap((m: any) => m.contact_replies || [])
-          .filter((r: any) => !r.is_read_by_patient)
-          .map((r: any) => r.id) || [];
-
-        if (unreadReplyIds.length > 0) {
+        if (data && data.length > 0) {
+          const allMessageIds = data.map((m: any) => m.id);
           await (supabase as any)
             .from('contact_replies')
             .update({ is_read_by_patient: true })
-            .in('id', unreadReplyIds);
+            .in('message_id', allMessageIds)
+            .eq('is_read_by_patient', false);
         }
       }
       setLoading(false);
@@ -109,7 +106,7 @@ const PatientMessages = () => {
                   </CardTitle>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(msg.created_at), "PPP p")}
+                    {new Date(msg.created_at).toLocaleDateString()}
                   </div>
                 </div>
               </CardHeader>

@@ -29,15 +29,20 @@ const PublicNavbar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(_mobileMenuOpen);
-  const { user, profile, isSuperAdmin, isClinicAdmin, isPatient, signOut } = useAuth();
+  const { user, profile, isSuperAdmin, isClinicAdmin, isPatient, roles, signOut } = useAuth();
   const { clinic } = useClinicContext();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const isAdmin = isSuperAdmin || isClinicAdmin();
-  const isActuallyPatient = isPatient && !isAdmin;
+  const hasRole = roles.length > 0;
+  // Patient is anyone who has the patient role OR has NO roles at all (except admins identified above)
+  const isActuallyPatient = !isAdmin && (isPatient || !hasRole);
 
   useEffect(() => {
-    if (!user || !isActuallyPatient) return;
+    if (!user || !isActuallyPatient) {
+      if (!user) setUnreadCount(0);
+      return;
+    }
 
     const checkMessages = async () => {
       // get message IDs belonging to this patient
