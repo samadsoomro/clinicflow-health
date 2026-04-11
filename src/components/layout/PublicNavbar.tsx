@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Menu, X, LogOut, MessageSquare } from "lucide-react";
+import { Activity, Menu, X, LogOut, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -144,6 +144,18 @@ const PublicNavbar = () => {
 
         <div className="hidden items-center gap-1 md:flex">
           <ThemeToggle />
+          {!isAdmin && (
+            <ClinicLink to="/messages" className="relative">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <MessageCircle className="h-5 w-5" />
+                {user && unreadCount > 0 && (
+                  <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] bg-destructive text-destructive-foreground hover:bg-destructive">
+                    {unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </ClinicLink>
+          )}
           {user ? (
             <>
               {isAdmin && (
@@ -155,18 +167,6 @@ const PublicNavbar = () => {
                 <span className="text-sm font-medium text-foreground px-2">{displayName}</span>
               )}
 
-              {isActuallyPatient && (
-                <ClinicLink to="/messages" className="relative">
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <MessageSquare className="h-5 w-5" />
-                    {unreadCount > 0 && (
-                      <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] bg-destructive text-destructive-foreground hover:bg-destructive">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </ClinicLink>
-              )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-1 h-4 w-4" />
                 Logout
@@ -223,24 +223,25 @@ const PublicNavbar = () => {
                 );
               })}
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                {!isAdmin && (
+                  <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      Messages
+                      {user && unreadCount > 0 && (
+                        <Badge className="ml-auto bg-destructive text-destructive-foreground">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </ClinicLink>
+                )}
                 {user ? (
                   <>
                     {displayName && (
                       <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {displayName}</p>
                     )}
-                    {isActuallyPatient && (
-                      <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>
-                        <Button variant="outline" className="w-full justify-start gap-2">
-                          <MessageSquare className="h-4 w-4" />
-                          Messages
-                          {unreadCount > 0 && (
-                            <Badge className="ml-auto bg-destructive text-destructive-foreground">
-                              {unreadCount}
-                            </Badge>
-                          )}
-                        </Button>
-                      </ClinicLink>
-                    )}
+
                     <div className="flex gap-2">
                       {isAdmin && (
                         <ClinicLink to="/admin" className="flex-1">

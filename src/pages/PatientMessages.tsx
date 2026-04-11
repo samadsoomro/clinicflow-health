@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, User, Building2, Calendar, ArrowRight, LogIn } from "lucide-react";
+import { MessageCircle, User, Building2, Calendar, ArrowRight, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicClinicId } from "@/hooks/useClinic";
@@ -69,19 +69,15 @@ const PatientMessages = () => {
 
   if (!user) {
     return (
-      <div className="container py-20">
-        <div className="max-w-md mx-auto bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-800 rounded-xl p-8 text-center space-y-4">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400">
-            <LogIn className="h-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground">Authentication Required</h2>
-          <p className="text-muted-foreground">
-            ⚠️ You are not logged in. Please log in to view your message history and receive clinic replies.
-          </p>
-          <ClinicLink to="/login">
-            <Button className="w-full mt-4">Login here</Button>
-          </ClinicLink>
-        </div>
+      <div className="max-w-lg mx-auto mt-16 text-center p-6 border rounded-lg">
+        <MessageCircle size={48} className="mx-auto mb-4 text-gray-400" />
+        <h2 className="text-xl font-semibold mb-2">Messages</h2>
+        <p className="text-gray-500 mb-4">
+          ⚠️ You are not logged in. Please log in to view your message history and clinic replies.
+        </p>
+        <ClinicLink to="/login" className="text-primary hover:underline">
+          Login here →
+        </ClinicLink>
       </div>
     );
   }
@@ -90,7 +86,7 @@ const PatientMessages = () => {
     <div className="container py-12 md:py-16 max-w-4xl">
       <div className="mb-8 flex items-center gap-3">
         <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <MessageSquare className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground font-display">Message History</h1>
@@ -100,15 +96,8 @@ const PatientMessages = () => {
 
       <div className="space-y-6">
         {messages.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-muted rounded-2xl">
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <MessageSquare className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">No messages found</h3>
-            <p className="text-muted-foreground mb-6">You haven't sent any messages to the clinic yet.</p>
-            <ClinicLink to="/contact">
-              <Button variant="outline">Contact Us Now</Button>
-            </ClinicLink>
+          <div className="text-center py-12 text-gray-500">
+            No messages yet. Use the <ClinicLink to="/contact" className="text-primary hover:underline">Contact Us</ClinicLink> form to send a message.
           </div>
         ) : (
           messages.map((msg) => (
@@ -127,51 +116,28 @@ const PatientMessages = () => {
               <CardContent className="p-0">
                 <div className="p-6 space-y-6">
                   {/* Patient Message */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <User className="h-4 w-4 text-primary" />
-                      <span>👤 You:</span>
-                    </div>
-                    <div className="pl-6 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {msg.message}
-                    </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
+                    <p className="text-xs text-gray-400 mb-1">👤 You wrote:</p>
+                    <p className="whitespace-pre-wrap">{msg.message}</p>
                   </div>
 
                   {/* Clinic Replies */}
-                  <div className="pt-4 border-t border-muted/50 space-y-4">
-                    {msg.contact_replies && msg.contact_replies.length > 0 ? (
-                      msg.contact_replies.map((reply: any) => (
-                        <div key={reply.id} className="space-y-2 group">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                              <Building2 className="h-4 w-4" />
-                              <span>🏥 Clinic replied:</span>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                              {format(new Date(reply.created_at), "p")}
-                            </span>
-                          </div>
-                          <div className="pl-6 text-sm text-foreground leading-relaxed whitespace-pre-wrap bg-primary/5 p-4 rounded-lg border border-primary/10">
-                            {reply.reply_text}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="flex items-center gap-2 p-4 bg-muted/20 border border-muted rounded-lg text-sm text-muted-foreground">
-                        <ArrowRight className="h-4 w-4 animate-pulse" />
-                        <span>No reply yet — we'll respond soon</span>
+                  {msg.contact_replies && msg.contact_replies.length > 0 ? (
+                    msg.contact_replies.map((reply: any) => (
+                      <div key={reply.id} className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded p-3 mt-4">
+                        <p className="text-xs text-blue-500 mb-1">🏥 Clinic replied · {new Date(reply.created_at).toLocaleDateString()}</p>
+                        <p className="whitespace-pre-wrap">{reply.reply_text}</p>
                       </div>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic mt-4">
+                      No reply yet — we'll respond to your message soon.
+                    </p>
+                  )}
                 </div>
                 
-                <div className="bg-muted/10 p-4 border-t border-border flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground italic">Want to send another message?</span>
-                  <ClinicLink to="/contact">
-                    <Button variant="link" size="sm" className="h-auto p-0 text-primary">
-                      Use the Contact Us form <ArrowRight className="ml-1 h-3 w-3" />
-                    </Button>
-                  </ClinicLink>
+                <div className="text-center mt-6 text-sm text-gray-500 pb-4 border-t border-border pt-4">
+                  Want to send another message? <ClinicLink to="/contact" className="text-primary hover:underline">Use the Contact Us form →</ClinicLink>
                 </div>
               </CardContent>
             </Card>
