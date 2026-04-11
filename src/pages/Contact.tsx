@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, Phone, MapPin, Send, Clock, CheckCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Send, Clock, CheckCircle, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import ClinicLink from "@/components/ClinicLink";
 
 const Contact = () => {
   const clinicId = usePublicClinicId();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [clinic, setClinic] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -53,8 +58,24 @@ const Contact = () => {
     }
     setSubmitted(true);
     setForm({ name: "", email: "", subject: "", message: "" });
-    toast.success("Your message has been sent. We will get back to you shortly.");
-    setTimeout(() => setSubmitted(false), 5000);
+    
+    if (session?.user) {
+      toast.success("Message sent!", {
+        description: "Your message has been sent. View your history to track replies.",
+        action: {
+          label: "View History",
+          onClick: () => {
+            const params = new URLSearchParams(window.location.search);
+            const clinicParam = params.get('clinic');
+            navigate(clinicParam ? `/messages?clinic=${clinicParam}` : "/messages");
+          }
+        }
+      });
+    } else {
+      toast.success("Your message has been sent. We will get back to you shortly.");
+    }
+
+    setTimeout(() => setSubmitted(false), 8000);
   };
 
   const mapsUrl = (clinic as any)?.maps_embed_url;
@@ -106,9 +127,27 @@ const Contact = () => {
             onSubmit={handleSubmit}
           >
             {submitted && (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 text-sm text-green-700 dark:text-green-300">
-                <CheckCircle className="h-4 w-4" />
-                Your message has been sent successfully!
+              <div className="flex flex-col gap-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 text-sm text-green-700 dark:text-green-300">
+                <div className="flex items-center gap-2 font-semibold">
+                  <CheckCircle className="h-4 w-4" />
+                  Your message has been sent successfully!
+                </div>
+                {user && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span>
+                      Track replies in your{" "}
+                      <ClinicLink to="/messages" className="font-bold underline hover:text-green-800 dark:hover:text-green-100 transition-colors">
+                        message history
+                      </ClinicLink>
+                    </span>
+                  </div>
+                )}
+                {!user && (
+                   <div className="pl-6 text-xs opacity-80 italic">
+                    Log in to track your message history and receive direct replies.
+                   </div>
+                )}
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-2">
