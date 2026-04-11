@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 import heroPattern from "@/assets/hero-pattern.jpg";
+import { PushNotificationManager } from "@/components/notifications/PushNotificationManager";
 
 interface SectionData {
   section_name: string;
@@ -152,6 +153,13 @@ const Index = () => {
               })}
             </motion.div>
           )}
+        </div>
+      </section>
+
+      {/* Push Notification Promo */}
+      <section className="py-8 bg-gray-50 dark:bg-gray-900/50">
+        <div className="container flex justify-center">
+          <PushNotificationManager />
         </div>
       </section>
 
