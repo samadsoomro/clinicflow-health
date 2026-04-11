@@ -40,6 +40,7 @@ const Index = () => {
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -60,46 +61,47 @@ const Index = () => {
     };
     fetchAll();
 
-    // Check if we should show the notification banner — listens to auth state
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session?.user) {
-        setShowNotifBanner(false);
-        return;
-      }
+    // Notification banner — listen to auth state
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      // browser doesn't support push — never show banner
+    } else if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
+      // VAPID key not configured
+    } else {
+      const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!session?.user) {
+          setShowNotifBanner(false);
+          setCurrentUserId(null);
+          return;
+        }
 
-      // Check browser support
-      if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-        return; // push not supported on this browser
-      }
+        setCurrentUserId(session.user.id);
 
-      // Check VAPID key exists
-      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      if (!vapidKey) return;
+        // Don't show to clinic admins or super admins
+        const { data: roleData } = await (supabase as any)
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (roleData) return; // has a role = admin, not a patient
 
-      // Already granted — no need to show banner
-      if (Notification.permission === 'granted') return;
+        // Check permission state on THIS device/browser
+        const permission = Notification.permission;
 
-      // Already denied — can't ask again
-      if (Notification.permission === 'denied') return;
+        if (permission === 'default') {
+          // Never asked on this device — show banner
+          setShowNotifBanner(true);
+        } else if (permission === 'granted') {
+          // Already granted — silently re-subscribe in case subscription expired
+          setShowNotifBanner(false);
+          subscribeToPushNotifications(session.user.id, clinicId).catch(() => {});
+        } else {
+          // 'denied' — don't show banner
+          setShowNotifBanner(false);
+        }
+      });
 
-      // Check user is not admin
-      const { data: roleData } = await (supabase as any)
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      if (roleData?.role === 'clinic_admin' || roleData?.role === 'super_admin') return;
-
-      // Check this specific device hasn't dismissed
-      const deviceKey = `notif_dismissed_${session.user.id}`;
-      const dismissed = localStorage.getItem(deviceKey);
-      if (dismissed) return;
-
-      // Show banner
-      setShowNotifBanner(true);
-    });
-
-    return () => { authSub.unsubscribe(); };
+      return () => { authSub.unsubscribe(); };
+    }
   }, [clinicId]);
 
   const getSection = (name: string): SectionData | undefined =>
@@ -498,59 +500,45 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Push Notification Banner — floating bottom bar, one-time */}
+      {/* Push Notification Banner — floating bottom bar */}
       {showNotifBanner && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3">
+        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0">
               <Bell size={20} className="text-blue-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Get notified of clinic replies</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Enable notifications to get alerted on your device when the clinic replies to your messages.
+              <p className="font-semibold text-sm">Stay updated from the clinic</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Get notified on this device when the clinic replies to your messages or when your token is almost ready.
               </p>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={async () => {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session?.user) return;
-                    const success = await subscribeToPushNotifications(session.user.id, clinicId);
-                    const deviceKey = `notif_dismissed_${session.user.id}`;
-                    localStorage.setItem(deviceKey, 'true');
+                    if (!currentUserId) return;
+                    const success = await subscribeToPushNotifications(currentUserId, clinicId);
                     setShowNotifBanner(false);
                     if (success) {
-                      toast.success('Notifications enabled! You will be notified of clinic replies.');
+                      toast.success('Notifications enabled! You will be alerted when the clinic replies.');
                     } else {
-                      toast.error('Could not enable notifications. Please allow notifications in your browser settings.');
+                      if (Notification.permission === 'denied') {
+                        toast.error('Notifications blocked. Please allow notifications in your browser settings.');
+                      }
                     }
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
                 >
-                  Enable Notifications
+                  🔔 Enable Notifications
                 </button>
                 <button
-                  onClick={async () => {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    const deviceKey = session?.user ? `notif_dismissed_${session.user.id}` : 'notif_dismissed_guest';
-                    localStorage.setItem(deviceKey, 'true');
-                    setShowNotifBanner(false);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1.5"
+                  onClick={() => setShowNotifBanner(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xs px-2 py-2 transition"
                 >
                   Not now
                 </button>
               </div>
             </div>
-            <button
-              onClick={async () => {
-                const { data: { session } } = await supabase.auth.getSession();
-                const deviceKey = session?.user ? `notif_dismissed_${session.user.id}` : 'notif_dismissed_guest';
-                localStorage.setItem(deviceKey, 'true');
-                setShowNotifBanner(false);
-              }}
-              className="text-gray-400 hover:text-gray-500"
-            >
+            <button onClick={() => setShowNotifBanner(false)} className="text-gray-400 hover:text-gray-500 flex-shrink-0">
               <X size={16} />
             </button>
           </div>

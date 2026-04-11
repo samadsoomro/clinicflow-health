@@ -19,11 +19,11 @@ const PatientMessages = () => {
   const clinicName = clinic?.clinic_name || "Clinic";
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+  const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
 
   useEffect(() => {
     if ('Notification' in window) {
-      setNotifPermission(Notification.permission);
+      setPermissionState(Notification.permission);
     }
   }, []);
 
@@ -117,35 +117,37 @@ const PatientMessages = () => {
         </p>
       </div>
 
-      {notifPermission === 'default' && (
-        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex items-center justify-between gap-3">
+      {user && permissionState === 'default' && (
+        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Bell size={20} className="text-blue-500 flex-shrink-0" />
+            <Bell size={18} className="text-blue-500 flex-shrink-0" />
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              Enable notifications to get alerted when the clinic replies to your messages.
+              Enable notifications on this device to get alerted when the clinic replies.
             </p>
           </div>
           <button
             onClick={async () => {
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session?.user) return;
-              const success = await subscribeToPushNotifications(session.user.id, clinicId);
-              if (success) {
-                setNotifPermission('granted');
+              const { data: { session: s } } = await supabase.auth.getSession();
+              if (!s?.user) return;
+              const ok = await subscribeToPushNotifications(s.user.id, clinicId);
+              if (ok) {
+                setPermissionState('granted');
                 toast.success('Notifications enabled!');
+              } else {
+                setPermissionState(Notification.permission);
               }
             }}
-            className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+            className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
           >
-            Enable
+            🔔 Enable Now
           </button>
         </div>
       )}
 
-      {notifPermission === 'denied' && (
-        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-xl p-3">
-          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            ⚠️ Notifications are blocked in your browser. To enable, go to your browser settings and allow notifications for this site.
+      {user && permissionState === 'denied' && (
+        <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-xl p-3">
+          <p className="text-sm text-orange-700 dark:text-orange-300">
+            ⚠️ Notifications are blocked on this device. Go to your browser settings → Site Settings → Notifications → Allow for this site.
           </p>
         </div>
       )}
