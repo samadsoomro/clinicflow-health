@@ -71,8 +71,13 @@ const AdminContactMessages = () => {
   };
 
   const deleteMessage = async (id: string) => {
+    // Step 1 — delete replies first (foreign key)
+    await (supabase as any).from('contact_replies').delete().eq('message_id', id);
+
+    // Step 2 — delete the message
     await supabase.from("contact_messages").delete().eq("id", id);
-    setMessages((prev) => prev.filter((m) => m.id !== id));
+    
+    await fetchMessages();
     setSelectedMessage(null);
     toast.success("Message deleted");
   };

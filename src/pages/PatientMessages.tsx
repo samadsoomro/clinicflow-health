@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageCircle, User, Building2, Calendar, ArrowRight, LogIn } from "lucide-react";
+import { MessageCircle, User, Building2, Calendar, ArrowRight, LogIn, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicClinicId } from "@/hooks/useClinic";
+import { useClinicContext } from "@/hooks/useClinicContext";
 import { Button } from "@/components/ui/button";
 import ClinicLink from "@/components/ClinicLink";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,8 @@ import { format } from "date-fns";
 const PatientMessages = () => {
   const { user, loading: authLoading } = useAuth();
   const clinicId = usePublicClinicId();
+  const { clinic } = useClinicContext();
+  const clinicName = clinic?.clinic_name || "Clinic";
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,78 +69,129 @@ const PatientMessages = () => {
 
   if (!user) {
     return (
-      <div className="max-w-lg mx-auto mt-16 text-center p-6 border rounded-lg">
-        <MessageCircle size={48} className="mx-auto mb-4 text-gray-400" />
-        <h2 className="text-xl font-semibold mb-2">Messages</h2>
-        <p className="text-gray-500 mb-4">
-          ⚠️ You are not logged in. Please log in to view your message history and clinic replies.
-        </p>
-        <ClinicLink to="/login" className="text-primary hover:underline">
-          Login here →
-        </ClinicLink>
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-700">
+          <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock size={32} className="text-yellow-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Messages</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            You need to be logged in to view your message history and receive replies from the clinic.
+          </p>
+          <div className="space-y-3">
+            <ClinicLink
+              to="/login"
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition"
+            >
+              Login to your account
+            </ClinicLink>
+            <ClinicLink
+              to="/register"
+              className="block w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-6 rounded-xl transition"
+            >
+              Create an account
+            </ClinicLink>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container py-12 md:py-16 max-w-4xl">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <MessageCircle className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground font-display">Message History</h1>
-          <p className="text-sm text-muted-foreground">View your conversations with the clinic staff.</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <MessageCircle size={24} /> Message History
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Your conversations with {clinicName}
+        </p>
       </div>
 
       <div className="space-y-6">
         {messages.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No messages yet. Use the <ClinicLink to="/contact" className="text-primary hover:underline">Contact Us</ClinicLink> form to send a message.
+          <div className="min-h-[50vh] flex items-center justify-center px-4">
+            <div className="max-w-md w-full text-center bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-700">
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle size={32} className="text-blue-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">No Messages Yet</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                You haven't sent any messages to the clinic yet. Use the Contact Us form to get in touch — we'll reply right here.
+              </p>
+              <ClinicLink
+                to="/contact"
+                className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition"
+              >
+                📩 Go to Contact Us
+              </ClinicLink>
+            </div>
           </div>
         ) : (
           messages.map((msg) => (
-            <Card key={msg.id} className="overflow-hidden border-border shadow-md">
-              <CardHeader className="bg-muted/30 border-b border-border py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <CardTitle className="text-lg font-semibold truncate pr-4">
-                    Subject: {msg.subject}
-                  </CardTitle>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(msg.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="p-6 space-y-6">
-                  {/* Patient Message */}
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
-                    <p className="text-xs text-gray-400 mb-1">👤 You wrote:</p>
-                    <p className="whitespace-pre-wrap">{msg.message}</p>
-                  </div>
+            <div key={msg.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-4 overflow-hidden">
+              
+              {/* Thread header */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-700">
+                <h3 className="font-semibold text-sm">{msg.subject}</h3>
+                <span className="text-xs text-gray-400">
+                  {new Date(msg.created_at).toLocaleDateString('en-PK', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  })}
+                </span>
+              </div>
 
-                  {/* Clinic Replies */}
-                  {msg.contact_replies && msg.contact_replies.length > 0 ? (
-                    msg.contact_replies.map((reply: any) => (
-                      <div key={reply.id} className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded p-3 mt-4">
-                        <p className="text-xs text-blue-500 mb-1">🏥 Clinic replied · {new Date(reply.created_at).toLocaleDateString()}</p>
-                        <p className="whitespace-pre-wrap">{reply.reply_text}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-400 italic mt-4">
-                      No reply yet — we'll respond to your message soon.
+              {/* Timeline body */}
+              <div className="px-5 py-4 space-y-4">
+
+                {/* Patient message — right aligned */}
+                <div className="flex justify-end">
+                  <div className="max-w-[80%]">
+                    <div className="bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
+                      {msg.message}
+                    </div>
+                    <p className="text-xs text-gray-400 text-right mt-1">
+                      👤 You · {new Date(msg.created_at).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                  )}
+                  </div>
                 </div>
-                
-                <div className="text-center mt-6 text-sm text-gray-500 pb-4 border-t border-border pt-4">
-                  Want to send another message? <ClinicLink to="/contact" className="text-primary hover:underline">Use the Contact Us form →</ClinicLink>
-                </div>
-              </CardContent>
-            </Card>
+
+                {/* Clinic replies — left aligned */}
+                {msg.contact_replies && msg.contact_replies.length > 0 ? (
+                  msg.contact_replies.map((reply: any) => (
+                    <div key={reply.id} className="flex justify-start">
+                      <div className="max-w-[80%]">
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm">
+                          {reply.reply_text}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          🏥 Clinic · {new Date(reply.created_at).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
+                          {!reply.is_read_by_patient && (
+                            <span className="ml-2 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">New</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-50 dark:bg-gray-700/40 border border-dashed border-gray-200 dark:border-gray-600 rounded-2xl px-4 py-3 text-sm text-gray-400 italic">
+                      ⏳ No reply yet — the clinic will respond soon.
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                <ClinicLink to="/contact" className="text-sm text-blue-500 hover:underline">
+                  📩 Send another message →
+                </ClinicLink>
+              </div>
+
+            </div>
           ))
         )}
       </div>
