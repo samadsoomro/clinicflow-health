@@ -60,29 +60,29 @@ const Index = () => {
     };
     fetchAll();
 
-    // Check if we should show the notification banner
-    const checkBanner = async () => {
-      // Check if VAPID key is available
-      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      if (!vapidKey) return; // VAPID key not set — don't show banner
-
-      // Check browser support
-      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-
-      // If permission already granted — don't show banner
-      if (Notification.permission === 'granted') {
-        localStorage.removeItem('notif_banner_dismissed'); // reset for future devices
+    // Check if we should show the notification banner — listens to auth state
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!session?.user) {
+        setShowNotifBanner(false);
         return;
       }
 
-      // If permission denied — don't bother showing
+      // Check browser support
+      if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return; // push not supported on this browser
+      }
+
+      // Check VAPID key exists
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return;
+
+      // Already granted — no need to show banner
+      if (Notification.permission === 'granted') return;
+
+      // Already denied — can't ask again
       if (Notification.permission === 'denied') return;
 
-      // Check if user is logged in as a patient
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      // Check user is not a clinic admin
+      // Check user is not admin
       const { data: roleData } = await (supabase as any)
         .from('user_roles')
         .select('role')
@@ -90,10 +90,16 @@ const Index = () => {
         .maybeSingle();
       if (roleData?.role === 'clinic_admin' || roleData?.role === 'super_admin') return;
 
-      // Show banner regardless of localStorage — permission is 'default' (not yet asked)
+      // Check this specific device hasn't dismissed
+      const deviceKey = `notif_dismissed_${session.user.id}`;
+      const dismissed = localStorage.getItem(deviceKey);
+      if (dismissed) return;
+
+      // Show banner
       setShowNotifBanner(true);
-    };
-    checkBanner();
+    });
+
+    return () => { authSub.unsubscribe(); };
   }, [clinicId]);
 
   const getSection = (name: string): SectionData | undefined =>
@@ -510,9 +516,10 @@ const Index = () => {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (!session?.user) return;
                     const success = await subscribeToPushNotifications(session.user.id, clinicId);
+                    const deviceKey = `notif_dismissed_${session.user.id}`;
+                    localStorage.setItem(deviceKey, 'true');
+                    setShowNotifBanner(false);
                     if (success) {
-                      localStorage.setItem('notif_banner_dismissed', 'true');
-                      setShowNotifBanner(false);
                       toast.success('Notifications enabled! You will be notified of clinic replies.');
                     } else {
                       toast.error('Could not enable notifications. Please allow notifications in your browser settings.');
@@ -523,8 +530,10 @@ const Index = () => {
                   Enable Notifications
                 </button>
                 <button
-                  onClick={() => {
-                    localStorage.setItem('notif_banner_dismissed', 'true');
+                  onClick={async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const deviceKey = session?.user ? `notif_dismissed_${session.user.id}` : 'notif_dismissed_guest';
+                    localStorage.setItem(deviceKey, 'true');
                     setShowNotifBanner(false);
                   }}
                   className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1.5"
@@ -534,8 +543,10 @@ const Index = () => {
               </div>
             </div>
             <button
-              onClick={() => {
-                localStorage.setItem('notif_banner_dismissed', 'true');
+              onClick={async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                const deviceKey = session?.user ? `notif_dismissed_${session.user.id}` : 'notif_dismissed_guest';
+                localStorage.setItem(deviceKey, 'true');
                 setShowNotifBanner(false);
               }}
               className="text-gray-400 hover:text-gray-500"

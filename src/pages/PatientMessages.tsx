@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageCircle, User, Building2, Calendar, ArrowRight, LogIn, Lock } from "lucide-react";
+import { MessageCircle, User, Building2, Calendar, ArrowRight, LogIn, Lock, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicClinicId } from "@/hooks/useClinic";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import ClinicLink from "@/components/ClinicLink";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { subscribeToPushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 const PatientMessages = () => {
   const { user, loading: authLoading } = useAuth();
@@ -17,6 +19,13 @@ const PatientMessages = () => {
   const clinicName = clinic?.clinic_name || "Clinic";
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user || !clinicId) {
@@ -107,6 +116,39 @@ const PatientMessages = () => {
           Your conversations with {clinicName}
         </p>
       </div>
+
+      {notifPermission === 'default' && (
+        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Bell size={20} className="text-blue-500 flex-shrink-0" />
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Enable notifications to get alerted when the clinic replies to your messages.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session?.user) return;
+              const success = await subscribeToPushNotifications(session.user.id, clinicId);
+              if (success) {
+                setNotifPermission('granted');
+                toast.success('Notifications enabled!');
+              }
+            }}
+            className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+          >
+            Enable
+          </button>
+        </div>
+      )}
+
+      {notifPermission === 'denied' && (
+        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-xl p-3">
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            ⚠️ Notifications are blocked in your browser. To enable, go to your browser settings and allow notifications for this site.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         {messages.length === 0 ? (
