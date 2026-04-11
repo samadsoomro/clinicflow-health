@@ -1,20 +1,31 @@
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'New Message from Clinic';
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    console.error('Push data parsing error:', e);
+  }
+
+  const title = data.title || 'Clinic Update';
   const options = {
-    body: data.body || 'You have a new reply to your message.',
+    body: data.body || 'You have a new message from the clinic.',
     icon: data.icon || '/favicon.ico',
     badge: data.badge || '/favicon.ico',
+    tag: 'clinic-reply', // Helps group notifications
+    renotify: true, // Notify even if a previous notification with the same tag is visible
     data: {
       url: data.url || '/messages'
     },
-    // Attempt to add sound if the browser supports it
-    // Note: 'sound' attribute is deprecated in many browsers, but we keep it here as a placeholder
-    // Modern way is usually handled by the OS notification settings
-    vibrate: [100, 50, 100],
+    // Vibration pattern for mobile devices
+    vibrate: [200, 100, 200],
+    // 'sound' is deprecated in most browsers, but we keep it for legacy support
+    // The actual alert sound is usually the OS default for push notifications
+    sound: 'default',
     actions: [
-      { action: 'open', title: 'View Message' }
-    ]
+      { action: 'open', title: 'Open Messages' }
+    ],
+    // Ensure the notification stays until the user interacts
+    requireInteraction: true
   };
 
   event.waitUntil(
@@ -24,18 +35,17 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data.url;
+  const urlToOpen = new URL(event.notification.data.url, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there is already a window open with this URL
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url.indexOf(urlToOpen) !== -1 && 'focus' in client) {
+      // Focus existing window if possible
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
           return client.focus();
         }
       }
-      // If not, open a new window
+      // Otherwise open new
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
