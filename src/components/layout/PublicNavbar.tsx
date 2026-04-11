@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Menu, X, LogOut } from "lucide-react";
-import { useState } from "react";
+import { Activity, Menu, X, LogOut, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 // Outside component — survives remounts completely
 let _mobileMenuOpen = false;
@@ -27,10 +29,43 @@ const PublicNavbar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(_mobileMenuOpen);
-  const { user, profile, isSuperAdmin, isClinicAdmin, signOut } = useAuth();
+  const { user, profile, isSuperAdmin, isClinicAdmin, isPatient, signOut } = useAuth();
   const { clinic } = useClinicContext();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isAdmin = isSuperAdmin || isClinicAdmin();
+  const isActuallyPatient = isPatient && !isAdmin;
+
+  useEffect(() => {
+    if (!user || !isActuallyPatient) return;
+
+    const checkMessages = async () => {
+      // get message IDs belonging to this patient
+      const { data: userMessages } = await (supabase as any)
+        .from('contact_messages')
+        .select('id')
+        .eq('user_id', user.id);
+      
+      const messageIds = userMessages?.map((m: any) => m.id) ?? [];
+      
+      if (messageIds.length === 0) {
+        setUnreadCount(0);
+        return;
+      }
+
+      const { count } = await (supabase as any)
+        .from('contact_replies')
+        .select('id', { count: 'exact' })
+        .eq('is_read_by_patient', false)
+        .in('message_id', messageIds);
+      
+      setUnreadCount(count || 0);
+    };
+
+    checkMessages();
+    const interval = setInterval(checkMessages, 60000);
+    return () => clearInterval(interval);
+  }, [user, isActuallyPatient]);
   const displayName = profile?.full_name || user?.email || null;
 
   const shortName = (clinic as any)?.short_name || "";
@@ -119,6 +154,19 @@ const PublicNavbar = () => {
               {displayName && (
                 <span className="text-sm font-medium text-foreground px-2">{displayName}</span>
               )}
+
+              {isActuallyPatient && (
+                <ClinicLink to="/messages" className="relative">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <MessageSquare className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] bg-destructive text-destructive-foreground hover:bg-destructive">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </ClinicLink>
+              )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-1 h-4 w-4" />
                 Logout
@@ -179,6 +227,19 @@ const PublicNavbar = () => {
                   <>
                     {displayName && (
                       <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {displayName}</p>
+                    )}
+                    {isActuallyPatient && (
+                      <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Messages
+                          {unreadCount > 0 && (
+                            <Badge className="ml-auto bg-destructive text-destructive-foreground">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </Button>
+                      </ClinicLink>
                     )}
                     <div className="flex gap-2">
                       {isAdmin && (

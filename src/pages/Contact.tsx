@@ -35,12 +35,16 @@ const Contact = () => {
       return;
     }
     setSubmitting(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { error } = await supabase.from("contact_messages").insert({
       clinic_id: clinicId,
       name: form.name.trim(),
       email: form.email.trim(),
       subject: form.subject.trim(),
       message: form.message.trim(),
+      user_id: session?.user?.id ?? null
     });
     setSubmitting(false);
     if (error) {

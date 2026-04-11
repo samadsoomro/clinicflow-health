@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Mail, Eye, Trash2, CheckCircle, Circle, Inbox } from "lucide-react";
+import { Mail, Eye, Trash2, CheckCircle, Circle, Inbox, MessageSquare, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,13 @@ interface ContactMessage {
   subject: string;
   message: string;
   is_read: boolean;
+  user_id: string | null;
   created_at: string;
+  contact_replies?: {
+    id: string;
+    reply_text: string;
+    created_at: string;
+  }[];
 }
 
 const AdminContactMessages = () => {
@@ -25,15 +32,16 @@ const AdminContactMessages = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   const fetchMessages = useCallback(async () => {
-    let query = supabase
+    const { data } = await (supabase as any)
       .from("contact_messages")
-      .select("*")
+      .select("*, contact_replies(id, reply_text, created_at)")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
 
-    const { data } = await query;
     setMessages((data as ContactMessage[]) || []);
     setLoading(false);
   }, [clinicId]);
@@ -67,6 +75,30 @@ const AdminContactMessages = () => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
     setSelectedMessage(null);
     toast.success("Message deleted");
+  };
+
+  const handleSendReply = async (messageId: string) => {
+    if (!replyText.trim()) {
+      toast.error("Please type a reply.");
+      return;
+    }
+    
+    const { error } = await (supabase as any).from('contact_replies').insert({
+      clinic_id: clinicId,
+      message_id: messageId,
+      reply_text: replyText.trim(),
+      is_read_by_patient: false
+    });
+
+    if (error) {
+      toast.error("Failed to send reply.");
+      return;
+    }
+
+    setReplyText('');
+    setReplyingTo(null);
+    fetchMessages();
+    toast.success('Reply sent successfully');
   };
 
   const filtered = messages.filter((m) => {
@@ -140,12 +172,21 @@ const AdminContactMessages = () => {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell whitespace-nowrap">
                     {new Date(msg.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3">
-                    {msg.is_read ? (
-                      <Badge variant="secondary" className="text-xs">Read</Badge>
-                    ) : (
-                      <Badge className="bg-primary text-primary-foreground text-xs">Unread</Badge>
-                    )}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      {msg.is_read ? (
+                        <Badge variant="secondary" className="text-[10px] w-fit">Read</Badge>
+                      ) : (
+                        <Badge className="bg-primary text-primary-foreground text-[10px] w-fit">Unread</Badge>
+                      )}
+                      {!msg.user_id ? (
+                        <Badge variant="outline" className="text-[10px] w-fit border-gray-400 text-gray-500">Guest</Badge>
+                      ) : msg.contact_replies && msg.contact_replies.length > 0 ? (
+                        <Badge className="bg-green-500 text-white text-[10px] w-fit">Replied</Badge>
+                      ) : (
+                        <Badge className="bg-orange-500 text-white text-[10px] w-fit">Awaiting Reply</Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
@@ -208,10 +249,65 @@ const AdminContactMessages = () => {
               <div className="rounded-lg bg-muted/50 p-4">
                 <p className="whitespace-pre-wrap text-sm text-foreground">{selectedMessage.message}</p>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => toggleRead(selectedMessage)}>
-                  {selectedMessage.is_read ? "Mark Unread" : "Mark Read"}
-                </Button>
+
+              {/* Reply History */}
+              {selectedMessage.contact_replies && selectedMessage.contact_replies.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Previous Replies</h4>
+                  <div className="space-y-2">
+                    {selectedMessage.contact_replies.map((reply) => (
+                      <div key={reply.id} className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                        <p className="text-foreground">{reply.reply_text}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {new Date(reply.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reply Input */}
+              <div className="pt-4 border-t border-border">
+                {selectedMessage.user_id ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Reply to Patient
+                      </h4>
+                    </div>
+                    <Textarea
+                      placeholder="Type your reply to this patient..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleSendReply(selectedMessage.id)}
+                        disabled={!replyText.trim()}
+                      >
+                        <Send className="mr-2 h-3.5 w-3.5" />
+                        Send Reply
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-md bg-muted p-3 text-center text-xs text-muted-foreground">
+                    Guest message — cannot reply via this system.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-border mt-4">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => toggleRead(selectedMessage)}>
+                    {selectedMessage.is_read ? "Mark Unread" : "Mark Read"}
+                  </Button>
+                </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">Delete</Button>

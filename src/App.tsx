@@ -17,6 +17,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Location = lazy(() => import("./pages/Location"));
 const Contact = lazy(() => import("./pages/Contact"));
 const PatientCard = lazy(() => import("./pages/PatientCard"));
+const PatientMessages = lazy(() => import("./pages/PatientMessages"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const TokenDisplay = lazy(() => import("./pages/TokenDisplay"));
@@ -66,6 +67,7 @@ const App = () => (
                       <Route path="/location" element={<Location />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/patient-card" element={<PatientCard />} />
+                      <Route path="/messages" element={<PatientMessages />} />
                     </Route>
 
                     <Route path="/token" element={<TokenDisplay />} />
