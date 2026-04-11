@@ -100,6 +100,33 @@ const AdminContactMessages = () => {
       return;
     }
 
+    // Send push notification if patient is logged in
+    const message = selectedMessage;
+    if (message?.user_id) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(
+          'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              user_id: message.user_id,
+              title: `Clinic replied to your message`,
+              body: replyText.trim().length > 80 ? replyText.trim().substring(0, 80) + '...' : replyText.trim(),
+              data: { url: '/messages' },
+            }),
+          }
+        );
+      } catch (e) {
+        console.error('Push notification failed:', e);
+        // Silent fail — reply still saved
+      }
+    }
+
     setReplyText('');
     setReplyingTo(null);
     fetchMessages();

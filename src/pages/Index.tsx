@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info } from "lucide-react";
+import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicClinicId } from "@/hooks/useClinic";
 import heroPattern from "@/assets/hero-pattern.jpg";
-import { PushNotificationManager } from "@/components/notifications/PushNotificationManager";
+import { subscribeToPushNotifications, checkPushPermission } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 interface SectionData {
   section_name: string;
@@ -38,6 +39,7 @@ const Index = () => {
   const [certs, setCerts] = useState<any[]>([]);
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -57,6 +59,21 @@ const Index = () => {
       setLoading(false);
     };
     fetchAll();
+
+    // Check if we should show the notification banner
+    const checkBanner = async () => {
+      const dismissed = localStorage.getItem('notif_banner_dismissed');
+      if (dismissed) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return; // only for logged-in patients
+
+      const permission = await checkPushPermission();
+      if (permission === 'granted') return; // already enabled
+
+      setShowNotifBanner(true);
+    };
+    checkBanner();
   }, [clinicId]);
 
   const getSection = (name: string): SectionData | undefined =>
@@ -156,12 +173,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Push Notification Promo */}
-      <section className="py-8 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container flex justify-center">
-          <PushNotificationManager />
-        </div>
-      </section>
+
 
       {/* Doctors */}
       {(doctorsSection || !hasCustomSections) && featuredDoctors.length > 0 && (
@@ -459,6 +471,58 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Push Notification Banner — floating bottom bar, one-time */}
+      {showNotifBanner && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+              <Bell size={20} className="text-blue-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">Get notified of clinic replies</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Enable notifications to get alerted on your device when the clinic replies to your messages.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.user) return;
+                    const success = await subscribeToPushNotifications(session.user.id, clinicId);
+                    if (success) {
+                      localStorage.setItem('notif_banner_dismissed', 'true');
+                      setShowNotifBanner(false);
+                      toast.success('Notifications enabled! You will be notified of clinic replies.');
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+                >
+                  Enable Notifications
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('notif_banner_dismissed', 'true');
+                    setShowNotifBanner(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1.5"
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.setItem('notif_banner_dismissed', 'true');
+                setShowNotifBanner(false);
+              }}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
