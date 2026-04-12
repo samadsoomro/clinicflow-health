@@ -87,11 +87,15 @@ const AdminContactMessages = () => {
       toast.error("Please type a reply.");
       return;
     }
+
+    const currentReplyText = replyText.trim();
+    const message = messages.find(m => m.id === messageId);
     
+    // Step 1 — Save reply to Supabase (fast)
     const { error } = await (supabase as any).from('contact_replies').insert({
       clinic_id: clinicId,
       message_id: messageId,
-      reply_text: replyText.trim(),
+      reply_text: currentReplyText,
       is_read_by_patient: false
     });
 
@@ -100,37 +104,33 @@ const AdminContactMessages = () => {
       return;
     }
 
-    // Send push notification if patient is logged in
-    const message = selectedMessage;
+    // Step 2 — Show success immediately — don't wait for push
+    setReplyText('');
+    setReplyingTo(null);
+    toast.success('Reply sent successfully');
+    fetchMessages();
+
+    // Step 3 — Fire push notification in background (no await)
     if (message?.user_id) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        await fetch(
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.access_token) return;
+        fetch(
           'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
+              'Authorization': `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
               user_id: message.user_id,
-              title: `Clinic replied to your message`,
-              body: replyText.trim().length > 80 ? replyText.trim().substring(0, 80) + '...' : replyText.trim(),
-              data: { url: '/messages' },
+              title: `${clinic?.clinic_name || "Clinic"} replied to your message`,
+              body: currentReplyText.length > 100 ? currentReplyText.substring(0, 100) + '...' : currentReplyText,
             }),
           }
-        );
-      } catch (e) {
-        console.error('Push notification failed:', e);
-        // Silent fail — reply still saved
-      }
+        ).catch(err => console.error('Push notification failed:', err));
+      });
     }
-
-    setReplyText('');
-    setReplyingTo(null);
-    fetchMessages();
-    toast.success('Reply sent successfully');
   };
 
   const filtered = messages.filter((m) => {

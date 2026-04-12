@@ -27,45 +27,69 @@ const PatientMessages = () => {
     }
   }, []);
 
+  const fetchMessages = async () => {
+    if (!user || !clinicId) return;
+    
+    // Fetch patient's messages with their replies
+    const { data, error } = await (supabase as any)
+      .from('contact_messages')
+      .select(`
+        id, subject, message, created_at,
+        contact_replies (
+          id, reply_text, is_read_by_patient, created_at
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching messages:", error);
+    } else {
+      setMessages(data || []);
+      
+      // Mark all unread replies as read
+      if (data && data.length > 0) {
+        const allMessageIds = data.map((m: any) => m.id);
+        await (supabase as any)
+          .from('contact_replies')
+          .update({ is_read_by_patient: true })
+          .in('message_id', allMessageIds)
+          .eq('is_read_by_patient', false);
+      }
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!user || !clinicId) {
       if (!authLoading) setLoading(false);
       return;
     }
 
-    const fetchMessages = async () => {
-      // Fetch patient's messages with their replies
-      const { data, error } = await (supabase as any)
-        .from('contact_messages')
-        .select(`
-          id, subject, message, created_at,
-          contact_replies (
-            id, reply_text, is_read_by_patient, created_at
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('clinic_id', clinicId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Error fetching messages:", error);
-      } else {
-        setMessages(data || []);
-        
-        // Mark all unread replies as read
-        if (data && data.length > 0) {
-          const allMessageIds = data.map((m: any) => m.id);
-          await (supabase as any)
-            .from('contact_replies')
-            .update({ is_read_by_patient: true })
-            .in('message_id', allMessageIds)
-            .eq('is_read_by_patient', false);
-        }
-      }
-      setLoading(false);
-    };
-
     fetchMessages();
+
+    // Subscribe to new replies on contact_replies in real-time
+    const channel = supabase
+      .channel("patient-messages-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "contact_replies",
+          filter: `clinic_id=eq.${clinicId}`,
+        },
+        async () => {
+          // Re-fetch messages when a new reply arrives
+          await fetchMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, clinicId, authLoading]);
 
   if (authLoading || loading) {
