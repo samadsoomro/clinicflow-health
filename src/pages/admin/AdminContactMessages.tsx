@@ -35,6 +35,13 @@ const AdminContactMessages = () => {
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
+  const [contactNote, setContactNote] = useState("");
+  const [urduEnabled, setUrduEnabled] = useState(false);
+  const [contactNoteUrdu, setContactNoteUrdu] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [clinicDataLoaded, setClinicDataLoaded] = useState(false);
+  const [clinicName, setClinicName] = useState("");
+
   const fetchMessages = useCallback(async () => {
     const { data } = await (supabase as any)
       .from("contact_messages")
@@ -46,14 +53,51 @@ const AdminContactMessages = () => {
     setLoading(false);
   }, [clinicId]);
 
+  const fetchClinicSettings = useCallback(async () => {
+    if (!clinicId) return;
+    const { data } = await supabase
+      .from('clinics')
+      .select('contact_note_english, contact_note_urdu, contact_note_urdu_enabled, clinic_name')
+      .eq('id', clinicId)
+      .single();
+
+    if (data) {
+      setContactNote(data.contact_note_english || '');
+      setUrduEnabled(data.contact_note_urdu_enabled || false);
+      setContactNoteUrdu(data.contact_note_urdu || '');
+      setClinicName(data.clinic_name || '');
+      setClinicDataLoaded(true);
+    }
+  }, [clinicId]);
+
   useEffect(() => {
     fetchMessages();
+    fetchClinicSettings();
     const channel = supabase
       .channel("admin-contact-messages")
       .on("postgres_changes", { event: "*", schema: "public", table: "contact_messages", filter: `clinic_id=eq.${clinicId}` }, () => fetchMessages())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchMessages, clinicId]);
+  }, [fetchMessages, fetchClinicSettings, clinicId]);
+
+  const handleSaveNote = async () => {
+    setSavingNote(true);
+    const { error } = await supabase
+      .from('clinics')
+      .update({
+        contact_note_english: contactNote || null,
+        contact_note_urdu: urduEnabled ? (contactNoteUrdu || null) : null,
+        contact_note_urdu_enabled: urduEnabled,
+      })
+      .eq('id', clinicId);
+
+    setSavingNote(false);
+    if (error) {
+      toast.error('Failed to save settings');
+    } else {
+      toast.success('Note settings saved');
+    }
+  };
 
   const openMessage = async (msg: ContactMessage) => {
     setSelectedMessage(msg);
@@ -124,7 +168,7 @@ const AdminContactMessages = () => {
             },
             body: JSON.stringify({
               user_id: message.user_id,
-              title: `${clinic?.clinic_name || "Clinic"} replied to your message`,
+              title: `${clinicName || "Clinic"} replied to your message`,
               body: currentReplyText.length > 100 ? currentReplyText.substring(0, 100) + '...' : currentReplyText,
             }),
           }
@@ -165,6 +209,62 @@ const AdminContactMessages = () => {
               )}
             </Button>
           ))}
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <h2 className="mb-4 text-sm font-semibold text-foreground">Contact Page Note Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">English Note Text</label>
+            <Textarea
+              value={contactNote}
+              onChange={(e) => setContactNote(e.target.value)}
+              rows={3}
+              placeholder="e.g. Please log in before sending a message so our team can reply to you directly."
+              className="w-full text-sm"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Default: If you'd like the clinic to reply to your message, please log in or register first, then send your message. We can only reply to messages from registered patients.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="urdu-enabled"
+              checked={urduEnabled}
+              onChange={(e) => setUrduEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="urdu-enabled" className="text-sm font-medium">Show second language translation</label>
+            <span className="text-xs text-gray-400">
+              When enabled, a translated version will also appear on the Contact page
+            </span>
+          </div>
+
+          {urduEnabled && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3">
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Second Language Translation (Optional)</label>
+              <Textarea
+                value={contactNoteUrdu}
+                onChange={(e) => setContactNoteUrdu(e.target.value)}
+                rows={3}
+                placeholder="Type or paste translation here..."
+                dir="auto"
+                className="w-full text-sm font-arabic"
+              />
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Tip: You can use direct translation from Google Translate or any other source.
+              </p>
+            </motion.div>
+          )}
+
+          <div className="flex justify-start">
+            <Button onClick={handleSaveNote} disabled={savingNote} size="sm">
+              {savingNote ? "Saving..." : "Save Note Settings"}
+            </Button>
+          </div>
         </div>
       </div>
 

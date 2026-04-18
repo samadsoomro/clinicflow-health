@@ -25,7 +25,7 @@ const Contact = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("contact_phone, contact_email, address, working_hours, maps_embed_url")
+        .select("contact_phone, contact_email, address, working_hours, maps_embed_url, contact_note_english, contact_note_urdu, contact_note_urdu_enabled")
         .eq("id", clinicId)
         .single();
       setClinic(data);
@@ -87,6 +87,13 @@ const Contact = () => {
     { icon: Clock, label: "Hours", value: clinic?.working_hours },
   ].filter((i) => i.value);
 
+  const noteEnglish = clinic?.contact_note_english || 
+    "If you'd like the clinic to reply to your message, please log in or register first, then send your message. We can only reply to messages from registered patients.";
+  const noteUrdu = clinic?.contact_note_urdu ||
+    "اگر آپ چاہتے ہیں کہ کلینک آپ کے پیغام کا جواب دے، تو براہ کرم پہلے لاگ ان یا رجسٹر کریں، پھر پیغام بھیجیں۔ ہم صرف رجسٹرڈ مریضوں کے پیغامات کا جواب دے سکتے ہیں۔";
+  const urduEnabled = clinic?.contact_note_urdu_enabled || false;
+  const isLoggedIn = !!user;
+
   return (
     <section className="py-16 md:py-20">
       <div className="container">
@@ -126,6 +133,47 @@ const Contact = () => {
             className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card lg:col-span-3"
             onSubmit={handleSubmit}
           >
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-amber-500 text-xl flex-shrink-0">ℹ️</span>
+                <div className="space-y-2 w-full">
+                  {/* English note — always shown */}
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {noteEnglish}
+                  </p>
+                  
+                  {/* Urdu note — only if enabled */}
+                  {urduEnabled && (
+                    <p 
+                      className="text-sm text-amber-800 dark:text-amber-200 border-t border-amber-200 dark:border-amber-600 pt-2 mt-2"
+                      dir="rtl"
+                      style={{ fontFamily: 'serif' }}
+                    >
+                      {noteUrdu}
+                    </p>
+                  )}
+                  
+                  {/* Login/Register buttons if not logged in */}
+                  {!isLoggedIn && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      <ClinicLink
+                        to="/login"
+                        className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-medium"
+                      >
+                        Login
+                      </ClinicLink>
+                      <ClinicLink
+                        to="/register"
+                        className="text-xs border border-amber-400 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg font-medium"
+                      >
+                        Register
+                      </ClinicLink>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {submitted && (
               <div className="flex flex-col gap-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 text-sm text-green-700 dark:text-green-300">
                 <div className="flex items-center gap-2 font-semibold">

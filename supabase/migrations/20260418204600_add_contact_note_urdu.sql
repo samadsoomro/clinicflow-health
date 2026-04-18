@@ -1,0 +1,1 @@
+ALTER TABLE clinics ADD COLUMN IF NOT EXISTS contact_note_urdu TEXT DEFAULT NULL;
