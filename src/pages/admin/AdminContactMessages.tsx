@@ -35,9 +35,11 @@ const AdminContactMessages = () => {
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
-  const [contactNote, setContactNote] = useState("");
+  const [noteGuest, setNoteGuest] = useState('');
+  const [noteGuestUrdu, setNoteGuestUrdu] = useState('');
+  const [noteLoggedIn, setNoteLoggedIn] = useState('');
+  const [noteLoggedInUrdu, setNoteLoggedInUrdu] = useState('');
   const [urduEnabled, setUrduEnabled] = useState(false);
-  const [contactNoteUrdu, setContactNoteUrdu] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [clinicDataLoaded, setClinicDataLoaded] = useState(false);
   const [clinicName, setClinicName] = useState("");
@@ -57,17 +59,21 @@ const AdminContactMessages = () => {
     if (!clinicId) return;
     const { data } = await supabase
       .from('clinics')
-      .select('contact_note_english, contact_note_urdu, contact_note_urdu_enabled, clinic_name')
+      .select('contact_note_english, contact_note_urdu, contact_note_loggedin_english, contact_note_loggedin_urdu, contact_note_urdu_enabled, clinic_name')
       .eq('id', clinicId)
       .single();
 
+
     if (data) {
-      setContactNote(data.contact_note_english || '');
+      setNoteGuest(data.contact_note_english || '');
+      setNoteGuestUrdu(data.contact_note_urdu || '');
+      setNoteLoggedIn(data.contact_note_loggedin_english || '');
+      setNoteLoggedInUrdu(data.contact_note_loggedin_urdu || '');
       setUrduEnabled(data.contact_note_urdu_enabled || false);
-      setContactNoteUrdu(data.contact_note_urdu || '');
       setClinicName(data.clinic_name || '');
       setClinicDataLoaded(true);
     }
+
   }, [clinicId]);
 
   useEffect(() => {
@@ -85,8 +91,10 @@ const AdminContactMessages = () => {
     const { error } = await supabase
       .from('clinics')
       .update({
-        contact_note_english: contactNote || null,
-        contact_note_urdu: urduEnabled ? (contactNoteUrdu || null) : null,
+        contact_note_english: noteGuest || null,
+        contact_note_urdu: urduEnabled ? (noteGuestUrdu || null) : null,
+        contact_note_loggedin_english: noteLoggedIn || null,
+        contact_note_loggedin_urdu: urduEnabled ? (noteLoggedInUrdu || null) : null,
         contact_note_urdu_enabled: urduEnabled,
       })
       .eq('id', clinicId);
@@ -97,6 +105,7 @@ const AdminContactMessages = () => {
     } else {
       toast.success('Note settings saved');
     }
+
   };
 
   const openMessage = async (msg: ContactMessage) => {
@@ -212,61 +221,7 @@ const AdminContactMessages = () => {
         </div>
       </div>
 
-      <div className="mb-8 rounded-xl border border-border bg-card p-4 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-foreground">Contact Page Note Settings</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">English Note Text</label>
-            <Textarea
-              value={contactNote}
-              onChange={(e) => setContactNote(e.target.value)}
-              rows={3}
-              placeholder="e.g. Please log in before sending a message so our team can reply to you directly."
-              className="w-full text-sm"
-            />
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              Default: If you'd like the clinic to reply to your message, please log in or register first, then send your message. We can only reply to messages from registered patients.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="urdu-enabled"
-              checked={urduEnabled}
-              onChange={(e) => setUrduEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <label htmlFor="urdu-enabled" className="text-sm font-medium">Show second language translation</label>
-            <span className="text-xs text-gray-400">
-              When enabled, a translated version will also appear on the Contact page
-            </span>
-          </div>
-
-          {urduEnabled && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Second Language Translation (Optional)</label>
-              <Textarea
-                value={contactNoteUrdu}
-                onChange={(e) => setContactNoteUrdu(e.target.value)}
-                rows={3}
-                placeholder="Type or paste translation here..."
-                dir="auto"
-                className="w-full text-sm font-arabic"
-              />
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Tip: You can use direct translation from Google Translate or any other source.
-              </p>
-            </motion.div>
-          )}
-
-          <div className="flex justify-start">
-            <Button onClick={handleSaveNote} disabled={savingNote} size="sm">
-              {savingNote ? "Saving..." : "Save Note Settings"}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -353,6 +308,98 @@ const AdminContactMessages = () => {
           </table>
         </div>
       )}
+
+      {/* ─── CONTACT PAGE NOTE SETTINGS ─── */}
+      <div className="mt-8 border-t pt-6 pb-12">
+        <h3 className="text-lg font-semibold mb-4">Contact Page Note Settings</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Section A — Note for non-logged-in visitors */}
+          <div className="p-4 bg-muted/30 dark:bg-muted/10 rounded-xl border border-border">
+            <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
+              <span>📢</span> Note for visitors NOT logged in
+            </h4>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Shown to anyone who visits the contact page without being logged in.
+            </p>
+            <Textarea
+              value={noteGuest}
+              onChange={(e) => setNoteGuest(e.target.value)}
+              rows={3}
+              placeholder="Default: If you'd like the clinic to reply to your message, please log in or register first..."
+              className="w-full text-sm resize-none"
+            />
+            {urduEnabled && (
+              <div className="mt-3 space-y-1.5">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase">Second Language (Guest)</label>
+                <Textarea
+                  value={noteGuestUrdu}
+                  onChange={(e) => setNoteGuestUrdu(e.target.value)}
+                  rows={3}
+                  dir="rtl"
+                  placeholder="اردو یا کوئی اور زبان میں ترجمہ یہاں لکھیں..."
+                  className="w-full text-sm font-arabic resize-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Section B — Note for logged-in patients */}
+          <div className="p-4 bg-muted/30 dark:bg-muted/10 rounded-xl border border-border">
+            <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
+              <span>✅</span> Note for logged-in patients
+            </h4>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Shown only to patients who are already logged in.
+            </p>
+            <Textarea
+              value={noteLoggedIn}
+              onChange={(e) => setNoteLoggedIn(e.target.value)}
+              rows={3}
+              placeholder='Default: After sending your message, please check the "Messages" menu later...'
+              className="w-full text-sm resize-none"
+            />
+            {urduEnabled && (
+              <div className="mt-3 space-y-1.5">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase">Second Language (Logged-in)</label>
+                <Textarea
+                  value={noteLoggedInUrdu}
+                  onChange={(e) => setNoteLoggedInUrdu(e.target.value)}
+                  rows={3}
+                  dir="rtl"
+                  placeholder="لاگ ان مریضوں کے لیے اردو نوٹ..."
+                  className="w-full text-sm font-arabic resize-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="urduToggle"
+              checked={urduEnabled}
+              onChange={(e) => setUrduEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="urduToggle" className="text-sm font-medium cursor-pointer">
+              Show second language translation on contact page
+            </label>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button onClick={handleSaveNote} disabled={savingNote} className="px-8">
+              {savingNote ? "Saving..." : "Save Note Settings"}
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Tip: You can use Google Translate for translations. Any language is supported.
+            </p>
+          </div>
+        </div>
+      </div>
+
 
       {/* Message Detail Modal */}
       <Dialog open={!!selectedMessage} onOpenChange={() => setSelectedMessage(null)}>
