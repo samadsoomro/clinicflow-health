@@ -13,7 +13,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // Lazy-loaded routes
 const Index = lazy(() => import("./pages/Index"));
 const LiveTokens = lazy(() => import("./pages/LiveTokens"));
+const OnlineToken = lazy(() => import("./pages/OnlineToken"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+
 const Location = lazy(() => import("./pages/Location"));
 const Contact = lazy(() => import("./pages/Contact"));
 const PatientCard = lazy(() => import("./pages/PatientCard"));
@@ -25,7 +27,9 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
 const AdminDoctors = lazy(() => import("./pages/admin/AdminDoctors"));
 const AdminTokens = lazy(() => import("./pages/admin/AdminTokens"));
+const AdminOnlineTokens = lazy(() => import("./pages/admin/AdminOnlineTokens"));
 const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
+
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminPatientCards = lazy(() => import("./pages/admin/AdminPatientCards"));
 const AdminLocation = lazy(() => import("./pages/admin/AdminLocation"));
@@ -63,7 +67,9 @@ const App = () => (
                     <Route element={<PublicLayout />}>
                       <Route path="/" element={<Index />} />
                       <Route path="/tokens" element={<LiveTokens />} />
+                      <Route path="/online-token" element={<OnlineToken />} />
                       <Route path="/notifications" element={<Notifications />} />
+
                       <Route path="/location" element={<Location />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/patient-card" element={<PatientCard />} />
@@ -79,7 +85,9 @@ const App = () => (
                       <Route path="homepage" element={<AdminHomepage />} />
                       <Route path="doctors" element={<AdminDoctors />} />
                       <Route path="tokens" element={<AdminTokens />} />
+                      <Route path="online-tokens" element={<AdminOnlineTokens />} />
                       <Route path="patients" element={<AdminPatients />} />
+
                       <Route path="notifications" element={<AdminNotifications />} />
                       <Route path="cards" element={<AdminPatientCards />} />
                       <Route path="location" element={<AdminLocation />} />

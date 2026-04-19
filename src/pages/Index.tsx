@@ -46,8 +46,9 @@ const Index = () => {
     const fetchAll = async () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled").eq("id", clinicId).single(),
         (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order").eq("clinic_id", clinicId).order("display_order"),
+
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
       ]);
@@ -172,15 +173,25 @@ const Index = () => {
               <p className="mb-8 text-lg leading-relaxed text-primary-foreground/70 md:text-xl">{heroDesc}</p>
             )}
             <div className="flex flex-wrap items-center gap-3 justify-center sm:flex-row sm:justify-center">
-              <Link to={heroBtnLink} className="w-full sm:w-auto">
+              <ClinicLink to={heroBtnLink} className="w-full sm:w-auto">
                 <Button variant="accent" size="lg" className="w-full px-8">{heroBtnText}</Button>
-              </Link>
-              <Link to="/tokens" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full bg-card text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 px-8">
-                  See Live Tokens
-                </Button>
-              </Link>
+              </ClinicLink>
+              {clinic?.live_tokens_enabled !== false && (
+                <ClinicLink to="/tokens" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full bg-card text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 px-8">
+                    See Live Tokens
+                  </Button>
+                </ClinicLink>
+              )}
+              {clinic?.online_tokens_enabled && (
+                <ClinicLink to="/online-token" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full bg-purple-600 text-white font-semibold border-2 border-purple-500 hover:bg-purple-700 transition-all duration-200 px-8">
+                    Get Online Token
+                  </Button>
+                </ClinicLink>
+              )}
             </div>
+
           </motion.div>
 
           {/* Stats */}
@@ -493,9 +504,17 @@ const Index = () => {
             <p className="mb-8 text-primary-foreground/70">
               Register today and experience modern healthcare management.
             </p>
-            <Link to="/register">
-              <Button variant="accent" size="lg" className="px-10">Register Now</Button>
-            </Link>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <ClinicLink to="/register">
+                <Button variant="accent" size="lg" className="px-10">Register Now</Button>
+              </ClinicLink>
+              {clinic?.online_tokens_enabled && (
+                <ClinicLink to="/online-token">
+                  <Button size="lg" className="px-10 bg-white text-purple-700 hover:bg-purple-50">Get Online Token</Button>
+                </ClinicLink>
+              )}
+            </div>
+
           </div>
         </div>
       </section>

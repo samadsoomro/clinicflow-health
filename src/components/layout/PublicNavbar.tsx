@@ -129,6 +129,7 @@ const PublicNavbar = () => {
 
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => {
+            if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
             const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
             return (
               <ClinicLink key={link.path} to={link.path}>
@@ -145,7 +146,22 @@ const PublicNavbar = () => {
               </ClinicLink>
             );
           })}
+          {clinic?.online_tokens_enabled && (
+            <ClinicLink to="/online-token">
+              <Button
+                variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
+                size="sm"
+                className={cn(
+                  "font-medium",
+                  location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
+                )}
+              >
+                Online Token
+              </Button>
+            </ClinicLink>
+          )}
         </nav>
+
 
         <div className="hidden items-center gap-1 md:flex">
           <ThemeToggle />
@@ -211,6 +227,7 @@ const PublicNavbar = () => {
           >
             <div className="container flex flex-col gap-2 py-4">
               {navLinks.map((link) => {
+                if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
                   <ClinicLink key={link.path} to={link.path}>
@@ -227,6 +244,21 @@ const PublicNavbar = () => {
                   </ClinicLink>
                 );
               })}
+              {clinic?.online_tokens_enabled && (
+                <ClinicLink to="/online-token">
+                  <Button
+                    variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
+                    onClick={closeMenu}
+                    className={cn(
+                      "w-full justify-start",
+                      location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
+                    )}
+                  >
+                    Online Token
+                  </Button>
+                </ClinicLink>
+              )}
+
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {!isAdmin && (
                   <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>

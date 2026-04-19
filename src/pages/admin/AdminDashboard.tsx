@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Activity, LayoutDashboard, Users, Stethoscope, Clock,
-  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout, Mail
+  Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout, Mail, Ticket
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +17,9 @@ const sidebarLinks = [
   { label: "Homepage", path: "/admin/homepage", icon: Layout },
   { label: "Doctors", path: "/admin/doctors", icon: Stethoscope },
   { label: "Tokens", path: "/admin/tokens", icon: Clock },
+  { label: "Online Tokens", path: "/admin/online-tokens", icon: Ticket },
   { label: "Patients", path: "/admin/patients", icon: Users },
+
   { label: "Notifications", path: "/admin/notifications", icon: Bell },
   { label: "Patient Cards", path: "/admin/cards", icon: CreditCard },
   { label: "Location", path: "/admin/location", icon: MapPin },

@@ -17,7 +17,9 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [liveTokensEnabled, setLiveTokensEnabled] = useState(true);
   const [form, setForm] = useState({
+
     clinicName: "",
     shortName: "",
     subdomain: "",
@@ -33,9 +35,10 @@ const AdminSettings = () => {
     const fetchClinic = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url")
+        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled")
         .eq("id", clinicId)
         .single();
+
       if (data) {
         setForm({
           clinicName: data.clinic_name || "",
@@ -48,8 +51,10 @@ const AdminSettings = () => {
           termsConditions: data.terms_conditions || "",
           mapsEmbedUrl: (data as any).maps_embed_url || "",
         });
+        setLiveTokensEnabled(data.live_tokens_enabled ?? true);
       }
       setLoading(false);
+
     };
     fetchClinic();
   }, [clinicId]);
@@ -113,8 +118,10 @@ const AdminSettings = () => {
         secondary_theme_color: form.secondaryThemeColor,
         terms_conditions: form.termsConditions,
         maps_embed_url: form.mapsEmbedUrl,
+        live_tokens_enabled: liveTokensEnabled,
       } as any)
       .eq("id", clinicId);
+
 
     if (error) {
       toast.error("Failed to save: " + error.message);
@@ -373,7 +380,38 @@ const AdminSettings = () => {
             </p>
           </div>
         </div>
+
+        {/* Section 6 — Website Controls */}
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
+          <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+            <Settings className="h-4 w-4" /> Website Controls
+          </h3>
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-muted/30">
+            <div>
+              <h3 className="font-semibold text-sm">Live Tokens Menu</h3>
+              <p className="text-xs text-muted-foreground">Show or hide the Live Tokens menu on the public website</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={liveTokensEnabled}
+              onChange={async (e) => {
+                const checked = e.target.checked;
+                setLiveTokensEnabled(checked);
+                const { error } = await supabase.from('clinics').update({ live_tokens_enabled: checked }).eq('id', clinicId);
+                if (error) {
+                  toast.error("Failed to update: " + error.message);
+                  setLiveTokensEnabled(!checked);
+                } else {
+                  toast.success(checked ? 'Live Tokens menu enabled' : 'Live Tokens menu disabled');
+                  await refreshClinic();
+                }
+              }}
+              className="w-5 h-5 accent-primary cursor-pointer"
+            />
+          </div>
+        </div>
       </div>
+
 
       <Button variant="hero" onClick={handleSave} disabled={saving}>
         <Save className="mr-2 h-4 w-4" /> {saving ? "Saving..." : "Save Settings"}

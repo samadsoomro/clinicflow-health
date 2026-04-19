@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicId } from "@/hooks/useClinic";
+import { useClinicContext } from "@/hooks/useClinicContext";
 import { toast } from "sonner";
+
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const AdminTokens = () => {
   const { clinicId } = useClinicId();
+  const { clinic, refreshClinic } = useClinicContext();
+
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
@@ -31,6 +36,9 @@ const AdminTokens = () => {
   const [urlSaveMsg, setUrlSaveMsg] = useState<string | null>(null);
   const [doctorSettings, setDoctorSettings] = useState<Record<string, boolean>>({});
   const [batchIssuing, setBatchIssuing] = useState<Record<string, boolean>>({});
+  const [onlineEnabled, setOnlineEnabled] = useState(false);
+  const [onlineIssuanceEnabled, setOnlineIssuanceEnabled] = useState(false);
+
 
 
   const today = new Date().toISOString().split("T")[0];
@@ -50,12 +58,15 @@ const AdminTokens = () => {
 
     if (clinicId) {
       fetchDoctors();
-      supabase.from("clinics").select("short_name, clinic_name, qr_base_url").eq("id", clinicId).single()
+      supabase.from("clinics").select("short_name, clinic_name, qr_base_url, online_tokens_enabled, online_tokens_issuance_enabled").eq("id", clinicId).single()
         .then(({ data }) => {
           setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
           setWebsiteUrl((data as any)?.qr_base_url || "");
+          setOnlineEnabled(data?.online_tokens_enabled || false);
+          setOnlineIssuanceEnabled(data?.online_tokens_issuance_enabled || false);
         });
     }
+
   }, [clinicId]);
 
   const fetchTodayTokens = async () => {
@@ -393,8 +404,31 @@ const AdminTokens = () => {
               </p>
             </div>
           </div>
+          {onlineEnabled && (
+            <div className="mt-3 sm:mt-0 flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
+              <Switch 
+                checked={onlineIssuanceEnabled} 
+                onCheckedChange={async (checked) => {
+                  setOnlineIssuanceEnabled(checked);
+                  const { error } = await supabase.from('clinics').update({ online_tokens_issuance_enabled: checked }).eq('id', clinicId);
+                  if (error) {
+                    toast.error("Failed to update: " + error.message);
+                    setOnlineIssuanceEnabled(!checked);
+                  } else {
+                    toast.success(checked ? 'Online issuance enabled' : 'Online issuance disabled');
+                    await refreshClinic();
+                  }
+                }} 
+              />
+              <div>
+                <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">Online Issuance</p>
+                <p className="text-[9px] text-purple-500 dark:text-purple-400">Controls new online token requests</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
 
       {doctorsLoading ? (
         <div className="flex items-center justify-center p-12">
@@ -447,19 +481,22 @@ const AdminTokens = () => {
                       {isStartFromOne ? "Starting from 1" : "Start from 1"}
                     </Button>
                     
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleIssueBatch(doctor)}
-                      disabled={batchIssuing[doctor.id]}
-                    >
-                      {batchIssuing[doctor.id] ? (
-                        <div className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      ) : (
-                        <FileText className="mr-1.5 h-3.5 w-3.5" />
-                      )}
-                      Issue 100 Tokens
-                    </Button>
+                    {!onlineEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleIssueBatch(doctor)}
+                        disabled={batchIssuing[doctor.id]}
+                      >
+                        {batchIssuing[doctor.id] ? (
+                          <div className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        ) : (
+                          <FileText className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Issue 100 Tokens
+                      </Button>
+                    )}
+
                   </div>
                 </div>
 

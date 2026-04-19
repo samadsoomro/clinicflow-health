@@ -32,7 +32,15 @@ interface ClinicData {
   second_branch_working_hours?: string | null;
   second_branch_maps_embed_url?: string | null;
   location_heading?: string | null;
+  live_tokens_enabled?: boolean | null;
+  online_tokens_enabled?: boolean | null;
+  online_tokens_daily_limit?: number | null;
+  online_tokens_issuance_enabled?: boolean | null;
+  online_token_popup_english?: string | null;
+  online_token_popup_second_lang?: string | null;
+  online_token_popup_second_lang_enabled?: boolean | null;
 }
+
 
 interface ClinicContextType {
   clinic: ClinicData | null;
