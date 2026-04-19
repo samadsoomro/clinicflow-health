@@ -100,7 +100,9 @@ const Contact = () => {
 
 
   return (
-    <section className="py-16 md:py-20">
+    <>
+      <section className="py-16 md:py-20">
+
       <div className="container">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-sm font-medium text-secondary-foreground">
@@ -254,56 +256,57 @@ const Contact = () => {
           </motion.div>
         )}
       </div>
-    </section>
+      </section>
 
-    {showSuccessModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in">
-          
-          {/* Success icon */}
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={36} className="text-green-500" />
-          </div>
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in">
+            
+            {/* Success icon */}
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle size={36} className="text-green-500" />
+            </div>
 
-          <h2 className="text-2xl font-bold mb-3">Message Sent!</h2>
+            <h2 className="text-2xl font-bold mb-3">Message Sent!</h2>
 
-          {/* English text */}
-          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
-            {clinic?.contact_popup_english || defaultPopupEnglish}
-          </p>
-
-          {/* Second language text — only if enabled */}
-          {urduEnabled && (
-            <p
-              className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-t border-gray-200 dark:border-gray-600 pt-3 mb-3"
-              dir="rtl"
-              style={{ fontFamily: 'serif' }}
-            >
-              {clinic?.contact_popup_second_lang || defaultPopupSecondLang}
+            {/* English text */}
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
+              {clinic?.contact_popup_english || defaultPopupEnglish}
             </p>
-          )}
 
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-5">
-            <ClinicLink
-              to="/messages"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm"
-              onClick={() => setShowSuccessModal(false)}
-            >
-              📩 View Messages
-            </ClinicLink>
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
-            >
-              ✕ Close
-            </button>
+            {/* Second language text — only if enabled */}
+            {urduEnabled && (
+              <p
+                className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-t border-gray-200 dark:border-gray-600 pt-3 mb-3"
+                dir="rtl"
+                style={{ fontFamily: 'serif' }}
+              >
+                {clinic?.contact_popup_second_lang || defaultPopupSecondLang}
+              </p>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-5">
+              <ClinicLink
+                to="/messages"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                📩 View Messages
+              </ClinicLink>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
+              >
+                ✕ Close
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
-
+      )}
+    </>
   );
+
 };
 
 export default Contact;
