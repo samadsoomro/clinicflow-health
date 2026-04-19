@@ -20,15 +20,18 @@ const Contact = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("contact_phone, contact_email, address, working_hours, maps_embed_url, contact_note_english, contact_note_urdu, contact_note_loggedin_english, contact_note_loggedin_urdu, contact_note_urdu_enabled")
+        .select("contact_phone, contact_email, address, working_hours, maps_embed_url, contact_note_english, contact_note_urdu, contact_note_loggedin_english, contact_note_loggedin_urdu, contact_note_urdu_enabled, contact_popup_english, contact_popup_second_lang")
         .eq("id", clinicId)
         .single();
       setClinic(data);
+
 
     };
     fetch();
@@ -61,20 +64,11 @@ const Contact = () => {
     setForm({ name: "", email: "", subject: "", message: "" });
     
     if (session?.user) {
-      toast.success("Message sent!", {
-        description: "Your message has been sent. View your history to track replies.",
-        action: {
-          label: "View History",
-          onClick: () => {
-            const params = new URLSearchParams(window.location.search);
-            const clinicParam = params.get('clinic');
-            navigate(clinicParam ? `/messages?clinic=${clinicParam}` : "/messages");
-          }
-        }
-      });
+      setShowSuccessModal(true);
     } else {
-      toast.success("Your message has been sent. We will get back to you shortly.");
+      toast.success("Your message has been sent! We will get back to you shortly.");
     }
+
 
     setTimeout(() => setSubmitted(false), 8000);
   };
@@ -99,6 +93,10 @@ const Contact = () => {
   const defaultGuestUrdu = "اگر آپ چاہتے ہیں کہ کلینک آپ کے پیغام کا جواب دے، تو براہِ کرم پہلے لاگ اِن کریں یا رجسٹر کریں، پھر اپنا پیغام بھیجیں۔ ہم صرف رجسٹرڈ مریضوں کے پیغامات کا جواب دے سکتے ہیں۔ اپنا پیغام بھیجنے کے بعد، براہِ کرم کچھ دیر بعد ویب سائٹ کے Messages مینو میں جا کر ہمارا جواب دیکھیں۔";
   const defaultLoggedInEnglish = "After sending your message, please check the \"Messages\" menu on the website later to see our reply.";
   const defaultLoggedInUrdu = "اپنا پیغام بھیجنے کے بعد، براہِ کرم کچھ دیر بعد ویب سائٹ کے Messages مینو میں جا کر ہمارا جواب دیکھیں۔";
+
+  const defaultPopupEnglish = 'Your message has been sent successfully! Please check the "Messages" menu on our website later to view our reply. We will respond as soon as possible.';
+  const defaultPopupSecondLang = 'آپ کا پیغام کامیابی سے بھیج دیا گیا ہے! براہِ کرم کچھ دیر بعد ہماری ویب سائٹ کے Messages مینو میں جا کر ہمارا جواب دیکھیں۔ ہم جلد از جلد جواب دیں گے۔';
+
 
 
   return (
@@ -257,6 +255,54 @@ const Contact = () => {
         )}
       </div>
     </section>
+
+    {showSuccessModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in">
+          
+          {/* Success icon */}
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={36} className="text-green-500" />
+          </div>
+
+          <h2 className="text-2xl font-bold mb-3">Message Sent!</h2>
+
+          {/* English text */}
+          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
+            {clinic?.contact_popup_english || defaultPopupEnglish}
+          </p>
+
+          {/* Second language text — only if enabled */}
+          {urduEnabled && (
+            <p
+              className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-t border-gray-200 dark:border-gray-600 pt-3 mb-3"
+              dir="rtl"
+              style={{ fontFamily: 'serif' }}
+            >
+              {clinic?.contact_popup_second_lang || defaultPopupSecondLang}
+            </p>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-5">
+            <ClinicLink
+              to="/messages"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm"
+              onClick={() => setShowSuccessModal(false)}
+            >
+              📩 View Messages
+            </ClinicLink>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
+            >
+              ✕ Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
   );
 };
 

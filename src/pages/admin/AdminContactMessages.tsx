@@ -39,8 +39,11 @@ const AdminContactMessages = () => {
   const [noteGuestUrdu, setNoteGuestUrdu] = useState('');
   const [noteLoggedIn, setNoteLoggedIn] = useState('');
   const [noteLoggedInUrdu, setNoteLoggedInUrdu] = useState('');
+  const [popupEnglish, setPopupEnglish] = useState('');
+  const [popupSecondLang, setPopupSecondLang] = useState('');
   const [urduEnabled, setUrduEnabled] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
+
   const [clinicDataLoaded, setClinicDataLoaded] = useState(false);
   const [clinicName, setClinicName] = useState("");
 
@@ -59,9 +62,10 @@ const AdminContactMessages = () => {
     if (!clinicId) return;
     const { data } = await supabase
       .from('clinics')
-      .select('contact_note_english, contact_note_urdu, contact_note_loggedin_english, contact_note_loggedin_urdu, contact_note_urdu_enabled, clinic_name')
+      .select('contact_note_english, contact_note_urdu, contact_note_loggedin_english, contact_note_loggedin_urdu, contact_note_urdu_enabled, clinic_name, contact_popup_english, contact_popup_second_lang')
       .eq('id', clinicId)
       .single();
+
 
 
     if (data) {
@@ -70,7 +74,10 @@ const AdminContactMessages = () => {
       setNoteLoggedIn(data.contact_note_loggedin_english || '');
       setNoteLoggedInUrdu(data.contact_note_loggedin_urdu || '');
       setUrduEnabled(data.contact_note_urdu_enabled || false);
+      setPopupEnglish(data.contact_popup_english || '');
+      setPopupSecondLang(data.contact_popup_second_lang || '');
       setClinicName(data.clinic_name || '');
+
       setClinicDataLoaded(true);
     }
 
@@ -96,8 +103,11 @@ const AdminContactMessages = () => {
         contact_note_loggedin_english: noteLoggedIn || null,
         contact_note_loggedin_urdu: urduEnabled ? (noteLoggedInUrdu || null) : null,
         contact_note_urdu_enabled: urduEnabled,
+        contact_popup_english: popupEnglish || null,
+        contact_popup_second_lang: urduEnabled ? (popupSecondLang || null) : null,
       })
       .eq('id', clinicId);
+
 
     setSavingNote(false);
     if (error) {
@@ -398,7 +408,38 @@ const AdminContactMessages = () => {
             </p>
           </div>
         </div>
+
+        {/* Section C — Success popup for logged-in patients */}
+        <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700">
+          <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
+            <span>✅</span> Success popup message (logged-in patients only)
+          </h4>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            This larger popup appears after a logged-in patient successfully sends a message. You can customize what it says.
+          </p>
+          <Textarea
+            value={popupEnglish}
+            onChange={(e) => setPopupEnglish(e.target.value)}
+            rows={3}
+            placeholder='Default: Your message has been sent! Please check the "Messages" menu on our website to view our reply. We will respond as soon as possible.'
+            className="w-full text-sm resize-none"
+          />
+          {urduEnabled && (
+            <div className="mt-3 space-y-1.5">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase">Second Language (Popup)</label>
+              <Textarea
+                value={popupSecondLang}
+                onChange={(e) => setPopupSecondLang(e.target.value)}
+                rows={3}
+                dir="rtl"
+                placeholder="آپ کا پیغام بھیج دیا گیا ہے! براہِ کرم ہماری ویب سائٹ کے Messages مینو میں جا کر ہمارا جواب دیکھیں۔ ہم جلد از جلد جواب دیں گے۔"
+                className="w-full text-sm font-arabic resize-none"
+              />
+            </div>
+          )}
+        </div>
       </div>
+
 
 
       {/* Message Detail Modal */}
