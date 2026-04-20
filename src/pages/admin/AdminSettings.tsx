@@ -57,8 +57,6 @@ const AdminSettings = () => {
       }
       setLoading(false);
     };
-
-    };
     fetchClinic();
   }, [clinicId]);
 
