@@ -14,22 +14,30 @@ const AdminOnlineTokens = () => {
   const [loading, setLoading] = useState(true);
   const [onlineEnabled, setOnlineEnabled] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(10);
-  const [popupEnglish, setPopupEnglish] = useState("");
-  const [popupSecondLang, setPopupSecondLang] = useState("");
   const [popupSecondLangEnabled, setPopupSecondLangEnabled] = useState(false);
+  const [guestNoteEnglish, setGuestNoteEnglish] = useState("");
+  const [guestNoteSecondLang, setGuestNoteSecondLang] = useState("");
+  const [guestNoteSecondLangEnabled, setGuestNoteSecondLangEnabled] = useState(false);
+  const [loggedinNoteEnglish, setLoggedinNoteEnglish] = useState("");
+  const [loggedinNoteSecondLang, setLoggedinNoteSecondLang] = useState("");
   const [onlineTokens, setOnlineTokens] = useState<any[]>([]);
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data } = await supabase.from('clinics').select('online_tokens_enabled, online_tokens_daily_limit, online_token_popup_english, online_token_popup_second_lang, online_token_popup_second_lang_enabled').eq('id', clinicId).single();
+      const { data } = await supabase.from('clinics').select('online_tokens_enabled, online_tokens_daily_limit, online_token_popup_english, online_token_popup_second_lang, online_token_popup_second_lang_enabled, online_token_guest_note_english, online_token_guest_note_second_lang, online_token_guest_note_second_lang_enabled, online_token_loggedin_note_english, online_token_loggedin_note_second_lang').eq('id', clinicId).single();
       if (data) {
         setOnlineEnabled(data.online_tokens_enabled || false);
         setDailyLimit(data.online_tokens_daily_limit || 10);
         setPopupEnglish(data.online_token_popup_english || "");
         setPopupSecondLang(data.online_token_popup_second_lang || "");
         setPopupSecondLangEnabled(data.online_token_popup_second_lang_enabled || false);
+        setGuestNoteEnglish(data.online_token_guest_note_english || "");
+        setGuestNoteSecondLang(data.online_token_guest_note_second_lang || "");
+        setGuestNoteSecondLangEnabled(data.online_token_guest_note_second_lang_enabled || false);
+        setLoggedinNoteEnglish(data.online_token_loggedin_note_english || "");
+        setLoggedinNoteSecondLang(data.online_token_loggedin_note_second_lang || "");
       }
     };
 
@@ -80,12 +88,17 @@ const AdminOnlineTokens = () => {
       online_token_popup_english: popupEnglish || null,
       online_token_popup_second_lang: popupSecondLangEnabled ? (popupSecondLang || null) : null,
       online_token_popup_second_lang_enabled: popupSecondLangEnabled,
+      online_token_guest_note_english: guestNoteEnglish || null,
+      online_token_guest_note_second_lang: guestNoteSecondLangEnabled ? (guestNoteSecondLang || null) : null,
+      online_token_guest_note_second_lang_enabled: guestNoteSecondLangEnabled,
+      online_token_loggedin_note_english: loggedinNoteEnglish || null,
+      online_token_loggedin_note_second_lang: popupSecondLangEnabled ? (loggedinNoteSecondLang || null) : null,
     }).eq('id', clinicId);
     
     if (error) {
       toast.error("Failed to save: " + error.message);
     } else {
-      toast.success('Popup settings saved');
+      toast.success('Notes and popup settings saved');
     }
   };
 
@@ -163,8 +176,74 @@ const AdminOnlineTokens = () => {
                 style={{ fontFamily: 'serif' }}
               />
             )}
-            <Button onClick={handleSavePopupSettings} className="w-full sm:w-auto">
-              <Save className="mr-2 h-4 w-4" /> Save Popup Settings
+
+            {/* Guest Note Settings */}
+            <div className="mt-6 pt-6 border-t border-border space-y-4">
+              <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
+                🔒 Note for visitors NOT logged in
+              </h4>
+              <p className="text-xs text-gray-400 mb-3">
+                Shown when someone visits the Online Token page without being logged in.
+              </p>
+              <Textarea
+                value={guestNoteEnglish}
+                onChange={(e) => setGuestNoteEnglish(e.target.value)}
+                rows={3}
+                placeholder="Default: To request an online token, please log in or register as a patient first."
+                className="w-full border rounded-lg p-3 text-sm"
+              />
+              <div className="flex items-center gap-3 mt-2">
+                <Switch
+                  checked={guestNoteSecondLangEnabled}
+                  onCheckedChange={setGuestNoteSecondLangEnabled}
+                />
+                <label className="text-sm">Show second language translation</label>
+              </div>
+              {guestNoteSecondLangEnabled && (
+                <Textarea
+                  value={guestNoteSecondLang}
+                  onChange={(e) => setGuestNoteSecondLang(e.target.value)}
+                  rows={3}
+                  dir="rtl"
+                  placeholder="آن لائن ٹوکن کے لیے براہِ کرم پہلے لاگ ان کریں یا رجسٹر کریں۔"
+                  className="w-full border rounded-lg p-3 text-sm mt-2 font-arabic"
+                  style={{ fontFamily: 'serif' }}
+                />
+              )}
+            </div>
+
+            {/* Logged-in Note Settings */}
+            <div className="mt-6 pt-6 border-t border-border space-y-4">
+              <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
+                ✅ Note for logged-in patients
+              </h4>
+              <p className="text-xs text-gray-400 mb-3">
+                Shown above the token form for logged-in patients only.
+              </p>
+              <Textarea
+                value={loggedinNoteEnglish}
+                onChange={(e) => setLoggedinNoteEnglish(e.target.value)}
+                rows={3}
+                placeholder="Default: This token is valid for one patient only. Please check live tokens before arriving."
+                className="w-full border rounded-lg p-3 text-sm"
+              />
+              {popupSecondLangEnabled && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Second language translation:</p>
+                  <Textarea
+                    value={loggedinNoteSecondLang}
+                    onChange={(e) => setLoggedinNoteSecondLang(e.target.value)}
+                    rows={3}
+                    dir="rtl"
+                    placeholder="یہ ٹوکن صرف ایک مریض کے لیے کارآمد ہے۔ کلینک آنے سے پہلے لائیو ٹوکن ضرور دیکھ لیں۔"
+                    className="w-full border rounded-lg p-3 text-sm font-arabic"
+                    style={{ fontFamily: 'serif' }}
+                  />
+                </div>
+              )}
+            </div>
+            <Button onClick={handleSavePopupSettings} className="w-full sm:w-auto mt-4 px-8">
+              <Save className="mr-2 h-4 w-4" /> Save All Note Settings
             </Button>
           </div>
         )}
@@ -184,6 +263,7 @@ const AdminOnlineTokens = () => {
                     <th className="p-3 text-left font-semibold">Token #</th>
                     <th className="p-3 text-left font-semibold">Doctor</th>
                     <th className="p-3 text-left font-semibold">Patient Name</th>
+                    <th className="p-3 text-left font-semibold">Patient ID</th>
                     <th className="p-3 text-left font-semibold">Phone</th>
                     <th className="p-3 text-left font-semibold">Time</th>
                     <th className="p-3 text-left font-semibold">Status</th>
@@ -195,6 +275,7 @@ const AdminOnlineTokens = () => {
                       <td className="p-3 font-bold text-purple-600">#{token.token_number}</td>
                       <td className="p-3">Dr. {token.doctors?.name || '—'}</td>
                       <td className="p-3 font-medium">{token.patient_name}</td>
+                      <td className="p-3 text-xs text-purple-500 font-mono">{token.formatted_patient_id || '—'}</td>
                       <td className="p-3 text-muted-foreground">{token.patient_phone || '—'}</td>
                       <td className="p-3 text-muted-foreground">{new Date(token.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="p-3">

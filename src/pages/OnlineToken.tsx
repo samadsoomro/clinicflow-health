@@ -8,7 +8,7 @@ import { useClinicContext } from "@/hooks/useClinicContext";
 import { supabase } from "@/integrations/supabase/client";
 import ClinicLink from "@/components/ClinicLink";
 import { toast } from "sonner";
-import html2canvas from 'html2canvas';
+import { generateOnlineTokenPDF } from "@/lib/onlineTokenPdf";
 
 const OnlineToken = () => {
   const { clinic, clinicId } = useClinicContext();
@@ -24,8 +24,21 @@ const OnlineToken = () => {
   
   const [issuedToken, setIssuedToken] = useState<any>(null);
   const [showTokenModal, setShowTokenModal] = useState(false);
+  
+  const [session, setSession] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [formattedPatientId, setFormattedPatientId] = useState("");
 
   const today = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setIsLoggedIn(!!currentSession?.user);
+    };
+    checkSession();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,7 +47,17 @@ const OnlineToken = () => {
       // 1. Fetch clinic settings for online tokens
       const { data: clinicData } = await supabase
         .from('clinics')
-        .select('online_tokens_enabled, online_tokens_issuance_enabled, online_tokens_daily_limit')
+        .select(`
+          online_tokens_enabled, 
+          online_tokens_issuance_enabled, 
+          online_tokens_daily_limit,
+          online_token_guest_note_english,
+          online_token_guest_note_second_lang,
+          online_token_guest_note_second_lang_enabled,
+          online_token_loggedin_note_english,
+          online_token_loggedin_note_second_lang,
+          online_token_popup_second_lang_enabled
+        `)
         .eq('id', clinicId)
         .single();
         
@@ -67,6 +90,27 @@ const OnlineToken = () => {
 
     fetchData();
   }, [clinicId, today]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !clinicId) return;
+    
+    const fetchPatientData = async () => {
+      const { data } = await supabase
+        .from('patients')
+        .select('full_name, phone, formatted_patient_id')
+        .eq('user_id', session.user.id)
+        .eq('clinic_id', clinicId)
+        .single();
+      
+      if (data) {
+        setName(data.full_name);
+        setPhone(data.phone || '');
+        setFormattedPatientId(data.formatted_patient_id);
+      }
+    };
+    
+    fetchPatientData();
+  }, [session?.user?.id, clinicId]);
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,9 +182,11 @@ const OnlineToken = () => {
         token_number: nextTokenNumber,
         patient_name: name,
         patient_phone: phone || null,
+        patient_id: session.user.id,
+        formatted_patient_id: formattedPatientId || null,
         token_date: today,
         status: 'waiting',
-      }).select().single();
+      }).select(`*, doctors(name, specialization)`).single();
 
       if (error) {
         toast.error("Failed to issue token: " + error.message);
@@ -156,23 +202,13 @@ const OnlineToken = () => {
     }
   };
 
-  const handleDownloadTokenImage = async () => {
-    const element = document.getElementById('online-token-card');
-    if (!element) return;
-    
+  const handleDownloadTokenPDF = async () => {
+    if (!issuedToken || !clinic) return;
     try {
-      const canvas = await html2canvas(element, { 
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null
-      });
-      const link = document.createElement('a');
-      link.download = `online-token-${issuedToken.token_number}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      toast.success("Token slip downloaded!");
+      await generateOnlineTokenPDF(issuedToken, clinic);
+      toast.success("Token receipt downloaded!");
     } catch (err) {
-      toast.error("Failed to download image");
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -239,70 +275,109 @@ const OnlineToken = () => {
           <p className="text-sm text-muted-foreground mt-2">Skip the queue by requesting your token online</p>
         </div>
 
-        <form onSubmit={handleRequestToken} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="doctor">Select Doctor *</Label>
-            <select 
-              id="doctor"
-              value={selectedDoctor} 
-              onChange={(e) => setSelectedDoctor(e.target.value)} 
-              required
-              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+        {!isLoggedIn && (
+          <div className="max-w-md mx-auto mt-4">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-amber-500 text-xl flex-shrink-0">ℹ️</span>
+                <div className="space-y-2 w-full">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {clinic?.online_token_guest_note_english ||
+                      'To request an online token, please log in or register as a patient first. This service is available for registered patients only.'}
+                  </p>
+                  {clinic?.online_token_guest_note_second_lang_enabled && clinic?.online_token_guest_note_second_lang && (
+                    <p
+                      className="text-sm text-amber-800 dark:text-amber-200 border-t border-amber-200 pt-2"
+                      dir="rtl"
+                      style={{ fontFamily: 'serif' }}
+                    >
+                      {clinic.online_token_guest_note_second_lang}
+                    </p>
+                  )}
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    <ClinicLink
+                      to="/login"
+                      className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                    >
+                      Login
+                    </ClinicLink>
+                    <ClinicLink
+                      to="/register"
+                      className="text-xs border border-amber-400 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-4 py-2 rounded-lg font-semibold transition-colors"
+                    >
+                      Register
+                    </ClinicLink>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isLoggedIn && (
+          <form onSubmit={handleRequestToken} className="space-y-5">
+            {isLoggedIn && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5">
+                <div className="flex items-start gap-3">
+                  <span className="text-amber-500 text-xl">ℹ️</span>
+                  <div>
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      {clinic?.online_token_loggedin_note_english ||
+                        'This token is valid for one patient only. Please check the live tokens menu before arriving at the clinic. Arrive early as your number may pass if you are late.'}
+                    </p>
+                    {clinic?.online_token_popup_second_lang_enabled && clinic?.online_token_loggedin_note_second_lang && (
+                      <p className="text-sm text-amber-800 dark:text-amber-200 mt-2 pt-2 border-t border-amber-200/50" dir="rtl" style={{ fontFamily: 'serif' }}>
+                        {clinic.online_token_loggedin_note_second_lang}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="doctor">Select Doctor *</Label>
+              <select 
+                id="doctor"
+                value={selectedDoctor} 
+                onChange={(e) => setSelectedDoctor(e.target.value)} 
+                required
+                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Select Doctor</option>
+                {activeDoctors.map(doc => (
+                  <option key={doc.id} value={doc.id}>Dr. {doc.name} — {doc.specialization}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Patient Name</Label>
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm border border-gray-100 dark:border-gray-600">
+                <span className="text-gray-400 text-xs block mb-1">Patient Name</span>
+                <span className="font-semibold text-foreground">{name || 'Loading...'}</span>
+                {formattedPatientId && <span className="ml-2 text-xs text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded">({formattedPatientId})</span>}
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl mt-4 shadow-lg shadow-purple-200 dark:shadow-none transition-all"
+              disabled={submitting || !selectedDoctor || !name}
             >
-              <option value="">Select Doctor</option>
-              {activeDoctors.map(doc => (
-                <option key={doc.id} value={doc.id}>Dr. {doc.name} — {doc.specialization}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Patient Full Name *</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                id="name"
-                placeholder="Enter full name" 
-                className="pl-10"
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number (Optional)</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                id="phone"
-                type="tel" 
-                placeholder="03xx-xxxxxxx" 
-                className="pl-10"
-                value={phone} 
-                onChange={(e) => setPhone(e.target.value)} 
-              />
-            </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl mt-4"
-            disabled={submitting || !selectedDoctor || !name}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : "Get My Token"}
-          </Button>
-          
-          <p className="text-[10px] text-center text-muted-foreground italic">
-            * Indicates required fields
-          </p>
-        </form>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : "Get My Token"}
+            </Button>
+            
+            <p className="text-[10px] text-center text-muted-foreground italic">
+              * Indicates required fields
+            </p>
+          </form>
+        )}
       </motion.div>
 
       {/* Token Receipt Modal */}
@@ -356,10 +431,10 @@ const OnlineToken = () => {
                 </div>
 
                 <Button 
-                  onClick={handleDownloadTokenImage}
+                  onClick={handleDownloadTokenPDF}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl"
                 >
-                  <Download className="mr-2 h-4 w-4" /> Download Token Slip
+                  <Download className="mr-2 h-4 w-4" /> Download Token Receipt (PDF)
                 </Button>
 
                 <Button 

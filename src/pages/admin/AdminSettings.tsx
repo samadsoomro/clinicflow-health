@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map, RotateCcw } from "lucide-react";
+import { Save, Palette, Activity, Upload, Loader2, QrCode, Scale, Map, RotateCcw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,7 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [liveTokensEnabled, setLiveTokensEnabled] = useState(true);
+  const [onlineTokensEnabled, setOnlineTokensEnabled] = useState(false);
   const [form, setForm] = useState({
 
     clinicName: "",
@@ -35,7 +36,7 @@ const AdminSettings = () => {
     const fetchClinic = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled")
+        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled, online_tokens_enabled")
         .eq("id", clinicId)
         .single();
 
@@ -52,8 +53,10 @@ const AdminSettings = () => {
           mapsEmbedUrl: (data as any).maps_embed_url || "",
         });
         setLiveTokensEnabled(data.live_tokens_enabled ?? true);
+        setOnlineTokensEnabled(data.online_tokens_enabled ?? false);
       }
       setLoading(false);
+    };
 
     };
     fetchClinic();
@@ -176,6 +179,8 @@ const AdminSettings = () => {
       </div>
     );
   }
+
+  if (!clinicId) return <div className="p-8 text-center text-muted-foreground italic">No clinic found. Please contact support.</div>;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -403,6 +408,30 @@ const AdminSettings = () => {
                   setLiveTokensEnabled(!checked);
                 } else {
                   toast.success(checked ? 'Live Tokens menu enabled' : 'Live Tokens menu disabled');
+                  await refreshClinic();
+                }
+              }}
+              className="w-5 h-5 accent-primary cursor-pointer"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-muted/30">
+            <div>
+              <h3 className="font-semibold text-sm">Online Tokens Feature</h3>
+              <p className="text-xs text-muted-foreground">Enable or disable the online token system for your clinic</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={onlineTokensEnabled}
+              onChange={async (e) => {
+                const checked = e.target.checked;
+                setOnlineTokensEnabled(checked);
+                const { error } = await supabase.from('clinics').update({ online_tokens_enabled: checked }).eq('id', clinicId);
+                if (error) {
+                  toast.error("Failed to update: " + error.message);
+                  setOnlineTokensEnabled(!checked);
+                } else {
+                  toast.success('Online tokens feature ' + (checked ? 'enabled' : 'disabled'));
                   await refreshClinic();
                 }
               }}
