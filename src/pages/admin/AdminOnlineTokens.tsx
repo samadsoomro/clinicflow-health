@@ -21,6 +21,7 @@ const AdminOnlineTokens = () => {
   const [loggedinNoteEnglish, setLoggedinNoteEnglish] = useState("");
   const [loggedinNoteSecondLang, setLoggedinNoteSecondLang] = useState("");
   const [onlineTokens, setOnlineTokens] = useState<any[]>([]);
+  const [doctorsList, setDoctorsList] = useState<any[]>([]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -44,15 +45,28 @@ const AdminOnlineTokens = () => {
     const fetchTokens = async () => {
       const { data } = await supabase
         .from('online_tokens')
-        .select(`*, doctors(name)`)
+        .select(`*`)
         .eq('clinic_id', clinicId)
         .eq('token_date', today)
         .order('created_at', { ascending: true });
       setOnlineTokens(data || []);
     };
 
+    const fetchDoctors = async () => {
+      const { data } = await supabase
+        .from('doctors')
+        .select('id, name')
+        .eq('clinic_id', clinicId);
+      setDoctorsList(data || []);
+    };
+
     if (clinicId) {
-      Promise.all([fetchSettings(), fetchTokens()]).then(() => setLoading(false));
+      Promise.all([fetchSettings(), fetchTokens(), fetchDoctors()])
+        .catch(err => {
+          console.error("Error loading online token data:", err);
+          toast.error("Failed to load some data. Refresh may help.");
+        })
+        .finally(() => setLoading(false));
 
       const channel = supabase
         .channel("admin-online-tokens")
@@ -273,7 +287,9 @@ const AdminOnlineTokens = () => {
                   {onlineTokens.map(token => (
                     <tr key={token.id} className="hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-bold text-purple-600">#{token.token_number}</td>
-                      <td className="p-3">Dr. {token.doctors?.name || '—'}</td>
+                      <td className="p-3">
+                        {doctorsList.find(d => d.id === token.doctor_id)?.name || 'Dr. —'}
+                      </td>
                       <td className="p-3 font-medium">{token.patient_name}</td>
                       <td className="p-3 text-xs text-purple-500 font-mono">{token.formatted_patient_id || '—'}</td>
                       <td className="p-3 text-muted-foreground">{token.patient_phone || '—'}</td>

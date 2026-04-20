@@ -186,12 +186,16 @@ const OnlineToken = () => {
         formatted_patient_id: formattedPatientId || null,
         token_date: today,
         status: 'waiting',
-      }).select(`*, doctors(name, specialization)`).single();
+      }).select().single();
 
       if (error) {
         toast.error("Failed to issue token: " + error.message);
-      } else {
-        setIssuedToken(newToken);
+      } else if (newToken) {
+        // Manually attach doctor info since relationship might be missing in schema cache
+        const doctorData = activeDoctors.find(d => d.id === selectedDoctor);
+        const tokenWithDoctor = { ...newToken, doctors: doctorData };
+        
+        setIssuedToken(tokenWithDoctor);
         setShowTokenModal(true);
         toast.success("Online token issued!");
       }
