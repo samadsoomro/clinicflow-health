@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ticket, User, Phone, Download, CheckCircle, AlertCircle, Loader2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { generateOnlineTokenPDF } from "@/lib/onlineTokenPdf";
 
 const OnlineToken = () => {
   const { clinic, clinicId } = useClinicContext();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   const [onlineIssuanceEnabled, setOnlineIssuanceEnabled] = useState(false);
@@ -90,6 +92,12 @@ const OnlineToken = () => {
 
     fetchData();
   }, [clinicId, today]);
+
+  useEffect(() => {
+    if (clinic?.online_tokens_enabled === false) {
+      navigate("/");
+    }
+  }, [clinic?.online_tokens_enabled, navigate]);
 
   useEffect(() => {
     if (!session?.user?.id || !clinicId) return;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { Button } from "@/components/ui/button";
 const LiveTokens = () => {
   const clinicId = usePublicClinicId();
   const { clinic } = useClinicContext();
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,12 @@ const LiveTokens = () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [clinicId]);
+
+  useEffect(() => {
+    if (clinic?.live_tokens_enabled === false) {
+      navigate("/");
+    }
+  }, [clinic?.live_tokens_enabled, navigate]);
 
   if (loading) {
     return (
