@@ -14,6 +14,8 @@ const AdminOnlineTokens = () => {
   const [loading, setLoading] = useState(true);
   const [onlineEnabled, setOnlineEnabled] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(10);
+  const [popupEnglish, setPopupEnglish] = useState("");
+  const [popupSecondLang, setPopupSecondLang] = useState("");
   const [popupSecondLangEnabled, setPopupSecondLangEnabled] = useState(false);
   const [guestNoteEnglish, setGuestNoteEnglish] = useState("");
   const [guestNoteSecondLang, setGuestNoteSecondLang] = useState("");
