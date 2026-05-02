@@ -13,8 +13,13 @@ interface TokenRow {
   status: string;
 }
 
+import { useClinicContext } from "@/hooks/useClinicContext";
+import ClinicLink from "@/components/ClinicLink";
+import { Button } from "@/components/ui/button";
+
 const LiveTokens = () => {
   const clinicId = usePublicClinicId();
+  const { clinic } = useClinicContext();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +92,23 @@ const LiveTokens = () => {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (clinic?.live_tokens_enabled === false) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="mb-6 h-20 w-20 rounded-2xl bg-destructive/10 flex items-center justify-center">
+          <Activity className="h-10 w-10 text-destructive" />
+        </div>
+        <h1 className="text-3xl font-bold mb-2">Tokens Module Disabled</h1>
+        <p className="text-muted-foreground mb-8 max-w-md">
+          Live token tracking is currently disabled by the clinic. Please contact the clinic directly for information about your appointment.
+        </p>
+        <ClinicLink to="/">
+          <Button variant="hero" size="lg">Go Back Home</Button>
+        </ClinicLink>
       </div>
     );
   }

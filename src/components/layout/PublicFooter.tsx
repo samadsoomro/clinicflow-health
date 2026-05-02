@@ -61,7 +61,9 @@ const PublicFooter = () => {
             <h4 className="mb-3 font-display font-semibold text-foreground">Quick Links</h4>
             <div className="flex flex-col gap-2">
               <ClinicLink to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">Home</ClinicLink>
-              <ClinicLink to="/tokens" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Tokens</ClinicLink>
+              {clinic?.live_tokens_enabled !== false && (
+                <ClinicLink to="/tokens" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Tokens</ClinicLink>
+              )}
               <ClinicLink to="/notifications" className="text-sm text-muted-foreground hover:text-primary transition-colors">Notifications</ClinicLink>
             </div>
           </div>

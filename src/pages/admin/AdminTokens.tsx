@@ -38,6 +38,7 @@ const AdminTokens = () => {
   const [batchIssuing, setBatchIssuing] = useState<Record<string, boolean>>({});
   const [onlineEnabled, setOnlineEnabled] = useState(false);
   const [onlineIssuanceEnabled, setOnlineIssuanceEnabled] = useState(false);
+  const [liveTokensEnabled, setLiveTokensEnabled] = useState(true);
 
 
 
@@ -58,12 +59,13 @@ const AdminTokens = () => {
 
     if (clinicId) {
       fetchDoctors();
-      supabase.from("clinics").select("short_name, clinic_name, qr_base_url, online_tokens_enabled, online_tokens_issuance_enabled").eq("id", clinicId).single()
+      supabase.from("clinics").select("short_name, clinic_name, qr_base_url, online_tokens_enabled, online_tokens_issuance_enabled, live_tokens_enabled").eq("id", clinicId).single()
         .then(({ data }) => {
           setClinicShortName((data as any)?.short_name || data?.clinic_name || "Clinic");
           setWebsiteUrl((data as any)?.qr_base_url || "");
           setOnlineEnabled(data?.online_tokens_enabled || false);
           setOnlineIssuanceEnabled(data?.online_tokens_issuance_enabled || false);
+          setLiveTokensEnabled(data?.live_tokens_enabled !== false);
         });
     }
 
@@ -363,6 +365,18 @@ const AdminTokens = () => {
     setTimeout(() => setUrlSaveMsg(null), 2000);
   };
 
+  const handleToggleLiveTokens = async (enabled: boolean) => {
+    setLiveTokensEnabled(enabled);
+    const { error } = await supabase.from("clinics").update({ live_tokens_enabled: enabled } as any).eq("id", clinicId);
+    if (error) {
+      toast.error("Failed to update: " + error.message);
+      setLiveTokensEnabled(!enabled);
+    } else {
+      toast.success(enabled ? "Live Tokens module enabled" : "Live Tokens module disabled");
+      await refreshClinic();
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Website URL + Export bar */}
@@ -380,6 +394,14 @@ const AdminTokens = () => {
               {savingUrl ? "…" : "Save"}
             </Button>
             {urlSaveMsg && <span className={`text-xs ${urlSaveMsg.startsWith("✓") ? "text-green-600" : "text-destructive"}`}>{urlSaveMsg}</span>}
+
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l">
+              <Label className="shrink-0 text-xs text-muted-foreground">Tokens Module</Label>
+              <Switch checked={liveTokensEnabled} onCheckedChange={handleToggleLiveTokens} />
+              <Badge variant="outline" className={`text-[10px] px-1 py-0 ${liveTokensEnabled ? "text-green-600 border-green-200" : "text-destructive border-destructive/20"}`}>
+                {liveTokensEnabled ? "ON" : "OFF"}
+              </Badge>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={todayTokens.length === 0}>
