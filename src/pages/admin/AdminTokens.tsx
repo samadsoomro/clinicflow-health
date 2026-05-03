@@ -256,9 +256,15 @@ const AdminTokens = () => {
         .eq('doctor_id', doctor.id)
         .gte('created_at', today + 'T00:00:00')
         .lte('created_at', today + 'T23:59:59');
+        
+      const { error: deleteOnlineError } = await supabase.from('online_tokens')
+        .delete()
+        .eq('clinic_id', clinicId)
+        .eq('doctor_id', doctor.id)
+        .eq('token_date', today);
       
-      if (deleteError) {
-        toast.error("Setting updated, but failed to reset tokens: " + deleteError.message);
+      if (deleteError || deleteOnlineError) {
+        toast.error("Setting updated, but failed to reset some tokens: " + (deleteError?.message || deleteOnlineError?.message));
       } else {
         toast.success(`'Start from 1' mode is now ON for Dr. ${doctor.name}`);
       }
@@ -301,33 +307,49 @@ const AdminTokens = () => {
 
 
   const handleResetToday = async () => {
-    if (!confirm("Reset all of today's tokens? This action cannot be undone.")) return;
+    if (!confirm("Reset all of today's walk-in AND online tokens? This action cannot be undone.")) return;
     setResetting(true);
 
     const ids = todayTokens.map((t) => t.id);
+    const onlineIds = todayOnlineTokens.map((t) => t.id);
+    
+    let success = true;
+
     if (ids.length > 0) {
       const { error } = await supabase.from("tokens").delete().in("id", ids);
       if (error) {
-        toast.error("Failed to reset: " + error.message);
-      } else {
-        setTodayTokens([]);
-        toast.success("Today's tokens have been reset!");
-
-        // After resetting today's tokens, silently clean up old completed/unavailable tokens
-        try {
-          fetch(
-            'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/cleanup-old-tokens',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ clinic_id: clinicId }),
-            }
-          );
-        } catch (_) {
-          // Silent fail — cleanup is non-critical
-        }
+        toast.error("Failed to reset walk-in tokens: " + error.message);
+        success = false;
       }
-    } else {
+    }
+    
+    if (onlineIds.length > 0) {
+      const { error } = await supabase.from("online_tokens").delete().in("id", onlineIds);
+      if (error) {
+        toast.error("Failed to reset online tokens: " + error.message);
+        success = false;
+      }
+    }
+
+    if (success && (ids.length > 0 || onlineIds.length > 0)) {
+      setTodayTokens([]);
+      setTodayOnlineTokens([]);
+      toast.success("All of today's tokens have been reset!");
+
+      // After resetting today's tokens, silently clean up old completed/unavailable tokens
+      try {
+        fetch(
+          'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/cleanup-old-tokens',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clinic_id: clinicId }),
+          }
+        );
+      } catch (_) {
+        // Silent fail — cleanup is non-critical
+      }
+    } else if (ids.length === 0 && onlineIds.length === 0) {
       toast.info("No tokens to reset");
     }
     setResetting(false);
