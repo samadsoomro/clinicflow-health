@@ -50,9 +50,9 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
 
   // Watermark (Drawn early so it's beneath text)
   doc.saveGraphicsState();
-  const gState = new (doc as any).GState({ opacity: 0.12 });
+  const gState = new (doc as any).GState({ opacity: 0.18 });
   doc.setGState(gState);
-  doc.setTextColor(220, 38, 38); // Red watermark
+  doc.setTextColor(234, 88, 12); // Orange / Dim Red watermark
   doc.setFontSize(12);
   doc.setFont('courier', 'bold');
   // Multiple horizontal small watermarks
@@ -196,9 +196,9 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   drawDashedLine(y);
   y += 5;
 
-  doc.setFont('courier', 'normal');
+  doc.setFont('courier', 'bold');
   doc.setFontSize(7);
-  doc.setTextColor(119, 119, 119);
+  doc.setTextColor(234, 88, 12); // Orange / Dim Red for the bottom part
   doc.text('Powered by ClinicToken CMS', W / 2, y, { align: 'center' });
 
   doc.save(`online-token-${tokenData.token_number}.pdf`);

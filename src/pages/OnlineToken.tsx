@@ -457,8 +457,8 @@ const OnlineToken = () => {
                   <p className="text-xs text-white/70">{clinic?.clinic_name}</p>
                   <p className="text-[10px] text-white/50">{new Date().toLocaleDateString()} — {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <div className="mt-6 border-t border-white/20 pt-4">
-                  <p className="text-[10px] font-medium text-white/80 uppercase tracking-tighter">
+                <div className="mt-6 border-t border-white/20 pt-4 bg-orange-500/20 rounded-b-xl -mx-8 -mb-8 p-4">
+                  <p className="text-[10px] font-bold text-orange-100 uppercase tracking-tighter">
                     Present this slip at clinical reception
                   </p>
                 </div>
