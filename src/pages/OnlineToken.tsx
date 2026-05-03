@@ -124,9 +124,9 @@ const OnlineToken = () => {
       }
 
       // Check if patient already has an online token today
-      const { data: existingTokens } = await supabase
+      const { data: existingTokens, error } = await supabase
         .from('online_tokens')
-        .select('*, doctors:doctor_id(*)')
+        .select('*')
         .eq('patient_id', session.user.id)
         .eq('clinic_id', clinicId)
         .eq('token_date', today)
@@ -135,7 +135,16 @@ const OnlineToken = () => {
 
       if (existingTokens && existingTokens.length > 0) {
         setHasTokenToday(true);
-        setIssuedToken(existingTokens[0]);
+        const token = existingTokens[0];
+        
+        // Fetch doctor info separately since FK might be missing
+        const { data: doctorData } = await supabase
+          .from('doctors')
+          .select('*')
+          .eq('id', token.doctor_id)
+          .single();
+          
+        setIssuedToken({ ...token, doctors: doctorData });
       } else {
         setHasTokenToday(false);
       }
