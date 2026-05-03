@@ -274,25 +274,6 @@ const OnlineToken = () => {
     );
   }
 
-  if (dailyLimitReached) {
-    return (
-      <div className="container py-16 text-center space-y-6">
-        <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-          <Ticket className="h-8 w-8 text-red-600" />
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">Token Limit Reached</h1>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Today's online token limit has been reached. No more online tokens can be issued for today. Please visit the clinic physically.
-          </p>
-        </div>
-        <ClinicLink to="/">
-          <Button variant="outline">Back to Home</Button>
-        </ClinicLink>
-      </div>
-    );
-  }
-
   const selectedDoctorData = activeDoctors.find(d => d.id === selectedDoctor);
 
   return (
@@ -374,7 +355,17 @@ const OnlineToken = () => {
           </div>
         )}
 
-        {isLoggedIn && !hasTokenToday && (
+        {isLoggedIn && !hasTokenToday && dailyLimitReached && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center space-y-3 mt-4">
+            <Ticket className="h-8 w-8 text-red-500 mx-auto" />
+            <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Token Limit Reached</h3>
+            <p className="text-sm text-red-800 dark:text-red-200">
+              Today's online token limit has been reached. No more online tokens can be issued for today. Please visit the clinic physically.
+            </p>
+          </div>
+        )}
+
+        {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
           <form onSubmit={handleRequestToken} className="space-y-5">
             {isLoggedIn && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">

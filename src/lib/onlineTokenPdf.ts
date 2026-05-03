@@ -5,16 +5,28 @@ const sanitizeStr = (str: string | null | undefined): string => {
   return str.replace(/،/g, ',').replace(/[^\x00-\x7F]/g, '');
 };
 
-const getHeartbeatIcon = async (): Promise<string> => {
+const getHeaderIcon = async (): Promise<string> => {
   return new Promise<string>((resolve) => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><path fill="#000000" d="M320.2 243.8l-49.7 99.4c-6 12.1-23.4 11.7-28.9-.6l-56.9-126.3-30 71.7H60.6l50.2 50.2c46.9 46.9 122.7 46.9 169.6 0l50.2-50.2h-10.4zM448 86.6c-46.9-46.9-122.7-46.9-169.6 0L256 109l-22.4-22.4c-46.9-46.9-122.7-46.9-169.6 0-38.3 38.3-45.4 96.6-21.4 141.5H94.9l43-102.6c5.7-13.6 25-13.8 30.9-.4l56.8 126.1 49.8-99.6c5.9-11.8 22.8-12 28.9-.3l37 76.8h110.1c24-44.9 16.9-103.2-21.4-141.5z"/></svg>';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>`;
     const img = new Image();
     img.onload = () => {
+      const size = 1024;
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 512;
+      canvas.width = size;
+      canvas.height = size;
       const ctx = canvas.getContext('2d');
-      if (ctx) ctx.drawImage(img, 0, 0);
+      if (ctx) {
+        // Draw crisp circle border
+        ctx.beginPath();
+        ctx.arc(size/2, size/2, (size/2) - 40, 0, 2 * Math.PI);
+        ctx.lineWidth = 50;
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+        
+        // Draw Lucide Activity SVG centered
+        const padding = 220;
+        ctx.drawImage(img, padding, padding, size - (padding*2), size - (padding*2));
+      }
       resolve(canvas.toDataURL('image/png', 1.0));
     };
     img.src = 'data:image/svg+xml;base64,' + btoa(svg);
@@ -34,17 +46,16 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   // Add blue border around the slip
   doc.setDrawColor(29, 78, 216); // blue-700
   doc.setLineWidth(0.6);
-  // Estimate height: We will draw a fixed height border, e.g. 150mm.
   doc.rect(2, 2, W - 4, 156);
 
   // Watermark (Drawn early so it's beneath text)
   doc.saveGraphicsState();
-  const gState = new (doc as any).GState({ opacity: 0.18 });
+  const gState = new (doc as any).GState({ opacity: 0.15 });
   doc.setGState(gState);
   doc.setTextColor(29, 78, 216); // Blue watermark
-  doc.setFontSize(32);
+  doc.setFontSize(45); // Large enough to cover diagonally
   doc.setFont('courier', 'bold');
-  doc.text('ONLINE TOKEN', W / 2, 80, {
+  doc.text('ONLINE TOKEN', W / 2 + 5, 80, {
     angle: 45,
     align: 'center',
   });
@@ -52,8 +63,8 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
 
   // Header Left: Heartbeat Icon
   try {
-    const iconDataUrl = await getHeartbeatIcon();
-    doc.addImage(iconDataUrl, 'PNG', 5, y - 2, 10, 10);
+    const iconDataUrl = await getHeaderIcon();
+    doc.addImage(iconDataUrl, 'PNG', 5, y - 2, 11, 11);
   } catch (err) {
     // silently skip icon if generation fails
   }
