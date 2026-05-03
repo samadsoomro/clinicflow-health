@@ -43,7 +43,7 @@ const AdminTokens = () => {
 
 
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -113,20 +113,32 @@ const AdminTokens = () => {
     if (clinicId) {
       fetchTodayTokens();
       fetchDoctorSettings();
-      const channel = supabase
-        .channel("admin-tokens")
+      const walkinChannel = supabase
+        .channel("admin-tokens-walkin")
         .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchTodayTokens();
         })
+        .subscribe();
+
+      const onlineChannel = supabase
+        .channel("admin-tokens-online")
         .on("postgres_changes", { event: "*", schema: "public", table: "online_tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchTodayTokens();
         })
+        .subscribe();
+
+      const settingsChannel = supabase
+        .channel("admin-token-settings")
         .on("postgres_changes", { event: "*", schema: "public", table: "doctor_token_settings", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchDoctorSettings();
         })
-
         .subscribe();
-      return () => { supabase.removeChannel(channel); };
+
+      return () => { 
+        supabase.removeChannel(walkinChannel);
+        supabase.removeChannel(onlineChannel);
+        supabase.removeChannel(settingsChannel);
+      };
     }
 
   }, [clinicId]);

@@ -27,7 +27,7 @@ const LiveTokens = () => {
   const [allTokens, setAllTokens] = useState<TokenRow[]>([]);
   const [loading, setLoading] = useState(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
   const fetchData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
@@ -68,30 +68,33 @@ const LiveTokens = () => {
   useEffect(() => {
     fetchData(true);
 
-    const channel = supabase
-      .channel("live-tokens-" + clinicId)
+    const walkinChannel = supabase
+      .channel("live-tokens-walkin-" + clinicId)
       .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "online_tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
       .subscribe((status) => {
-        // If subscription is active, clear polling
         if (status === "SUBSCRIBED") {
           if (pollingRef.current) {
             clearInterval(pollingRef.current);
             pollingRef.current = null;
           }
         } else {
-          // Fallback polling if realtime drops
           if (!pollingRef.current) {
             pollingRef.current = setInterval(() => fetchData(), 5000);
           }
         }
       });
 
+    const onlineChannel = supabase
+      .channel("live-tokens-online-" + clinicId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "online_tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
+      .subscribe();
+
     // Start polling as backup initially
     pollingRef.current = setInterval(() => fetchData(), 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(walkinChannel);
+      supabase.removeChannel(onlineChannel);
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [clinicId]);
@@ -196,12 +199,12 @@ const LiveTokens = () => {
                   </div>
                 )}
 
-                {/* Serving Token — Green Box (or Blue if Online) */}
+                {/* Serving Token — Green Box */}
                 {servingToken && (
-                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${servingToken.isOnline ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-green-500 bg-green-50 dark:bg-green-950/20"}`}>
-                    <Badge className={`mb-2 text-white text-xs ${servingToken.isOnline ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}>NOW SERVING</Badge>
+                  <div className="mb-4 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-green-600 hover:bg-green-700 text-white text-xs">NOW SERVING</Badge>
                     <div className="flex justify-center">
-                      <div className={`flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl text-white shadow-lg ${servingToken.isOnline ? "bg-blue-600" : "bg-green-600"}`}>
+                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-green-600 text-white shadow-lg">
                         <span className="font-display text-5xl sm:text-7xl font-extrabold">{servingToken.token_number}</span>
                       </div>
                     </div>
@@ -214,12 +217,12 @@ const LiveTokens = () => {
                   </div>
                 )}
 
-                {/* Next Waiting Token (or Blue if Online) */}
+                {/* Next Waiting Token */}
                 {nextWaiting && servingToken && (
-                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${nextWaiting.isOnline ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "border-amber-400 bg-amber-50 dark:bg-amber-950/20"}`}>
-                    <Badge className={`mb-2 text-white text-xs ${nextWaiting.isOnline ? "bg-blue-500 hover:bg-blue-600" : "bg-amber-500 hover:bg-amber-600"}`}>GET READY — YOUR TURN IS COMING</Badge>
+                  <div className="mb-4 rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-amber-500 hover:bg-amber-600 text-white text-xs">GET READY — YOUR TURN IS COMING</Badge>
                     <div className="flex justify-center">
-                      <div className={`flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl text-white shadow-lg ${nextWaiting.isOnline ? "bg-blue-500" : "bg-amber-500"}`}>
+                      <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg">
                         <span className="font-display text-4xl sm:text-5xl font-extrabold">{nextWaiting.token_number}</span>
                       </div>
                     </div>
@@ -232,12 +235,12 @@ const LiveTokens = () => {
                   </div>
                 )}
 
-                {/* First waiting when nothing is serving — Orange Box (or Blue if Online) */}
+                {/* First waiting when nothing is serving — Orange Box */}
                 {nextWaiting && !servingToken && (
-                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${nextWaiting.isOnline ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "border-orange-400 bg-orange-50 dark:bg-orange-950/20"}`}>
-                    <Badge className={`mb-2 text-white text-xs ${nextWaiting.isOnline ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600"}`}>WAITING</Badge>
+                  <div className="mb-4 rounded-2xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/20 p-4 text-center">
+                    <Badge className="mb-2 bg-orange-500 hover:bg-orange-600 text-white text-xs">WAITING</Badge>
                     <div className="flex justify-center">
-                      <div className={`flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl text-white shadow-lg ${nextWaiting.isOnline ? "bg-blue-500" : "bg-orange-500"}`}>
+                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg">
                         <span className="font-display text-5xl sm:text-7xl font-extrabold">{nextWaiting.token_number}</span>
                       </div>
                     </div>

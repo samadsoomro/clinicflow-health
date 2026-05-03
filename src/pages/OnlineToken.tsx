@@ -33,7 +33,7 @@ const OnlineToken = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formattedPatientId, setFormattedPatientId] = useState("");
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
   useEffect(() => {
     const checkSession = async () => {
@@ -124,17 +124,18 @@ const OnlineToken = () => {
       }
 
       // Check if patient already has an online token today
-      const { data: existingToken } = await supabase
+      const { data: existingTokens } = await supabase
         .from('online_tokens')
         .select('*, doctors:doctor_id(*)')
         .eq('patient_id', session.user.id)
         .eq('clinic_id', clinicId)
         .eq('token_date', today)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (existingToken) {
+      if (existingTokens && existingTokens.length > 0) {
         setHasTokenToday(true);
-        setIssuedToken(existingToken);
+        setIssuedToken(existingTokens[0]);
       } else {
         setHasTokenToday(false);
       }
