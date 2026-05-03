@@ -18,6 +18,8 @@ const OnlineToken = () => {
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   const [onlineIssuanceEnabled, setOnlineIssuanceEnabled] = useState(false);
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState(0);
+  const [reservedCount, setReservedCount] = useState(0);
   
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [name, setName] = useState("");
@@ -73,6 +75,9 @@ const OnlineToken = () => {
           .eq('clinic_id', clinicId)
           .eq('token_date', today);
           
+        setReservedCount(count || 0);
+        setDailyLimit(clinicData.online_tokens_daily_limit || 10);
+          
         if ((count || 0) >= (clinicData.online_tokens_daily_limit || 10)) {
           setDailyLimitReached(true);
         }
@@ -121,13 +126,18 @@ const OnlineToken = () => {
       // Check if patient already has an online token today
       const { data: existingToken } = await supabase
         .from('online_tokens')
-        .select('id')
+        .select('*, doctors:doctor_id(*)')
         .eq('patient_id', session.user.id)
         .eq('clinic_id', clinicId)
         .eq('token_date', today)
         .maybeSingle();
 
-      setHasTokenToday(!!existingToken);
+      if (existingToken) {
+        setHasTokenToday(true);
+        setIssuedToken(existingToken);
+      } else {
+        setHasTokenToday(false);
+      }
     };
     
     fetchPatientData();
@@ -298,6 +308,14 @@ const OnlineToken = () => {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Get Online Token</h1>
           <p className="text-sm text-muted-foreground mt-2">Skip the queue by requesting your token online</p>
+
+          <div className="mt-6 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-800/30 inline-block text-left">
+            <h3 className="font-semibold text-purple-800 dark:text-purple-300 text-sm">Daily Online Token Limit</h3>
+            <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mb-1">Maximum online tokens that can be issued per day</p>
+            <p className="text-sm font-bold text-purple-700 dark:text-purple-400">
+              Today's Reserved: {reservedCount} / {dailyLimit} limit
+            </p>
+          </div>
         </div>
 
         {!isLoggedIn && (
@@ -343,9 +361,16 @@ const OnlineToken = () => {
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center space-y-3 mt-4">
             <CheckCircle className="h-8 w-8 text-blue-500 mx-auto" />
             <h3 className="font-bold text-lg text-blue-900 dark:text-blue-100">Token Already Issued</h3>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+            <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
               You have already received an online token for today. You can only get one online token per day. Please check your token receipt.
             </p>
+            <Button 
+               onClick={() => setShowTokenModal(true)}
+               variant="outline"
+               className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/50"
+            >
+               View Your Past Online Token
+            </Button>
           </div>
         )}
 

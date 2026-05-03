@@ -7,15 +7,15 @@ const sanitizeStr = (str: string | null | undefined): string => {
 
 const getHeartbeatIcon = async (): Promise<string> => {
   return new Promise<string>((resolve) => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100" height="100"><path fill="#000000" d="M320.2 243.8l-49.7 99.4c-6 12.1-23.4 11.7-28.9-.6l-56.9-126.3-30 71.7H60.6l50.2 50.2c46.9 46.9 122.7 46.9 169.6 0l50.2-50.2h-10.4zM448 86.6c-46.9-46.9-122.7-46.9-169.6 0L256 109l-22.4-22.4c-46.9-46.9-122.7-46.9-169.6 0-38.3 38.3-45.4 96.6-21.4 141.5H94.9l43-102.6c5.7-13.6 25-13.8 30.9-.4l56.8 126.1 49.8-99.6c5.9-11.8 22.8-12 28.9-.3l37 76.8h110.1c24-44.9 16.9-103.2-21.4-141.5z"/></svg>';
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><path fill="#000000" d="M320.2 243.8l-49.7 99.4c-6 12.1-23.4 11.7-28.9-.6l-56.9-126.3-30 71.7H60.6l50.2 50.2c46.9 46.9 122.7 46.9 169.6 0l50.2-50.2h-10.4zM448 86.6c-46.9-46.9-122.7-46.9-169.6 0L256 109l-22.4-22.4c-46.9-46.9-122.7-46.9-169.6 0-38.3 38.3-45.4 96.6-21.4 141.5H94.9l43-102.6c5.7-13.6 25-13.8 30.9-.4l56.8 126.1 49.8-99.6c5.9-11.8 22.8-12 28.9-.3l37 76.8h110.1c24-44.9 16.9-103.2-21.4-141.5z"/></svg>';
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 100;
+      canvas.width = 512;
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      resolve(canvas.toDataURL('image/png', 1.0));
     };
     img.src = 'data:image/svg+xml;base64,' + btoa(svg);
   });
@@ -30,6 +30,25 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
 
   const W = 80;
   let y = 10;
+
+  // Add blue border around the slip
+  doc.setDrawColor(29, 78, 216); // blue-700
+  doc.setLineWidth(0.6);
+  // Estimate height: We will draw a fixed height border, e.g. 150mm.
+  doc.rect(2, 2, W - 4, 156);
+
+  // Watermark (Drawn early so it's beneath text)
+  doc.saveGraphicsState();
+  const gState = new (doc as any).GState({ opacity: 0.18 });
+  doc.setGState(gState);
+  doc.setTextColor(29, 78, 216); // Blue watermark
+  doc.setFontSize(32);
+  doc.setFont('courier', 'bold');
+  doc.text('ONLINE TOKEN', W / 2, 80, {
+    angle: 45,
+    align: 'center',
+  });
+  doc.restoreGraphicsState();
 
   // Header Left: Heartbeat Icon
   try {
@@ -89,13 +108,13 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
 
   const drawRow = (label: string, value: string) => {
     doc.setFont('courier', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(68, 68, 68);
     doc.text(label, 5, y);
     
     doc.setFont('courier', 'bold');
     doc.setTextColor(0, 0, 0);
-    const splitVal = doc.splitTextToSize(sanitizeStr(value), 45);
+    const splitVal = doc.splitTextToSize(sanitizeStr(value), 52);
     doc.text(splitVal, W - 5, y, { align: 'right' });
     y += (splitVal.length * 4) + 1;
   };
@@ -153,7 +172,7 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
     
     doc.setFont('courier', 'bold');
     doc.setTextColor(0, 0, 0);
-    const splitVal = doc.splitTextToSize(sanitizeStr(value), 48);
+    const splitVal = doc.splitTextToSize(sanitizeStr(value), 52);
     doc.text(splitVal, W - 5, y, { align: 'right' });
     y += (splitVal.length * 4);
   };
@@ -170,25 +189,6 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   doc.setFontSize(7);
   doc.setTextColor(119, 119, 119);
   doc.text('Powered by ClinicToken CMS', W / 2, y, { align: 'center' });
-
-  // Add blue border around the slip
-  doc.setDrawColor(29, 78, 216); // blue-700
-  doc.setLineWidth(0.6);
-  const totalHeight = y + 5;
-  doc.rect(2, 2, W - 4, totalHeight - 4);
-
-  // Watermark
-  doc.saveGraphicsState();
-  const gState = new (doc as any).GState({ opacity: 0.18 });
-  doc.setGState(gState);
-  doc.setTextColor(29, 78, 216); // Blue watermark
-  doc.setFontSize(36);
-  doc.setFont('courier', 'bold');
-  doc.text('ONLINE TOKEN', W / 2, totalHeight / 2, {
-    angle: 45,
-    align: 'center',
-  });
-  doc.restoreGraphicsState();
 
   doc.save(`online-token-${tokenData.token_number}.pdf`);
 }
