@@ -24,6 +24,7 @@ const AdminTokens = () => {
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [todayTokens, setTodayTokens] = useState<any[]>([]);
+  const [todayOnlineTokens, setTodayOnlineTokens] = useState<any[]>([]);
   const [issuing, setIssuing] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [receiptToken, setReceiptToken] = useState<any>(null);
@@ -72,14 +73,23 @@ const AdminTokens = () => {
   }, [clinicId]);
 
   const fetchTodayTokens = async () => {
-    const { data } = await supabase
+    const { data: walkIn } = await supabase
       .from("tokens")
       .select("*, doctors:doctor_id(name, specialization)")
       .eq("clinic_id", clinicId)
       .gte("created_at", today + "T00:00:00")
       .lte("created_at", today + "T23:59:59")
       .order("token_number", { ascending: true });
-    setTodayTokens((data as any[]) || []);
+      
+    const { data: online } = await supabase
+      .from("online_tokens")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .eq("token_date", today)
+      .order("token_number", { ascending: true });
+
+    setTodayTokens((walkIn as any[]) || []);
+    setTodayOnlineTokens((online as any[]) || []);
   };
 
   const fetchDoctorSettings = async () => {
@@ -108,6 +118,9 @@ const AdminTokens = () => {
         .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchTodayTokens();
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "online_tokens", filter: `clinic_id=eq.${clinicId}` }, () => {
+          fetchTodayTokens();
+        })
         .on("postgres_changes", { event: "*", schema: "public", table: "doctor_token_settings", filter: `clinic_id=eq.${clinicId}` }, () => {
           fetchDoctorSettings();
         })
@@ -120,14 +133,17 @@ const AdminTokens = () => {
 
   const getNextTokenNumber = (doctorId?: string) => {
     if (doctorId && doctorSettings[doctorId]) {
-      // For this specific doctor only — count their own tokens today
-      const doctorTokensCount = todayTokens.filter(t => t.doctor_id === doctorId).length;
-      return doctorTokensCount + 1;
+      // For this specific doctor only — count their own tokens today (walk-in + online)
+      const walkInCount = todayTokens.filter(t => t.doctor_id === doctorId).length;
+      const onlineCount = todayOnlineTokens.filter(t => t.doctor_id === doctorId).length;
+      return walkInCount + onlineCount + 1;
     }
     
-    // Global continuity — get MAX across all doctors today
-    if (todayTokens.length === 0) return 1;
-    return Math.max(...todayTokens.map((t) => t.token_number)) + 1;
+    // Global continuity — get MAX across all doctors today (walk-in + online)
+    const maxWalkIn = todayTokens.length > 0 ? Math.max(...todayTokens.map((t) => t.token_number)) : 0;
+    const maxOnline = todayOnlineTokens.length > 0 ? Math.max(...todayOnlineTokens.map((t) => t.token_number)) : 0;
+    
+    return Math.max(maxWalkIn, maxOnline) + 1;
   };
 
 

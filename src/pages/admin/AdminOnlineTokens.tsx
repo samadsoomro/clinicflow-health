@@ -144,6 +144,59 @@ const AdminOnlineTokens = () => {
           <Switch checked={onlineEnabled} onCheckedChange={handleToggleOnline} />
         </div>
 
+        {/* Online Tokens List */}
+        {onlineEnabled && (
+          <div className="space-y-4">
+            <h3 className="font-display font-semibold text-lg text-foreground">
+              Today's Online Tokens — {new Date().toLocaleDateString()}
+            </h3>
+            <div className="overflow-hidden border border-border rounded-xl bg-card shadow-soft">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 border-b border-border">
+                    <tr>
+                      <th className="p-3 text-left font-semibold">Token #</th>
+                      <th className="p-3 text-left font-semibold">Doctor</th>
+                      <th className="p-3 text-left font-semibold">Patient Name</th>
+                      <th className="p-3 text-left font-semibold">Patient ID</th>
+                      <th className="p-3 text-left font-semibold">Phone</th>
+                      <th className="p-3 text-left font-semibold">Time</th>
+                      <th className="p-3 text-left font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {onlineTokens.map(token => (
+                      <tr key={token.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="p-3 font-bold text-purple-600">#{token.token_number}</td>
+                        <td className="p-3">
+                          {doctorsList.find(d => d.id === token.doctor_id)?.name || 'Dr. —'}
+                        </td>
+                        <td className="p-3 font-medium">{token.patient_name}</td>
+                        <td className="p-3 text-xs text-purple-500 font-mono">{token.formatted_patient_id || '—'}</td>
+                        <td className="p-3 text-muted-foreground">{token.patient_phone || '—'}</td>
+                        <td className="p-3 text-muted-foreground">
+                          {new Date(token.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase()}
+                        </td>
+                        <td className="p-3">
+                          <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Online
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {onlineTokens.length === 0 && (
+                <div className="text-center text-muted-foreground py-12">
+                  <Ticket className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>No online tokens issued today.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Daily limit */}
         {onlineEnabled && (
           <div className="flex items-center gap-4 p-4 border border-border rounded-xl bg-card shadow-soft">
@@ -264,57 +317,6 @@ const AdminOnlineTokens = () => {
           </div>
         )}
       </div>
-
-      {/* Online Tokens List */}
-      {onlineEnabled && (
-        <div className="space-y-4">
-          <h3 className="font-display font-semibold text-lg text-foreground">
-            Today's Online Tokens — {new Date().toLocaleDateString()}
-          </h3>
-          <div className="overflow-hidden border border-border rounded-xl bg-card shadow-soft">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="p-3 text-left font-semibold">Token #</th>
-                    <th className="p-3 text-left font-semibold">Doctor</th>
-                    <th className="p-3 text-left font-semibold">Patient Name</th>
-                    <th className="p-3 text-left font-semibold">Patient ID</th>
-                    <th className="p-3 text-left font-semibold">Phone</th>
-                    <th className="p-3 text-left font-semibold">Time</th>
-                    <th className="p-3 text-left font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {onlineTokens.map(token => (
-                    <tr key={token.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="p-3 font-bold text-purple-600">#{token.token_number}</td>
-                      <td className="p-3">
-                        {doctorsList.find(d => d.id === token.doctor_id)?.name || 'Dr. —'}
-                      </td>
-                      <td className="p-3 font-medium">{token.patient_name}</td>
-                      <td className="p-3 text-xs text-purple-500 font-mono">{token.formatted_patient_id || '—'}</td>
-                      <td className="p-3 text-muted-foreground">{token.patient_phone || '—'}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(token.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                      <td className="p-3">
-                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                          Online
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {onlineTokens.length === 0 && (
-              <div className="text-center text-muted-foreground py-12">
-                <Ticket className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p>No online tokens issued today.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 };
