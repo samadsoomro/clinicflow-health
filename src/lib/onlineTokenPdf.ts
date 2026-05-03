@@ -141,7 +141,7 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   const dateTime = `${dateStr}  ${timePart}`;
 
   drawRow('Patient', tokenData.patient_name || 'Walk-in');
-  drawRow('Doctor', tokenData.doctors?.name ? `Dr. ${tokenData.doctors.name}` : '—');
+  drawRow('Doctor', tokenData.doctors?.name || '—');
   drawRow('Specialization', tokenData.doctors?.specialization || '—');
   drawRow('Date', dateTime);
   

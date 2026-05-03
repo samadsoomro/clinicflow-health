@@ -371,7 +371,7 @@ const OnlineToken = () => {
             <Ticket className="h-8 w-8 text-red-500 mx-auto" />
             <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Token Limit Reached</h3>
             <p className="text-sm text-red-800 dark:text-red-200">
-              Today's online token limit has been reached. No more online tokens can be issued for today. Please visit the clinic physically.
+              Today's daily online token limit is {reservedCount} by {dailyLimit} limit. You are now not able to get a token today. Please visit physically our hospital or clinic.
             </p>
           </div>
         )}
@@ -463,13 +463,13 @@ const OnlineToken = () => {
                 <p className="text-7xl font-black mb-2 leading-none">#{issuedToken.token_number}</p>
                 <p className="font-bold text-xl truncate">{issuedToken.patient_name}</p>
                 <div className="mt-4 space-y-1">
-                  <p className="text-sm font-medium text-white/90">Dr. {selectedDoctorData?.name}</p>
+                  <p className="text-sm font-medium text-white/90">Dr. {issuedToken.doctors?.name || selectedDoctorData?.name}</p>
                   <p className="text-xs text-white/70">{clinic?.clinic_name}</p>
                   <p className="text-[10px] text-white/50">{new Date().toLocaleDateString()} — {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
                 <div className="mt-6 border-t border-white/20 pt-4 bg-orange-500/20 rounded-b-xl -mx-8 -mb-8 p-4">
                   <p className="text-[10px] font-bold text-orange-100 uppercase tracking-tighter">
-                    Present this slip at clinical reception
+                    Present this slip at reception
                   </p>
                 </div>
               </div>
