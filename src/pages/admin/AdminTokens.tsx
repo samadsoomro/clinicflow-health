@@ -176,11 +176,20 @@ const AdminTokens = () => {
   };
 
   const handleMarkServing = async (token: any) => {
-    const servingForDoc = todayTokens.filter((t) => t.doctor_id === token.doctor_id && t.status === "serving");
-    for (const st of servingForDoc) {
+    const table = token.isOnline ? "online_tokens" : "tokens";
+    
+    // Clear any currently serving tokens for this doctor in both tables
+    const servingWalkIn = todayTokens.filter((t) => t.doctor_id === token.doctor_id && t.status === "serving");
+    const servingOnline = todayOnlineTokens.filter((t) => t.doctor_id === token.doctor_id && t.status === "serving");
+    
+    for (const st of servingWalkIn) {
       await supabase.from("tokens").update({ status: "completed" } as any).eq("id", st.id);
     }
-    const { error } = await supabase.from("tokens").update({ status: "serving" } as any).eq("id", token.id);
+    for (const st of servingOnline) {
+      await supabase.from("online_tokens").update({ status: "completed" } as any).eq("id", st.id);
+    }
+
+    const { error } = await supabase.from(table).update({ status: "serving" } as any).eq("id", token.id);
     if (error) {
       toast.error("Failed: " + error.message);
     } else {
@@ -190,7 +199,8 @@ const AdminTokens = () => {
   };
 
   const handleMarkUnavailable = async (token: any) => {
-    const { error } = await supabase.from("tokens").update({ status: "unavailable" } as any).eq("id", token.id);
+    const table = token.isOnline ? "online_tokens" : "tokens";
+    const { error } = await supabase.from(table).update({ status: "unavailable" } as any).eq("id", token.id);
     if (error) {
       toast.error("Failed: " + error.message);
     } else {
@@ -200,26 +210,28 @@ const AdminTokens = () => {
   };
 
   const handleMarkCompleted = async (token: any) => {
-    const { data: nextToken } = await supabase
-      .from("tokens")
-      .select("*")
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", token.doctor_id)
-      .eq("status", "waiting")
-      .gte("created_at", today + "T00:00:00")
-      .lte("created_at", today + "T23:59:59")
-      .order("token_number", { ascending: true })
-      .limit(1)
-      .single();
+    const table = token.isOnline ? "online_tokens" : "tokens";
+    
+    // Find next token from BOTH tables
+    const waitingWalkIn = todayTokens.filter(t => t.doctor_id === token.doctor_id && t.status === "waiting");
+    const waitingOnline = todayOnlineTokens.filter(t => t.doctor_id === token.doctor_id && t.status === "waiting");
+    
+    const combinedWaiting = [
+      ...waitingWalkIn.map(t => ({ ...t, isOnline: false })),
+      ...waitingOnline.map(t => ({ ...t, isOnline: true }))
+    ].sort((a, b) => a.token_number - b.token_number);
+    
+    const nextToken = combinedWaiting.length > 0 ? combinedWaiting[0] : null;
 
-    const { error } = await supabase.from("tokens").update({ status: "completed" } as any).eq("id", token.id);
+    const { error } = await supabase.from(table).update({ status: "completed" } as any).eq("id", token.id);
     if (error) {
       toast.error("Failed: " + error.message);
       return;
     }
 
     if (nextToken) {
-      await supabase.from("tokens").update({ status: "serving" } as any).eq("id", nextToken.id);
+      const nextTable = nextToken.isOnline ? "online_tokens" : "tokens";
+      await supabase.from(nextTable).update({ status: "serving" } as any).eq("id", nextToken.id);
       toast.success(`Token #${token.token_number} completed → Token #${nextToken.token_number} now serving`);
     } else {
       toast.success(`Token #${token.token_number} completed. Queue is clear.`);
@@ -497,7 +509,11 @@ const AdminTokens = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
           {activeDoctors.map((doctor) => {
-            const doctorTokens = todayTokens.filter(t => t.doctor_id === doctor.id);
+            const combinedTokens = [
+              ...todayTokens.map(t => ({ ...t, isOnline: false })),
+              ...todayOnlineTokens.map(t => ({ ...t, isOnline: true }))
+            ];
+            const doctorTokens = combinedTokens.filter(t => t.doctor_id === doctor.id);
             const servingToken = doctorTokens.find(t => t.status === 'serving');
             const waitingCount = doctorTokens.filter(t => t.status === 'waiting').length;
             const isStartFromOne = doctorSettings[doctor.id] === true;
@@ -597,7 +613,7 @@ const AdminTokens = () => {
                           doctorTokens
                             .sort((a, b) => a.token_number - b.token_number)
                             .map(token => (
-                              <tr key={token.id} className={`hover:bg-muted/30 transition-colors ${token.status === 'serving' ? 'bg-primary/5' : ''}`}>
+                              <tr key={`${token.isOnline ? 'online' : 'walkin'}-${token.id}`} className={`hover:bg-muted/30 transition-colors ${token.status === 'serving' ? 'bg-primary/5' : ''}`}>
                                 <td className="px-4 py-3">
                                   <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${token.status === "serving" ? "bg-primary text-white" :
                                     token.status === "waiting" ? "bg-yellow-500 text-white" :
@@ -608,16 +624,21 @@ const AdminTokens = () => {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <p className={`font-medium ${token.status === 'unavailable' ? 'line-through text-muted-foreground' : ''}`}>
-                                    {token.patient_name || 'Walk-in'}
-                                  </p>
-                                  <Badge variant="outline" className={`mt-1 text-[10px] px-1.5 py-0 capitalize ${token.status === 'serving' ? 'bg-primary/10 text-primary border-primary/20' :
-                                    token.status === 'waiting' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' :
-                                      token.status === 'completed' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
-                                        'bg-destructive/10 text-destructive border-destructive/20'
-                                    }`}>
-                                    {token.status}
-                                  </Badge>
+                                  <div className="flex flex-col gap-1">
+                                    <p className={`font-medium ${token.status === 'unavailable' ? 'line-through text-muted-foreground' : ''}`}>
+                                      {token.patient_name || 'Walk-in'}
+                                      {token.isOnline && (
+                                        <Badge variant="outline" className="ml-2 text-[9px] bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">Online</Badge>
+                                      )}
+                                    </p>
+                                    <Badge variant="outline" className={`w-fit text-[10px] px-1.5 py-0 capitalize ${token.status === 'serving' ? 'bg-primary/10 text-primary border-primary/20' :
+                                      token.status === 'waiting' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' :
+                                        token.status === 'completed' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
+                                          'bg-destructive/10 text-destructive border-destructive/20'
+                                      }`}>
+                                      {token.status}
+                                    </Badge>
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex items-center justify-center gap-1">

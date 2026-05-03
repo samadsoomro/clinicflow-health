@@ -12,6 +12,7 @@ interface TokenRow {
   patient_name: string;
   doctor_id: string;
   status: string;
+  isOnline?: boolean;
 }
 
 import { useClinicContext } from "@/hooks/useClinicContext";
@@ -44,8 +45,21 @@ const LiveTokens = () => {
         .lte("created_at", today + "T23:59:59")
         .order("token_number", { ascending: true });
 
+      const { data: onlineTokenData } = await supabase
+        .from("online_tokens")
+        .select("id, token_number, patient_name, doctor_id, status")
+        .eq("clinic_id", clinicId)
+        .eq("token_date", today)
+        .order("token_number", { ascending: true });
+
       setDoctors((docData as any[]) || []);
-      setAllTokens((tokenData as TokenRow[]) || []);
+      
+      const combinedTokens = [
+        ...(tokenData || []).map(t => ({ ...t, isOnline: false })),
+        ...(onlineTokenData || []).map(t => ({ ...t, isOnline: true }))
+      ].sort((a, b) => a.token_number - b.token_number);
+
+      setAllTokens(combinedTokens as TokenRow[]);
     } finally {
       if (isInitial) setLoading(false);
     }
@@ -56,16 +70,8 @@ const LiveTokens = () => {
 
     const channel = supabase
       .channel("live-tokens-" + clinicId)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tokens",
-          filter: `clinic_id=eq.${clinicId}`,
-        },
-        () => fetchData()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "online_tokens", filter: `clinic_id=eq.${clinicId}` }, () => fetchData())
       .subscribe((status) => {
         // If subscription is active, clear polling
         if (status === "SUBSCRIBED") {
@@ -190,47 +196,56 @@ const LiveTokens = () => {
                   </div>
                 )}
 
-                {/* Serving Token — Green Box */}
+                {/* Serving Token — Green Box (or Blue if Online) */}
                 {servingToken && (
-                  <div className="mb-4 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 text-center">
-                    <Badge className="mb-2 bg-green-600 hover:bg-green-700 text-white text-xs">NOW SERVING</Badge>
+                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${servingToken.isOnline ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-green-500 bg-green-50 dark:bg-green-950/20"}`}>
+                    <Badge className={`mb-2 text-white text-xs ${servingToken.isOnline ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}>NOW SERVING</Badge>
                     <div className="flex justify-center">
-                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-green-600 text-white shadow-lg">
+                      <div className={`flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl text-white shadow-lg ${servingToken.isOnline ? "bg-blue-600" : "bg-green-600"}`}>
                         <span className="font-display text-5xl sm:text-7xl font-extrabold">{servingToken.token_number}</span>
                       </div>
                     </div>
                     {servingToken.patient_name ? (
-                      <p className="mt-2 text-lg font-semibold text-foreground">{servingToken.patient_name}</p>
+                      <p className="mt-2 text-lg font-semibold text-foreground">
+                        {servingToken.patient_name}
+                        {servingToken.isOnline && <span className="text-blue-600 text-sm font-medium ml-1 block sm:inline">(Online Token)</span>}
+                      </p>
                     ) : null}
                   </div>
                 )}
 
-                {/* Next Waiting Token */}
+                {/* Next Waiting Token (or Blue if Online) */}
                 {nextWaiting && servingToken && (
-                  <div className="mb-4 rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4 text-center">
-                    <Badge className="mb-2 bg-amber-500 hover:bg-amber-600 text-white text-xs">GET READY — YOUR TURN IS COMING</Badge>
+                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${nextWaiting.isOnline ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "border-amber-400 bg-amber-50 dark:bg-amber-950/20"}`}>
+                    <Badge className={`mb-2 text-white text-xs ${nextWaiting.isOnline ? "bg-blue-500 hover:bg-blue-600" : "bg-amber-500 hover:bg-amber-600"}`}>GET READY — YOUR TURN IS COMING</Badge>
                     <div className="flex justify-center">
-                      <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg">
+                      <div className={`flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl text-white shadow-lg ${nextWaiting.isOnline ? "bg-blue-500" : "bg-amber-500"}`}>
                         <span className="font-display text-4xl sm:text-5xl font-extrabold">{nextWaiting.token_number}</span>
                       </div>
                     </div>
                     {nextWaiting.patient_name ? (
-                      <p className="mt-2 text-base font-semibold text-foreground">{nextWaiting.patient_name}</p>
+                      <p className="mt-2 text-base font-semibold text-foreground">
+                        {nextWaiting.patient_name}
+                        {nextWaiting.isOnline && <span className="text-blue-500 text-xs font-medium ml-1 block sm:inline">(Online Token)</span>}
+                      </p>
                     ) : null}
                   </div>
                 )}
 
-                {/* First waiting when nothing is serving — Orange Box */}
+                {/* First waiting when nothing is serving — Orange Box (or Blue if Online) */}
                 {nextWaiting && !servingToken && (
-                  <div className="mb-4 rounded-2xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/20 p-4 text-center">
-                    <Badge className="mb-2 bg-orange-500 hover:bg-orange-600 text-white text-xs">WAITING</Badge>
+                  <div className={`mb-4 rounded-2xl border-2 p-4 text-center ${nextWaiting.isOnline ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "border-orange-400 bg-orange-50 dark:bg-orange-950/20"}`}>
+                    <Badge className={`mb-2 text-white text-xs ${nextWaiting.isOnline ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600"}`}>WAITING</Badge>
                     <div className="flex justify-center">
-                      <div className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg">
+                      <div className={`flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl text-white shadow-lg ${nextWaiting.isOnline ? "bg-blue-500" : "bg-orange-500"}`}>
                         <span className="font-display text-5xl sm:text-7xl font-extrabold">{nextWaiting.token_number}</span>
                       </div>
                     </div>
                     {nextWaiting.patient_name ? (
-                      <p className="mt-2 text-lg font-semibold text-foreground">{nextWaiting.patient_name}</p>
+                      <p className="mt-2 text-lg font-semibold text-foreground">
+                        {nextWaiting.patient_name}
+                        {nextWaiting.isOnline && <span className="text-blue-500 text-sm font-medium ml-1 block sm:inline">(Online Token)</span>}
+                      </p>
                     ) : null}
                   </div>
                 )}
@@ -240,10 +255,15 @@ const LiveTokens = () => {
                   <div className="mt-2 border-t border-border pt-3">
                     <div className="space-y-2">
                       {unavailableTokens.map((ut) => (
-                        <div key={ut.id} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
+                        <div key={`${ut.isOnline ? 'online' : 'walkin'}-${ut.id}`} className="flex items-center justify-between rounded-xl bg-destructive/5 border border-destructive/20 px-4 py-2">
                           <div className="flex items-center gap-3">
                             <span className="font-display text-lg font-bold text-muted-foreground">#{ut.token_number}</span>
-                            {ut.patient_name && <span className="text-sm text-muted-foreground line-through">{ut.patient_name}</span>}
+                            {ut.patient_name && (
+                              <span className="text-sm text-muted-foreground line-through flex items-center">
+                                {ut.patient_name}
+                                {ut.isOnline && <span className="text-[10px] ml-1 bg-blue-100 text-blue-800 px-1 rounded no-underline">Online</span>}
+                              </span>
+                            )}
                           </div>
                           <Badge variant="destructive" className="text-xs">Unavailable</Badge>
                         </div>
