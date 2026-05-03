@@ -50,15 +50,15 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
 
   // Watermark (Drawn early so it's beneath text)
   doc.saveGraphicsState();
-  const gState = new (doc as any).GState({ opacity: 0.15 });
+  const gState = new (doc as any).GState({ opacity: 0.12 });
   doc.setGState(gState);
-  doc.setTextColor(29, 78, 216); // Blue watermark
-  doc.setFontSize(45); // Large enough to cover diagonally
+  doc.setTextColor(220, 38, 38); // Red watermark
+  doc.setFontSize(12);
   doc.setFont('courier', 'bold');
-  doc.text('ONLINE TOKEN', W / 2 + 5, 80, {
-    angle: 45,
-    align: 'center',
-  });
+  // Multiple horizontal small watermarks
+  doc.text('ONLINE TOKEN   ONLINE TOKEN', W / 2, 45, { align: 'center' });
+  doc.text('ONLINE TOKEN   ONLINE TOKEN', W / 2, 85, { align: 'center' });
+  doc.text('ONLINE TOKEN   ONLINE TOKEN', W / 2, 125, { align: 'center' });
   doc.restoreGraphicsState();
 
   // Header Left: Heartbeat Icon

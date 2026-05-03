@@ -227,6 +227,7 @@ const OnlineToken = () => {
         const tokenWithDoctor = { ...newToken, doctors: doctorData };
         
         setIssuedToken(tokenWithDoctor);
+        setHasTokenToday(true); // Update state so the form hides!
         setShowTokenModal(true);
         toast.success("Online token issued!");
       }
