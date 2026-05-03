@@ -463,7 +463,7 @@ const OnlineToken = () => {
                 <p className="text-7xl font-black mb-2 leading-none">#{issuedToken.token_number}</p>
                 <p className="font-bold text-xl truncate">{issuedToken.patient_name}</p>
                 <div className="mt-4 space-y-1">
-                  <p className="text-sm font-medium text-white/90">Dr. {issuedToken.doctors?.name || selectedDoctorData?.name}</p>
+                  <p className="text-sm font-medium text-white/90">{issuedToken.doctors?.name || selectedDoctorData?.name}</p>
                   <p className="text-xs text-white/70">{clinic?.clinic_name}</p>
                   <p className="text-[10px] text-white/50">{new Date().toLocaleDateString()} — {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
