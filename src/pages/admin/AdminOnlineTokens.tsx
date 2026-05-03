@@ -203,6 +203,9 @@ const AdminOnlineTokens = () => {
             <div className="flex-1">
               <h3 className="font-semibold text-foreground">Daily Online Token Limit</h3>
               <p className="text-sm text-muted-foreground">Maximum online tokens that can be issued per day</p>
+              <p className="text-sm font-bold mt-2 text-purple-600 dark:text-purple-400">
+                Today's Reserved: {onlineTokens.length} / {dailyLimit} limit
+              </p>
             </div>
             <Input
               type="number"

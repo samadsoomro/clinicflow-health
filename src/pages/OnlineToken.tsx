@@ -99,6 +99,8 @@ const OnlineToken = () => {
     }
   }, [clinic?.online_tokens_enabled, navigate]);
 
+  const [hasTokenToday, setHasTokenToday] = useState(false);
+
   useEffect(() => {
     if (!session?.user?.id || !clinicId) return;
     
@@ -115,10 +117,21 @@ const OnlineToken = () => {
         setPhone(data.phone || '');
         setFormattedPatientId(data.formatted_patient_id);
       }
+
+      // Check if patient already has an online token today
+      const { data: existingToken } = await supabase
+        .from('online_tokens')
+        .select('id')
+        .eq('patient_id', session.user.id)
+        .eq('clinic_id', clinicId)
+        .eq('token_date', today)
+        .maybeSingle();
+
+      setHasTokenToday(!!existingToken);
     };
     
     fetchPatientData();
-  }, [session?.user?.id, clinicId]);
+  }, [session?.user?.id, clinicId, today]);
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,10 +339,20 @@ const OnlineToken = () => {
           </div>
         )}
 
-        {isLoggedIn && (
+        {isLoggedIn && hasTokenToday && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center space-y-3 mt-4">
+            <CheckCircle className="h-8 w-8 text-blue-500 mx-auto" />
+            <h3 className="font-bold text-lg text-blue-900 dark:text-blue-100">Token Already Issued</h3>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              You have already received an online token for today. You can only get one online token per day. Please check your token receipt.
+            </p>
+          </div>
+        )}
+
+        {isLoggedIn && !hasTokenToday && (
           <form onSubmit={handleRequestToken} className="space-y-5">
             {isLoggedIn && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">
                 <div className="flex items-start gap-3">
                   <span className="text-amber-500 text-xl">ℹ️</span>
                   <div>

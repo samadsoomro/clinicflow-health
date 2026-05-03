@@ -171,14 +171,20 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   doc.setTextColor(119, 119, 119);
   doc.text('Powered by ClinicToken CMS', W / 2, y, { align: 'center' });
 
+  // Add blue border around the slip
+  doc.setDrawColor(29, 78, 216); // blue-700
+  doc.setLineWidth(0.6);
+  const totalHeight = y + 5;
+  doc.rect(2, 2, W - 4, totalHeight - 4);
+
   // Watermark
   doc.saveGraphicsState();
-  const gState = new (doc as any).GState({ opacity: 0.15 });
+  const gState = new (doc as any).GState({ opacity: 0.18 });
   doc.setGState(gState);
   doc.setTextColor(29, 78, 216); // Blue watermark
-  doc.setFontSize(38);
+  doc.setFontSize(36);
   doc.setFont('courier', 'bold');
-  doc.text('ONLINE TOKEN', W / 2, 70, {
+  doc.text('ONLINE TOKEN', W / 2, totalHeight / 2, {
     angle: 45,
     align: 'center',
   });

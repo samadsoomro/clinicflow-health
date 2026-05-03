@@ -448,7 +448,7 @@ const AdminTokens = () => {
             <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={todayTokens.length === 0}>
               <FileText className="mr-1.5 h-4 w-4" /> PDF
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || todayTokens.length === 0}>
+            <Button variant="destructive" size="sm" onClick={handleResetToday} disabled={resetting || (todayTokens.length === 0 && todayOnlineTokens.length === 0)}>
               <RotateCcw className="mr-1.5 h-4 w-4" /> {resetting ? "Resetting..." : "Reset Today"}
             </Button>
           </div>
