@@ -12,8 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
-// Outside component — survives remounts completely
-let _mobileMenuOpen = false;
+
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -28,7 +27,7 @@ const PublicNavbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(_mobileMenuOpen);
+  const [isOpen, setIsOpen] = useState(false);
   const { user, profile, isSuperAdmin, isClinicAdmin, isPatient, roles, signOut } = useAuth();
   const { clinic } = useClinicContext();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -78,22 +77,21 @@ const PublicNavbar = () => {
   const clinicName = clinic?.clinic_name || "ClinicToken";
 
   const openMenu = () => {
-    _mobileMenuOpen = true;
     setIsOpen(true);
   };
 
   const closeMenu = () => {
-    _mobileMenuOpen = false;
     setIsOpen(false);
   };
 
   const toggleMenu = () => {
-    if (_mobileMenuOpen) {
-      closeMenu();
-    } else {
-      openMenu();
-    }
+    setIsOpen(!isOpen);
   };
+
+  // Auto-close mobile menu when location changes
+  useEffect(() => {
+    closeMenu();
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await signOut();
