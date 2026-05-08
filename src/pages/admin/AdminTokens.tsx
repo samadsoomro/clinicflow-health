@@ -167,18 +167,24 @@ const AdminTokens = () => {
   const handleIssueToken = async (doctorId: string, patientName: string) => {
     setIssuing(true);
     const tokenNumber = getNextTokenNumber(doctorId);
+    
+    const toTitleCase = (str: string) => {
+      return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+    const formattedName = patientName.trim() ? toTitleCase(patientName.trim()) : "";
+
     const { error } = await supabase.from("tokens").insert({
       clinic_id: clinicId,
       doctor_id: doctorId,
       token_number: tokenNumber,
-      patient_name: patientName.trim() || "",
+      patient_name: formattedName,
       status: "waiting",
     } as any);
 
     if (error) {
       toast.error("Failed to issue token: " + error.message);
     } else {
-      const issuedToken = { token_number: tokenNumber, patient_name: patientName.trim() || "", doctor_id: doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
+      const issuedToken = { token_number: tokenNumber, patient_name: formattedName, doctor_id: doctorId, status: "waiting", created_at: new Date().toISOString(), clinic_id: clinicId };
       toast.success(`Token #${tokenNumber} issued successfully`, {
         action: { label: "Print Token", onClick: () => { setReceiptToken(issuedToken); setReceiptOpen(true); } },
       });

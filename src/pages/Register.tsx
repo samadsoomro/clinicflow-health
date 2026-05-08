@@ -75,7 +75,12 @@ const Register = () => {
       case "fullName": return !v.trim() ? "Full name is required" : v.trim().length < 3 ? "Full name must be at least 3 characters" : null;
       case "age": { const n = parseInt(v); return !v ? "Age is required" : (isNaN(n) || n < 1 || n > 120) ? "Please enter a valid age between 1 and 120" : null; }
       case "gender": return !v ? "Please select a gender" : null;
-      case "phone": return !v.trim() ? "Phone is required" : v.replace(/\D/g, "").length < 10 ? "Please enter a valid phone number" : null;
+      case "phone": {
+        const phoneRegex = /^\+92\d{10}$/;
+        if (!v.trim()) return "Phone is required";
+        if (!phoneRegex.test(v.trim())) return "Registration not done; Format should be +923322243333";
+        return null;
+      }
       case "email": return validateEmail(v);
       case "password": return !v ? "Password is required" : v.length < 8 ? "Password must be at least 8 characters" : null;
       case "confirmPassword": return !v ? "Please confirm your password" : v !== form.password ? "Passwords do not match" : null;
@@ -104,6 +109,12 @@ const Register = () => {
     }
     setLoading(true);
     setFormError(null);
+    const toTitleCase = (str: string) => {
+      return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    const formattedName = toTitleCase(form.fullName.trim());
+    const formattedPhone = form.phone.trim().replace("+92", "+92 ");
     const normalizedEmail = form.email.toLowerCase().trim();
 
     // Check patients table for this clinic
@@ -125,7 +136,7 @@ const Register = () => {
       password: form.password,
       options: {
         emailRedirectTo: undefined,
-        data: { full_name: form.fullName.trim() }
+        data: { full_name: formattedName }
       },
     });
 
@@ -153,8 +164,12 @@ const Register = () => {
 
     if (authData.user) {
       await supabase.from("patients").insert({
-        clinic_id: clinicId, user_id: authData.user.id, full_name: form.fullName.trim(),
-        age: parseInt(form.age), gender: form.gender, phone: form.phone.trim(),
+        clinic_id: clinicId, 
+        user_id: authData.user.id, 
+        full_name: formattedName,
+        age: parseInt(form.age), 
+        gender: form.gender, 
+        phone: formattedPhone,
         email: normalizedEmail
       });
 
@@ -259,7 +274,7 @@ const Register = () => {
             {/* Phone */}
             <div className="space-y-1">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" placeholder="+92 300 1234567" maxLength={20} value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={() => handleBlur("phone")} />
+              <Input id="phone" placeholder="+923322243333" maxLength={20} value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={() => handleBlur("phone")} />
               {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
             </div>
 
