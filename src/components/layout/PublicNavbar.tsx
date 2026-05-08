@@ -217,92 +217,115 @@ const PublicNavbar = () => {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-border bg-card md:hidden"
-            onClick={closeMenu}
-          >
-            <div className="container flex flex-col gap-2 py-4">
-              {navLinks.map((link) => {
-                if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
-                const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
-                return (
-                  <ClinicLink key={link.path} to={link.path}>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeMenu}
+              className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
+            />
+            
+            {/* Sidebar */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 z-[70] w-[280px] bg-card shadow-2xl md:hidden flex flex-col"
+            >
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <ClinicLink to="/" className="flex items-center gap-2" onClick={closeMenu}>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+                      <Activity className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  <span className="font-display font-bold text-foreground truncate">{clinicName}</span>
+                </ClinicLink>
+                <Button variant="ghost" size="icon" onClick={closeMenu}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+                {navLinks.map((link) => {
+                  if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
+                  const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
+                  return (
+                    <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start",
+                          isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                        )}
+                      >
+                        {link.label}
+                      </Button>
+                    </ClinicLink>
+                  );
+                })}
+                {clinic?.online_tokens_enabled && (
+                  <ClinicLink to="/online-token" onClick={closeMenu}>
                     <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      onClick={closeMenu}
+                      variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
                       className={cn(
                         "w-full justify-start",
-                        isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                        location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
                       )}
                     >
-                      {link.label}
-                    </Button>
-                  </ClinicLink>
-                );
-              })}
-              {clinic?.online_tokens_enabled && (
-                <ClinicLink to="/online-token">
-                  <Button
-                    variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
-                    onClick={closeMenu}
-                    className={cn(
-                      "w-full justify-start",
-                      location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
-                    )}
-                  >
-                    Online Token
-                  </Button>
-                </ClinicLink>
-              )}
-
-              <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                {!isAdmin && (
-                  <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full justify-start gap-2">
-                      <MessageCircle className="h-4 w-4" />
-                      Messages
-                      {user && unreadCount > 0 && (
-                        <Badge className="ml-auto bg-destructive text-destructive-foreground">
-                          {unreadCount}
-                        </Badge>
-                      )}
+                      Online Token
                     </Button>
                   </ClinicLink>
                 )}
-                {user ? (
-                  <>
-                    {displayName && (
-                      <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {displayName}</p>
-                    )}
 
-                    <div className="flex gap-2">
+                <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
+                  {!isAdmin && (
+                    <ClinicLink to="/messages" onClick={closeMenu}>
+                      <Button variant="outline" className="w-full justify-start gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        Messages
+                        {user && unreadCount > 0 && (
+                          <Badge className="ml-auto bg-destructive text-destructive-foreground">
+                            {unreadCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </ClinicLink>
+                  )}
+                  {user ? (
+                    <>
+                      {displayName && (
+                        <p className="text-xs font-medium text-muted-foreground px-2 py-1">Signed in as {displayName}</p>
+                      )}
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1">
-                          <Button variant="outline" className="w-full" onClick={closeMenu}>Dashboard</Button>
+                        <ClinicLink to="/admin" onClick={closeMenu}>
+                          <Button variant="outline" className="w-full justify-start">Dashboard</Button>
                         </ClinicLink>
                       )}
-                      <Button variant="destructive" className="flex-1" onClick={handleLogout}>
-                        <LogOut className="mr-1 h-4 w-4" />
+                      <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
                         Logout
                       </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <ClinicLink to="/login" className="flex-1">
-                      <Button variant="outline" className="w-full" onClick={closeMenu}>Log in</Button>
-                    </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1">
-                      <Button variant="hero" className="w-full" onClick={closeMenu}>Register</Button>
-                    </ClinicLink>
-                  </>
-                )}
+                    </>
+                  ) : (
+                    <>
+                      <ClinicLink to="/login" onClick={closeMenu}>
+                        <Button variant="outline" className="w-full justify-start">Log in</Button>
+                      </ClinicLink>
+                      <ClinicLink to="/register" onClick={closeMenu}>
+                        <Button variant="hero" className="w-full justify-start">Register</Button>
+                      </ClinicLink>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>
