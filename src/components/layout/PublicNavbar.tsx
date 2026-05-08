@@ -91,13 +91,13 @@ const PublicNavbar = () => {
   // Auto-close mobile menu when location changes
   useEffect(() => {
     closeMenu();
-  }, [location.pathname]);
+  }, [location]);
 
   const handleLogout = async () => {
     await signOut();
     closeMenu();
     toast({ title: "Logged out", description: "You have been signed out." });
-
+    
     const params = new URLSearchParams(location.search);
     const clinicParam = params.get('clinic');
     navigate(clinicParam ? `/?clinic=${clinicParam}` : "/");
@@ -222,6 +222,7 @@ const PublicNavbar = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-t border-border bg-card md:hidden"
+            onClick={closeMenu}
           >
             <div className="container flex flex-col gap-2 py-4">
               {navLinks.map((link) => {
