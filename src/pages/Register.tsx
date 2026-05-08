@@ -81,9 +81,8 @@ const Register = () => {
       case "age": { const n = parseInt(v); return !v ? "Age is required" : (isNaN(n) || n < 1 || n > 120) ? "Please enter a valid age between 1 and 120" : null; }
       case "gender": return !v ? "Please select a gender" : null;
       case "phone": {
-        const phoneRegex = /^\+92\d{10}$/;
         if (!v.trim()) return "Phone is required";
-        if (!phoneRegex.test(v.trim())) return "Registration not done; Format should be +923322243333";
+        if (v.trim().length !== 10) return "Please enter exactly 10 digits after +92";
         return null;
       }
       case "email": return validateEmail(v);
@@ -119,7 +118,7 @@ const Register = () => {
     };
 
     const formattedName = toTitleCase(form.fullName.trim());
-    const formattedPhone = form.phone.trim().replace("+92", "+92 ");
+    const formattedPhone = "+92 " + form.phone.trim();
     const normalizedEmail = form.email.toLowerCase().trim();
 
     // Check patients table for this clinic
@@ -279,7 +278,19 @@ const Register = () => {
             {/* Phone */}
             <div className="space-y-1">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" placeholder="+923322243333" maxLength={20} value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={() => handleBlur("phone")} />
+              <div className="flex gap-2">
+                <div className="flex items-center justify-center rounded-lg border border-input bg-secondary px-3 text-sm font-bold text-primary">
+                  +92
+                </div>
+                <Input 
+                  id="phone" 
+                  placeholder="3001234567" 
+                  maxLength={10} 
+                  value={form.phone} 
+                  onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} 
+                  onBlur={() => handleBlur("phone")} 
+                />
+              </div>
               {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
             </div>
 
