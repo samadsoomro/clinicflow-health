@@ -72,7 +72,12 @@ const Register = () => {
   const validateField = (field: string): string | null => {
     const v = form[field as keyof typeof form];
     switch (field) {
-      case "fullName": return !v.trim() ? "Full name is required" : v.trim().length < 3 ? "Full name must be at least 3 characters" : null;
+      case "fullName": {
+        if (!v.trim()) return "Full name is required";
+        if (v.trim().length < 3) return "Full name must be at least 3 characters";
+        if (!/^[a-zA-Z\s.]+$/.test(v.trim())) return "Only standard alphabetic characters are allowed (no fancy fonts)";
+        return null;
+      }
       case "age": { const n = parseInt(v); return !v ? "Age is required" : (isNaN(n) || n < 1 || n > 120) ? "Please enter a valid age between 1 and 120" : null; }
       case "gender": return !v ? "Please select a gender" : null;
       case "phone": {
