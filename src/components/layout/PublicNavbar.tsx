@@ -91,6 +91,16 @@ const PublicNavbar = () => {
     return () => window.removeEventListener('popstate', closeMenu);
   }, []);
 
+  const handleMobileNav = (path: string) => {
+    const params = new URLSearchParams(location.search);
+    const clinicParam = params.get('clinic');
+    const href = clinicParam ? `${path}${path.includes('?') ? '&' : '?'}clinic=${clinicParam}` : path;
+    
+    // Use navigate directly for absolute control
+    navigate(href);
+    closeMenu();
+  };
+
   const handleLogout = async () => {
     await signOut();
     closeMenu();
@@ -227,46 +237,47 @@ const PublicNavbar = () => {
                 if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
-                  <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start h-12 px-4",
-                        isActive ? "text-orange-500 font-bold bg-orange-500/5" : "text-foreground/70"
-                      )}
-                    >
-                      {link.label}
-                    </Button>
-                  </ClinicLink>
+                  <Button
+                    key={link.path}
+                    variant={isActive ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start h-12 px-4",
+                      isActive ? "text-orange-500 font-bold bg-orange-500/5" : "text-foreground/70"
+                    )}
+                    onClick={() => handleMobileNav(link.path)}
+                  >
+                    {link.label}
+                  </Button>
                 );
               })}
               {clinic?.online_tokens_enabled && (
-                <ClinicLink to="/online-token" onClick={closeMenu}>
-                  <Button
-                    variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start h-12 px-4",
-                      location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/5" : "text-foreground/70"
-                    )}
-                  >
-                    Online Token
-                  </Button>
-                </ClinicLink>
+                <Button
+                  variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start h-12 px-4",
+                    location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/5" : "text-foreground/70"
+                  )}
+                  onClick={() => handleMobileNav("/online-token")}
+                >
+                  Online Token
+                </Button>
               )}
 
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {!isAdmin && (
-                  <ClinicLink to="/messages" className="px-1" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full justify-start gap-2 h-12 px-4">
-                      <MessageCircle className="h-4 w-4" />
-                      Messages
-                      {user && unreadCount > 0 && (
-                        <Badge className="ml-auto bg-destructive text-destructive-foreground">
-                          {unreadCount}
-                        </Badge>
-                      )}
-                    </Button>
-                  </ClinicLink>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2 h-12 px-4"
+                    onClick={() => handleMobileNav("/messages")}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Messages
+                    {user && unreadCount > 0 && (
+                      <Badge className="ml-auto bg-destructive text-destructive-foreground">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </Button>
                 )}
                 {user ? (
                   <div className="space-y-2">
@@ -279,9 +290,13 @@ const PublicNavbar = () => {
 
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1" onClick={closeMenu}>
-                          <Button variant="outline" className="w-full h-12">Dashboard</Button>
-                        </ClinicLink>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 h-12"
+                          onClick={() => handleMobileNav("/admin")}
+                        >
+                          Dashboard
+                        </Button>
                       )}
                       <Button variant="destructive" className="flex-1 h-12" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
@@ -291,14 +306,23 @@ const PublicNavbar = () => {
                   </div>
                 ) : (
                   <div className="flex gap-2 pt-1">
-                    <ClinicLink to="/login" className="flex-1" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full h-12">Log in</Button>
-                    </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1" onClick={closeMenu}>
-                      <Button variant="hero" className="w-full h-12">Register</Button>
-                    </ClinicLink>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 h-12"
+                      onClick={() => handleMobileNav("/login")}
+                    >
+                      Log in
+                    </Button>
+                    <Button 
+                      variant="hero" 
+                      className="flex-1 h-12"
+                      onClick={() => handleMobileNav("/register")}
+                    >
+                      Register
+                    </Button>
                   </div>
                 )}
+              </div>
               </div>
             </div>
           </motion.div>
