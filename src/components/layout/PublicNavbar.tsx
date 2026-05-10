@@ -227,103 +227,114 @@ const PublicNavbar = () => {
               className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm md:hidden"
             />
             
-            {/* Sidebar from Right */}
+            {/* Mobile Sidebar - Clean & Simple */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 z-[110] w-[280px] bg-card shadow-2xl md:hidden flex flex-col border-l border-border"
+              className="fixed inset-y-0 right-0 z-[110] w-[300px] bg-background shadow-2xl md:hidden flex flex-col p-6"
             >
-              <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                <div className="flex items-center gap-2">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                      <Activity className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                  <span className="font-display font-bold text-foreground truncate max-w-[160px]">{clinicName}</span>
-                </div>
-                <Button variant="ghost" size="icon" onClick={closeMenu} className="hover:bg-muted">
-                  <X className="h-5 w-5" />
+              {/* Close Button Only */}
+              <div className="flex justify-end mb-8">
+                <Button variant="ghost" size="icon" onClick={closeMenu} className="h-10 w-10 hover:bg-muted rounded-full">
+                  <X className="h-6 w-6" />
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-2">Navigation</p>
+              {/* Menu Links - Direct Rendering for Visibility */}
+              <div className="flex flex-col space-y-2 overflow-y-auto pr-2">
                 {navLinks.map((link) => {
-                  if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
-                  const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
+                  // Robust check for enabled tokens
+                  const isTokensDisabled = link.path === "/tokens" && clinic?.live_tokens_enabled === false;
+                  if (isTokensDisabled) return null;
+
+                  const isActive = location.pathname === link.path;
+                  
                   return (
-                    <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
-                      <Button
-                        variant={isActive ? "secondary" : "ghost"}
-                        className={cn(
-                          "w-full justify-start h-11 px-4",
-                          isActive ? "text-orange-500 font-bold bg-orange-500/10" : "text-foreground/70"
-                        )}
-                      >
-                        {link.label}
-                      </Button>
+                    <ClinicLink 
+                      key={link.path} 
+                      to={link.path} 
+                      onClick={closeMenu}
+                      className={cn(
+                        "flex items-center px-4 py-4 text-lg font-medium rounded-xl transition-all",
+                        isActive 
+                          ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" 
+                          : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      {link.label}
                     </ClinicLink>
                   );
                 })}
-                {clinic?.online_tokens_enabled && (
-                  <ClinicLink to="/online-token" onClick={closeMenu}>
-                    <Button
-                      variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start h-11 px-4",
-                        location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70"
-                      )}
-                    >
-                      Online Token
-                    </Button>
+
+                {/* Online Token Link */}
+                {clinic?.online_tokens_enabled !== false && (
+                  <ClinicLink 
+                    to="/online-token" 
+                    onClick={closeMenu}
+                    className={cn(
+                      "flex items-center px-4 py-4 text-lg font-medium rounded-xl transition-all mt-2",
+                      location.pathname === "/online-token"
+                        ? "bg-purple-500/10 text-purple-600 font-bold border-l-4 border-purple-500"
+                        : "text-purple-500/80 hover:bg-purple-50/50"
+                    )}
+                  >
+                    Online Token
                   </ClinicLink>
                 )}
 
-                <div className="mt-6 pt-6 border-t border-border flex flex-col gap-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 px-2">Account</p>
+                {/* Messages & Account */}
+                <div className="mt-6 pt-6 border-t border-border space-y-3">
                   {!isAdmin && (
-                    <ClinicLink to="/messages" onClick={closeMenu}>
-                      <Button variant="ghost" className="w-full justify-start gap-2 h-11 px-4">
-                        <MessageCircle className="h-4 w-4" />
-                        Messages
-                        {user && unreadCount > 0 && (
-                          <Badge className="ml-auto bg-destructive text-destructive-foreground">
-                            {unreadCount}
-                          </Badge>
-                        )}
-                      </Button>
+                    <ClinicLink 
+                      to="/messages" 
+                      onClick={closeMenu}
+                      className="flex items-center justify-between px-4 py-4 text-lg font-medium text-foreground/80 hover:bg-muted rounded-xl transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="h-5 w-5" />
+                        <span>Messages</span>
+                      </div>
+                      {user && unreadCount > 0 && (
+                        <Badge variant="destructive" className="h-6 w-6 rounded-full flex items-center justify-center p-0">
+                          {unreadCount}
+                        </Badge>
+                      )}
                     </ClinicLink>
                   )}
+
                   {user ? (
-                    <>
+                    <div className="space-y-4 pt-2">
                       {displayName && (
-                        <div className="px-4 py-2 mb-2 rounded-lg bg-muted/50">
-                          <p className="text-[10px] text-muted-foreground leading-none mb-1">Signed in as</p>
+                        <div className="px-4 py-3 bg-muted/50 rounded-xl">
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-1">Signed in as</p>
                           <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
                         </div>
                       )}
+                      
                       {isAdmin && (
-                        <ClinicLink to="/admin" onClick={closeMenu}>
-                          <Button variant="ghost" className="w-full justify-start h-11 px-4">Dashboard</Button>
+                        <ClinicLink to="/admin" onClick={closeMenu} className="flex items-center px-4 py-4 text-lg font-medium text-foreground/80 hover:bg-muted rounded-xl transition-all">
+                          Admin Dashboard
                         </ClinicLink>
                       )}
-                      <Button variant="destructive" className="w-full justify-start h-11 px-4" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
+
+                      <Button 
+                        variant="destructive" 
+                        className="w-full h-14 text-lg font-bold rounded-xl shadow-lg mt-4"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="mr-3 h-5 w-5" />
+                        Sign Out
                       </Button>
-                    </>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="flex flex-col gap-3 pt-4">
                       <ClinicLink to="/login" onClick={closeMenu}>
-                        <Button variant="outline" className="w-full h-11">Log in</Button>
+                        <Button variant="outline" className="w-full h-14 text-lg font-semibold rounded-xl">Log in</Button>
                       </ClinicLink>
                       <ClinicLink to="/register" onClick={closeMenu}>
-                        <Button variant="hero" className="w-full h-11">Register</Button>
+                        <Button variant="hero" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg">Register</Button>
                       </ClinicLink>
                     </div>
                   )}
