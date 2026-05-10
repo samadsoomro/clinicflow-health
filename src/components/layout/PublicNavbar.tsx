@@ -230,19 +230,26 @@ const PublicNavbar = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-t border-border bg-card md:hidden shadow-xl"
-            onClick={closeMenu}
           >
-            <div className="container flex flex-col gap-2 py-4">
+            <div 
+              key={location.pathname}
+              className="container flex flex-col gap-2 py-4"
+            >
               {navLinks.map((link) => {
                 if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
-                const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
+                
+                // Absolute equality for Home to avoid partial matches
+                const isActive = link.path === "/" 
+                  ? location.pathname === "/" 
+                  : location.pathname.startsWith(link.path);
+
                 return (
                   <Button
                     key={link.path}
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start h-12 px-4",
-                      isActive ? "text-orange-500 font-bold bg-orange-500/5" : "text-foreground/70"
+                      "w-full justify-start h-12 px-4 transition-colors",
+                      isActive ? "text-orange-500 font-bold bg-orange-500/10" : "text-foreground/70"
                     )}
                     onClick={() => handleMobileNav(link.path)}
                   >
@@ -255,7 +262,7 @@ const PublicNavbar = () => {
                   variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start h-12 px-4",
-                    location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/5" : "text-foreground/70"
+                    location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70"
                   )}
                   onClick={() => handleMobileNav("/online-token")}
                 >
@@ -322,7 +329,6 @@ const PublicNavbar = () => {
                     </Button>
                   </div>
                 )}
-              </div>
               </div>
             </div>
           </motion.div>
