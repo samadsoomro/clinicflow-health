@@ -224,34 +224,35 @@ const PublicNavbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeMenu}
-              className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm md:hidden"
             />
             
-            {/* Sidebar */}
+            {/* Sidebar from Right */}
             <motion.div
-              initial={{ x: "-100%" }}
+              initial={{ x: "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-[70] w-[280px] bg-card shadow-2xl md:hidden flex flex-col"
+              className="fixed inset-y-0 right-0 z-[110] w-[280px] bg-card shadow-2xl md:hidden flex flex-col border-l border-border"
             >
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <ClinicLink to="/" className="flex items-center gap-2" onClick={closeMenu}>
+              <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+                <div className="flex items-center gap-2">
                   {logoUrl ? (
                     <img src={logoUrl} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                       <Activity className="h-4 w-4 text-white" />
                     </div>
                   )}
-                  <span className="font-display font-bold text-foreground truncate">{clinicName}</span>
-                </ClinicLink>
-                <Button variant="ghost" size="icon" onClick={closeMenu}>
+                  <span className="font-display font-bold text-foreground truncate max-w-[160px]">{clinicName}</span>
+                </div>
+                <Button variant="ghost" size="icon" onClick={closeMenu} className="hover:bg-muted">
                   <X className="h-5 w-5" />
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+              <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-2">Navigation</p>
                 {navLinks.map((link) => {
                   if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
                   const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
@@ -260,8 +261,8 @@ const PublicNavbar = () => {
                       <Button
                         variant={isActive ? "secondary" : "ghost"}
                         className={cn(
-                          "w-full justify-start",
-                          isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                          "w-full justify-start h-11 px-4",
+                          isActive ? "text-orange-500 font-bold bg-orange-500/10" : "text-foreground/70"
                         )}
                       >
                         {link.label}
@@ -274,8 +275,8 @@ const PublicNavbar = () => {
                     <Button
                       variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
                       className={cn(
-                        "w-full justify-start",
-                        location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
+                        "w-full justify-start h-11 px-4",
+                        location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70"
                       )}
                     >
                       Online Token
@@ -283,10 +284,11 @@ const PublicNavbar = () => {
                   </ClinicLink>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
+                <div className="mt-6 pt-6 border-t border-border flex flex-col gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 px-2">Account</p>
                   {!isAdmin && (
                     <ClinicLink to="/messages" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full justify-start gap-2">
+                      <Button variant="ghost" className="w-full justify-start gap-2 h-11 px-4">
                         <MessageCircle className="h-4 w-4" />
                         Messages
                         {user && unreadCount > 0 && (
@@ -300,27 +302,30 @@ const PublicNavbar = () => {
                   {user ? (
                     <>
                       {displayName && (
-                        <p className="text-xs font-medium text-muted-foreground px-2 py-1">Signed in as {displayName}</p>
+                        <div className="px-4 py-2 mb-2 rounded-lg bg-muted/50">
+                          <p className="text-[10px] text-muted-foreground leading-none mb-1">Signed in as</p>
+                          <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+                        </div>
                       )}
                       {isAdmin && (
                         <ClinicLink to="/admin" onClick={closeMenu}>
-                          <Button variant="outline" className="w-full justify-start">Dashboard</Button>
+                          <Button variant="ghost" className="w-full justify-start h-11 px-4">Dashboard</Button>
                         </ClinicLink>
                       )}
-                      <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
+                      <Button variant="destructive" className="w-full justify-start h-11 px-4" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
                       </Button>
                     </>
                   ) : (
-                    <>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
                       <ClinicLink to="/login" onClick={closeMenu}>
-                        <Button variant="outline" className="w-full justify-start">Log in</Button>
+                        <Button variant="outline" className="w-full h-11">Log in</Button>
                       </ClinicLink>
                       <ClinicLink to="/register" onClick={closeMenu}>
-                        <Button variant="hero" className="w-full justify-start">Register</Button>
+                        <Button variant="hero" className="w-full h-11">Register</Button>
                       </ClinicLink>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
