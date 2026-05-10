@@ -76,22 +76,20 @@ const PublicNavbar = () => {
   const logoUrl = clinic?.logo_url;
   const clinicName = clinic?.clinic_name || "ClinicToken";
 
-  const openMenu = () => {
-    setIsOpen(true);
-  };
-
-  const closeMenu = () => {
-    setIsOpen(false);
-  };
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  const openMenu = () => setIsOpen(true);
+  const closeMenu = () => setIsOpen(false);
+  const toggleMenu = () => setIsOpen(prev => !prev);
 
   // Auto-close mobile menu when location changes
   useEffect(() => {
     closeMenu();
   }, [location]);
+
+  // Fallback for browser back/forward buttons
+  useEffect(() => {
+    window.addEventListener('popstate', closeMenu);
+    return () => window.removeEventListener('popstate', closeMenu);
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -229,7 +227,7 @@ const PublicNavbar = () => {
                 if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
-                  <ClinicLink key={link.path} to={link.path}>
+                  <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
@@ -243,7 +241,7 @@ const PublicNavbar = () => {
                 );
               })}
               {clinic?.online_tokens_enabled && (
-                <ClinicLink to="/online-token">
+                <ClinicLink to="/online-token" onClick={closeMenu}>
                   <Button
                     variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
                     className={cn(
@@ -258,7 +256,7 @@ const PublicNavbar = () => {
 
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {!isAdmin && (
-                  <ClinicLink to="/messages" className="px-1">
+                  <ClinicLink to="/messages" className="px-1" onClick={closeMenu}>
                     <Button variant="outline" className="w-full justify-start gap-2 h-12 px-4">
                       <MessageCircle className="h-4 w-4" />
                       Messages
@@ -281,7 +279,7 @@ const PublicNavbar = () => {
 
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1">
+                        <ClinicLink to="/admin" className="flex-1" onClick={closeMenu}>
                           <Button variant="outline" className="w-full h-12">Dashboard</Button>
                         </ClinicLink>
                       )}
@@ -293,10 +291,10 @@ const PublicNavbar = () => {
                   </div>
                 ) : (
                   <div className="flex gap-2 pt-1">
-                    <ClinicLink to="/login" className="flex-1">
+                    <ClinicLink to="/login" className="flex-1" onClick={closeMenu}>
                       <Button variant="outline" className="w-full h-12">Log in</Button>
                     </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1">
+                    <ClinicLink to="/register" className="flex-1" onClick={closeMenu}>
                       <Button variant="hero" className="w-full h-12">Register</Button>
                     </ClinicLink>
                   </div>
