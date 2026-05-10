@@ -221,19 +221,20 @@ const PublicNavbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-border bg-card md:hidden"
+            className="overflow-hidden border-t border-border bg-card md:hidden shadow-xl"
+            onClick={closeMenu}
           >
             <div className="container flex flex-col gap-2 py-4">
               {navLinks.map((link) => {
                 if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
                 const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
                 return (
-                  <ClinicLink key={link.path} to={link.path} onClick={closeMenu}>
+                  <ClinicLink key={link.path} to={link.path}>
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
-                        "w-full justify-start",
-                        isActive ? "text-orange-500 font-bold" : "text-foreground/70"
+                        "w-full justify-start h-12 px-4",
+                        isActive ? "text-orange-500 font-bold bg-orange-500/5" : "text-foreground/70"
                       )}
                     >
                       {link.label}
@@ -242,12 +243,12 @@ const PublicNavbar = () => {
                 );
               })}
               {clinic?.online_tokens_enabled && (
-                <ClinicLink to="/online-token" onClick={closeMenu}>
+                <ClinicLink to="/online-token">
                   <Button
                     variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start",
-                      location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
+                      "w-full justify-start h-12 px-4",
+                      location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/5" : "text-foreground/70"
                     )}
                   >
                     Online Token
@@ -257,8 +258,8 @@ const PublicNavbar = () => {
 
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {!isAdmin && (
-                  <ClinicLink to="/messages" className="px-2" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full justify-start gap-2">
+                  <ClinicLink to="/messages" className="px-1">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-12 px-4">
                       <MessageCircle className="h-4 w-4" />
                       Messages
                       {user && unreadCount > 0 && (
@@ -270,32 +271,35 @@ const PublicNavbar = () => {
                   </ClinicLink>
                 )}
                 {user ? (
-                  <>
+                  <div className="space-y-2">
                     {displayName && (
-                      <p className="text-sm font-medium text-foreground px-2 py-1">Signed in as {displayName}</p>
+                      <div className="px-4 py-2 bg-muted/50 rounded-lg">
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-0.5">Signed in as</p>
+                        <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+                      </div>
                     )}
 
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <ClinicLink to="/admin" className="flex-1" onClick={closeMenu}>
-                          <Button variant="outline" className="w-full">Dashboard</Button>
+                        <ClinicLink to="/admin" className="flex-1">
+                          <Button variant="outline" className="w-full h-12">Dashboard</Button>
                         </ClinicLink>
                       )}
-                      <Button variant="destructive" className="flex-1" onClick={handleLogout}>
-                        <LogOut className="mr-1 h-4 w-4" />
+                      <Button variant="destructive" className="flex-1 h-12" onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
                         Logout
                       </Button>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <ClinicLink to="/login" className="flex-1" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full">Log in</Button>
+                  <div className="flex gap-2 pt-1">
+                    <ClinicLink to="/login" className="flex-1">
+                      <Button variant="outline" className="w-full h-12">Log in</Button>
                     </ClinicLink>
-                    <ClinicLink to="/register" className="flex-1" onClick={closeMenu}>
-                      <Button variant="hero" className="w-full">Register</Button>
+                    <ClinicLink to="/register" className="flex-1">
+                      <Button variant="hero" className="w-full h-12">Register</Button>
                     </ClinicLink>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
