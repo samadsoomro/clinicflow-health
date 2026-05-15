@@ -495,10 +495,12 @@ const OnlineToken = () => {
             <p className="text-sm text-red-800 dark:text-red-200">
               Today's daily online token limit is {reservedCount} by {dailyLimit} limit. You are now not able to get a token today. Please visit physically our hospital or clinic.
             </p>
-             {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
+          </div>
+        )}
+
+        {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
           <form onSubmit={handleRequestToken} className="space-y-5">
-            {isLoggedIn && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">
                 <div className="flex items-start gap-3">
                   <span className="text-amber-500 text-xl">ℹ️</span>
                   <div>
@@ -514,7 +516,6 @@ const OnlineToken = () => {
                   </div>
                 </div>
               </div>
-            )}
 
             {/* Notification enrollment prompt */}
             {isLoggedIn && notifPermission !== 'granted' && (
