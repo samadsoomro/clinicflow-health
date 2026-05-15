@@ -387,7 +387,7 @@ const OnlineToken = () => {
             <Button 
                onClick={() => setShowTokenModal(true)}
                variant="outline"
-               className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/50"
+               className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/50"
             >
                View Your Past Online Token
             </Button>
