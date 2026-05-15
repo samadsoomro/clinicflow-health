@@ -280,6 +280,18 @@ const OnlineToken = () => {
     setSubmitting(true);
     
     try {
+      // Check if push subscription exists — warn if not
+      const { data: subExists } = await supabase
+        .from('push_subscriptions')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      if (!subExists) {
+        // Try to auto-subscribe silently
+        await subscribeToPushNotifications(session.user.id, clinicId);
+      }
+
       // Check if doctor has "start from 1" enabled today
       const { data: doctorSetting } = await supabase
         .from('doctor_token_settings')

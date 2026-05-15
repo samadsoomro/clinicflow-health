@@ -27,14 +27,16 @@ export async function subscribeToPushNotifications(
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     await navigator.serviceWorker.ready;
 
-    // Request permission (shows browser dialog)
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      console.log('Permission not granted:', permission);
-      return false;
+    if (permission !== 'granted') return false;
+
+    // Unsubscribe any existing stale subscription first
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) {
+      await existingSub.unsubscribe();
     }
 
-    // Subscribe to push
+    // Create fresh subscription
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
@@ -46,30 +48,29 @@ export async function subscribeToPushNotifications(
       return false;
     }
 
-    // Save to Supabase
-    const { error } = await (supabase as any).from('push_subscriptions').upsert(
-      {
-        user_id: userId,
-        clinic_id: clinicId,
-        endpoint: subJson.endpoint,
-        p256dh: subJson.keys?.p256dh ?? '',
-        auth_key: subJson.keys?.auth ?? '',
-        subscription: subJson,
-      },
-      { onConflict: 'user_id,endpoint' }
-    );
+    // Delete old records for this user first
+    await (supabase as any).from('push_subscriptions').delete().eq('user_id', userId);
+
+    // Save to Supabase (fresh insert)
+    const { error } = await (supabase as any).from('push_subscriptions').insert({
+      user_id: userId,
+      clinic_id: clinicId,
+      endpoint: subJson.endpoint,
+      p256dh: subJson.keys?.p256dh ?? '',
+      auth_key: subJson.keys?.auth ?? '',
+      subscription: subJson,
+    });
 
     if (error) {
       console.error('Failed to save subscription:', error);
       return false;
     }
 
-    // After upsert, verify it was saved
+    // After insert, verify it was saved
     const { data: saved, error: verifyError } = await supabase
       .from('push_subscriptions')
       .select('id, endpoint')
       .eq('user_id', userId)
-      .eq('endpoint', subJson.endpoint!)
       .maybeSingle();
 
     if (verifyError || !saved) {

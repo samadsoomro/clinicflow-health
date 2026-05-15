@@ -24,3 +24,8 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// Prevent PWA install prompt
+self.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+});
