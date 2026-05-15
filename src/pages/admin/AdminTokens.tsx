@@ -213,6 +213,7 @@ const AdminTokens = () => {
     } else {
       toast.success(`Token #${token.token_number} is now Serving`);
       fetchTodayTokens();
+      notifyProximityPatients(token.doctor_id, token.token_number);
     }
   };
 
@@ -224,6 +225,7 @@ const AdminTokens = () => {
     } else {
       toast.info(`Token #${token.token_number} marked as unavailable`);
       fetchTodayTokens();
+      notifyProximityPatients(token.doctor_id, token.token_number);
     }
   };
 
@@ -251,8 +253,10 @@ const AdminTokens = () => {
       const nextTable = nextToken.isOnline ? "online_tokens" : "tokens";
       await supabase.from(nextTable).update({ status: "serving" } as any).eq("id", nextToken.id);
       toast.success(`Token #${token.token_number} completed → Token #${nextToken.token_number} now serving`);
+      notifyProximityPatients(token.doctor_id, nextToken.token_number);
     } else {
       toast.success(`Token #${token.token_number} completed. Queue is clear.`);
+      notifyProximityPatients(token.doctor_id, token.token_number);
     }
     fetchTodayTokens();
   };
@@ -431,6 +435,29 @@ const AdminTokens = () => {
     }
     setSavingUrl(false);
     setTimeout(() => setUrlSaveMsg(null), 2000);
+  };
+
+  const notifyProximityPatients = async (doctorId: string, tokenNumber: number) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      fetch(
+        'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/check-token-proximity',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            doctor_id: doctorId,
+            clinic_id: clinicId,
+            current_token_number: tokenNumber,
+          }),
+        }
+      );
+    } catch (e) {
+      console.error('Proximity check failed:', e); // silent fail
+    }
   };
 
   const handleToggleLiveTokens = async (enabled: boolean) => {

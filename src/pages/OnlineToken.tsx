@@ -33,9 +33,6 @@ const OnlineToken = () => {
   const [session, setSession] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formattedPatientId, setFormattedPatientId] = useState("");
-  const [proximityAlertSent, setProximityAlertSent] = useState(false);
-  const proximityAlertSentRef = useRef(false);
-  const proximityChannelRef = useRef<any>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
 
   const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -55,13 +52,6 @@ const OnlineToken = () => {
     }
   }, [session?.user]);
 
-  useEffect(() => {
-    return () => {
-      if (proximityChannelRef.current) {
-        supabase.removeChannel(proximityChannelRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -178,97 +168,6 @@ const OnlineToken = () => {
     fetchPatientData();
   }, [session?.user?.id, clinicId, today]);
 
-  const setupTokenProximityAlert = (
-    doctorId: string,
-    myTokenNumber: number,
-    userId: string
-  ) => {
-    const channel = supabase
-      .channel(`token-proximity-${doctorId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tokens',
-          filter: `doctor_id=eq.${doctorId}`,
-        },
-        async (payload) => {
-          const updatedToken = payload.new as any;
-          
-          // Only care about serving/completed tokens
-          if (!['serving', 'completed'].includes(updatedToken.status)) return;
-          
-          const currentNumber = updatedToken.token_number;
-          const tokensRemaining = myTokenNumber - currentNumber;
-          
-          // Alert when 10 or fewer tokens away and not yet alerted
-          if (tokensRemaining > 0 && tokensRemaining <= 10 && !proximityAlertSentRef.current) {
-            proximityAlertSentRef.current = true;
-            setProximityAlertSent(true);
-            
-            // 1. Show in-app alert
-            toast(`🏥 Your token #${myTokenNumber} is near! Only ${tokensRemaining} token(s) ahead. Please head to the clinic now.`, {
-              duration: 10000,
-              icon: '🔔',
-            });
-
-            // 2. Send push notification
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-              fetch(
-                'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({
-                    user_id: userId,
-                    title: '🏥 Your token is almost ready!',
-                    body: `Token #${myTokenNumber} — Only ${tokensRemaining} patient(s) ahead. Please head to the clinic now.`,
-                  }),
-                }
-              ).catch(console.error);
-            }
-          }
-          
-          // Alert when it's exactly their turn
-          if (currentNumber === myTokenNumber && !proximityAlertSentRef.current) {
-            proximityAlertSentRef.current = true;
-            setProximityAlertSent(true);
-            toast(`🔔 It's your turn! Token #${myTokenNumber} is now being served.`, {
-              duration: 15000,
-              icon: '✅',
-            });
-            
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-              fetch(
-                'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({
-                    user_id: userId,
-                    title: "✅ It's your turn!",
-                    body: `Token #${myTokenNumber} is now being served. Please proceed to the doctor immediately.`,
-                  }),
-                }
-              ).catch(console.error);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    // Store channel reference for cleanup
-    proximityChannelRef.current = channel;
-  };
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -369,11 +268,6 @@ const OnlineToken = () => {
         setHasTokenToday(true); // Update state so the form hides!
         setShowTokenModal(true);
         toast.success("Online token issued!");
-
-        // Start proximity watcher
-        if (session?.user?.id) {
-          setupTokenProximityAlert(selectedDoctor, nextTokenNumber, session.user.id);
-        }
       }
     } catch (err: any) {
       toast.error("An error occurred: " + err.message);

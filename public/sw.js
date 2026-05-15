@@ -1,31 +1,47 @@
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
+
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'New Message';
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch(e) {
+    data = { title: 'Notification', body: event.data?.text() || '' };
+  }
+
+  const title = data.title || 'ClinicToken Alert';
   const options = {
-    body: data.body || 'You have a new reply from the clinic.',
+    body: data.body || '',
     icon: data.icon || '/favicon.ico',
     badge: data.badge || '/favicon.ico',
-    tag: data.tag || 'clinic-reply',
-    data: data.data || {},
-    vibrate: [200, 100, 200],
+    tag: data.tag || 'clinic-alert',
+    data: data.data || { url: '/' },
+    requireInteraction: data.requireInteraction || true,
+    vibrate: data.vibrate || [200, 100, 200],
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/messages';
+  const url = event.notification.data?.url || '/';
+  
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus existing tab if open
       for (const client of clientList) {
-        if (client.url.includes(url) && 'focus' in client) return client.focus();
+        if ('focus' in client) return client.focus();
       }
+      // Open new tab
       if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });
 
-// Prevent PWA install prompt
+// Suppress PWA install prompt
 self.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
 });
