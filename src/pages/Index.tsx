@@ -41,8 +41,6 @@ const Index = () => {
   const [certs, setCerts] = useState<any[]>([]);
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNotifBanner, setShowNotifBanner] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -63,48 +61,6 @@ const Index = () => {
       setLoading(false);
     };
     fetchAll();
-
-    // Notification banner — listen to auth state
-    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-      // browser doesn't support push — never show banner
-    } else if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
-      // VAPID key not configured
-    } else {
-      const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (!session?.user) {
-          setShowNotifBanner(false);
-          setCurrentUserId(null);
-          return;
-        }
-
-        setCurrentUserId(session.user.id);
-
-        // Don't show to clinic admins or super admins
-        const { data: roleData } = await (supabase as any)
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        if (roleData) return; // has a role = admin, not a patient
-
-        // Check permission state on THIS device/browser
-        const permission = Notification.permission;
-
-        if (permission === 'default') {
-          // Never asked on this device — show banner
-          setShowNotifBanner(true);
-        } else if (permission === 'granted') {
-          // Already granted — silently re-subscribe in case subscription expired
-          setShowNotifBanner(false);
-          subscribeToPushNotifications(session.user.id, clinicId).catch(() => {});
-        } else {
-          // 'denied' — don't show banner
-          setShowNotifBanner(false);
-        }
-      });
-
-      return () => { authSub.unsubscribe(); };
-    }
   }, [clinicId]);
 
   const getSection = (name: string): SectionData | undefined =>
@@ -521,50 +477,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Push Notification Banner — floating bottom bar */}
-      {showNotifBanner && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-lg mx-auto animate-fade-in">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0">
-              <Bell size={20} className="text-blue-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Stay updated from the clinic</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Get notified on this device when the clinic replies to your messages or when your token is almost ready.
-              </p>
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={async () => {
-                    if (!currentUserId) return;
-                    const success = await subscribeToPushNotifications(currentUserId, clinicId);
-                    setShowNotifBanner(false);
-                    if (success) {
-                      toast.success('Notifications enabled! You will be alerted when the clinic replies.');
-                    } else {
-                      if (Notification.permission === 'denied') {
-                        toast.error('Notifications blocked. Please allow notifications in your browser settings.');
-                      }
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
-                >
-                  🔔 Enable Notifications
-                </button>
-                <button
-                  onClick={() => setShowNotifBanner(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xs px-2 py-2 transition"
-                >
-                  Not now
-                </button>
-              </div>
-            </div>
-            <button onClick={() => setShowNotifBanner(false)} className="text-gray-400 hover:text-gray-500 flex-shrink-0">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 };

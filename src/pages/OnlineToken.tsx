@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ClinicLink from "@/components/ClinicLink";
 import { toast } from "sonner";
 import { generateOnlineTokenPDF } from "@/lib/onlineTokenPdf";
+import { subscribeToPushNotifications } from "@/hooks/usePushNotifications";
 
 const OnlineToken = () => {
   const { clinic, clinicId } = useClinicContext();
@@ -35,6 +36,7 @@ const OnlineToken = () => {
   const [proximityAlertSent, setProximityAlertSent] = useState(false);
   const proximityAlertSentRef = useRef(false);
   const proximityChannelRef = useRef<any>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
 
   const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
@@ -46,6 +48,12 @@ const OnlineToken = () => {
     };
     checkSession();
   }, []);
+
+  useEffect(() => {
+    if ('Notification' in window && session?.user) {
+      setNotifPermission(Notification.permission);
+    }
+  }, [session?.user]);
 
   useEffect(() => {
     return () => {
@@ -487,10 +495,7 @@ const OnlineToken = () => {
             <p className="text-sm text-red-800 dark:text-red-200">
               Today's daily online token limit is {reservedCount} by {dailyLimit} limit. You are now not able to get a token today. Please visit physically our hospital or clinic.
             </p>
-          </div>
-        )}
-
-        {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
+             {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
           <form onSubmit={handleRequestToken} className="space-y-5">
             {isLoggedIn && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">
@@ -505,6 +510,46 @@ const OnlineToken = () => {
                       <p className="text-sm text-amber-800 dark:text-amber-200 mt-2 pt-2 border-t border-amber-200/50" dir="rtl" style={{ fontFamily: 'serif' }}>
                         {clinic.online_token_loggedin_note_second_lang}
                       </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notification enrollment prompt */}
+            {isLoggedIn && notifPermission !== 'granted' && (
+              <div className="mb-5 bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Bell size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+                      Enable notifications for token alerts
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-300 mt-0.5">
+                      Get notified on your phone when your token number is near — so you know when to leave for the clinic.
+                    </p>
+                    {notifPermission === 'denied' ? (
+                      <p className="text-xs text-red-500 mt-2">
+                        ⚠️ Notifications are blocked. Go to Chrome → Settings → Site Settings → Notifications → allow this site.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const { data: { session: s } } = await supabase.auth.getSession();
+                          if (!s?.user) return;
+                          const ok = await subscribeToPushNotifications(s.user.id, clinicId);
+                          if (ok) {
+                            setNotifPermission('granted');
+                            toast.success('Notifications enabled! You will be alerted when your token is near.');
+                          } else {
+                            setNotifPermission(Notification.permission as NotificationPermission);
+                          }
+                        }}
+                        className="mt-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        🔔 Enable Token Alerts
+                      </button>
                     )}
                   </div>
                 </div>

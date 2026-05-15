@@ -64,7 +64,20 @@ export async function subscribeToPushNotifications(
       return false;
     }
 
-    console.log('Push subscription saved successfully');
+    // After upsert, verify it was saved
+    const { data: saved, error: verifyError } = await supabase
+      .from('push_subscriptions')
+      .select('id, endpoint')
+      .eq('user_id', userId)
+      .eq('endpoint', subJson.endpoint!)
+      .maybeSingle();
+
+    if (verifyError || !saved) {
+      console.error('Subscription not saved to Supabase:', verifyError);
+      return false;
+    }
+
+    console.log('Push subscription verified in Supabase:', saved.id);
     return true;
   } catch (err) {
     console.error('subscribeToPushNotifications error:', err);

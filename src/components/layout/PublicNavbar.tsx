@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Activity, Menu, X, LogOut, MessageCircle } from "lucide-react";
+import { Activity, Menu, X, LogOut, MessageCircle, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,8 @@ import ClinicLink from "@/components/ClinicLink";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { subscribeToPushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 
 
@@ -31,11 +33,49 @@ const PublicNavbar = () => {
   const { user, profile, isSuperAdmin, isClinicAdmin, isPatient, roles, signOut } = useAuth();
   const { clinic } = useClinicContext();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+  const [isPatientState, setIsPatientState] = useState(false);
 
   const isAdmin = isSuperAdmin || isClinicAdmin();
   const hasRole = roles.length > 0;
   // Patient is anyone who has the patient role OR has NO roles at all (except admins identified above)
   const isActuallyPatient = !isAdmin && (isPatient || !hasRole);
+
+  useEffect(() => {
+    const checkNotifState = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      // Check if patient (not admin)
+      const { data: role } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      if (role) return; // is admin — skip
+      setIsPatientState(true);
+
+      if ('Notification' in window) {
+        setNotifPermission(Notification.permission);
+      }
+    };
+    checkNotifState();
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user || !clinic?.id) return;
+    const success = await subscribeToPushNotifications(session.user.id, clinic.id);
+    if (success) {
+      setNotifPermission('granted');
+      toast.success('Notifications enabled!');
+    } else {
+      if (Notification.permission === 'denied') {
+        toast.error('Notifications blocked. Go to browser settings → Site Settings → allow notifications for this site.');
+      }
+    }
+  };
 
   useEffect(() => {
     if (!user || !isActuallyPatient) {
@@ -171,6 +211,29 @@ const PublicNavbar = () => {
 
         <div className="hidden items-center gap-1 md:flex">
           <ThemeToggle />
+          
+          {isPatientState && 'Notification' in window && (
+            <button
+              onClick={notifPermission === 'granted' ? undefined : handleEnableNotifications}
+              title={
+                notifPermission === 'granted' ? 'Notifications enabled' :
+                notifPermission === 'denied' ? 'Notifications blocked' :
+                'Enable notifications'
+              }
+              className="relative p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Bell size={18} className={
+                notifPermission === 'granted' ? 'text-green-500' :
+                notifPermission === 'denied' ? 'text-red-400' :
+                'text-gray-400 animate-pulse'
+              } />
+              {/* Pulsing dot when not yet enabled */}
+              {notifPermission === 'default' && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full" />
+              )}
+            </button>
+          )}
+
           {!isAdmin && (
             <ClinicLink to="/messages" className="relative">
               <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -213,6 +276,23 @@ const PublicNavbar = () => {
 
         <div className="flex items-center gap-1 md:hidden">
           <ThemeToggle />
+          
+          {isPatientState && 'Notification' in window && (
+            <button
+              onClick={notifPermission === 'granted' ? undefined : handleEnableNotifications}
+              className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Bell size={20} className={
+                notifPermission === 'granted' ? 'text-green-500' :
+                notifPermission === 'denied' ? 'text-red-400' :
+                'text-gray-400 animate-pulse'
+              } />
+              {notifPermission === 'default' && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-card" />
+              )}
+            </button>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
