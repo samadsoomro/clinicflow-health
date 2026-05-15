@@ -98,17 +98,22 @@ const PublicNavbar = () => {
   }, [user?.id, clinic?.id]);
 
   const handleEnableNotifications = async () => {
+    if (notifStatus === 'denied') {
+      // Can't programmatically open settings — show instructions toast
+      toast.error('Notifications are blocked. Go to Chrome menu → Settings → Site Settings → Notifications → find this site → Allow.');
+      return;
+    }
+
+    // This triggers Chrome's native "Allow notifications?" dialog
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user || !clinic?.id) return;
-    const success = await subscribeToPushNotifications(session.user.id, clinic.id);
-    if (success) {
+    if (!session?.user) return;
+
+    const ok = await subscribeToPushNotifications(session.user.id, clinic?.id || '');
+    if (ok) {
       setNotifStatus('enabled');
-      toast.success('Notifications enabled!');
+      toast.success('Notifications enabled! You will be alerted when your token is near.');
     } else {
-      if (Notification.permission === 'denied') {
-        setNotifStatus('denied');
-        toast.error('Notifications blocked. Go to browser settings → Site Settings → allow notifications for this site.');
-      }
+      setNotifStatus(Notification.permission === 'denied' ? 'denied' : 'disabled');
     }
   };
 

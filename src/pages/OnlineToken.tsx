@@ -567,12 +567,7 @@ const OnlineToken = () => {
                   )}
                   
                   {/* Notification reminder inside modal */}
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-3 mt-2">
-                    <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-2">
-                      <Bell size={14} />
-                      You will receive a notification when your token is near. Keep this page open or enable notifications.
-                    </p>
-                  </div>
+                  
                 </div>
 
                 <Button 

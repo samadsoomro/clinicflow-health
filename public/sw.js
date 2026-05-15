@@ -1,6 +1,3 @@
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
-
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -16,30 +13,29 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/favicon.ico',
     tag: data.tag || 'clinic-alert',
     data: data.data || { url: '/' },
-    requireInteraction: data.requireInteraction || true,
-    vibrate: data.vibrate || [200, 100, 200],
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+    // NO actions array — removes subscribe/unsubscribe buttons
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
-  
+  const targetUrl = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Focus existing tab if open
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }
-      // Open new tab
-      if (clients.openWindow) return clients.openWindow(url);
+      if (clients.openWindow) return clients.openWindow(targetUrl);
     })
   );
 });
+
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
 
 // Suppress PWA install prompt
 self.addEventListener('beforeinstallprompt', (event) => {
