@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Ticket, User, Phone, Download, CheckCircle, AlertCircle, Loader2, Globe } from "lucide-react";
+import { Ticket, User, Phone, Download, CheckCircle, AlertCircle, Loader2, Globe, ChevronDown, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,9 @@ const OnlineToken = () => {
   const [session, setSession] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formattedPatientId, setFormattedPatientId] = useState("");
+  const [proximityAlertSent, setProximityAlertSent] = useState(false);
+  const proximityAlertSentRef = useRef(false);
+  const proximityChannelRef = useRef<any>(null);
 
   const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
@@ -42,6 +45,14 @@ const OnlineToken = () => {
       setIsLoggedIn(!!currentSession?.user);
     };
     checkSession();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (proximityChannelRef.current) {
+        supabase.removeChannel(proximityChannelRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -89,8 +100,14 @@ const OnlineToken = () => {
         .select('id, name, specialization')
         .eq('clinic_id', clinicId)
         .eq('status', 'active')
-        .order('name');
-      setActiveDoctors(doctorsData || []);
+        .order('name', { ascending: true });
+      
+      // Deduplicate by id just in case
+      const uniqueDoctors = Array.from(
+        new Map(doctorsData?.map(d => [d.id, d]) ?? []).values()
+      );
+      
+      setActiveDoctors(uniqueDoctors || []);
       
       setLoading(false);
     };
@@ -152,6 +169,98 @@ const OnlineToken = () => {
     
     fetchPatientData();
   }, [session?.user?.id, clinicId, today]);
+
+  const setupTokenProximityAlert = (
+    doctorId: string,
+    myTokenNumber: number,
+    userId: string
+  ) => {
+    const channel = supabase
+      .channel(`token-proximity-${doctorId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tokens',
+          filter: `doctor_id=eq.${doctorId}`,
+        },
+        async (payload) => {
+          const updatedToken = payload.new as any;
+          
+          // Only care about serving/completed tokens
+          if (!['serving', 'completed'].includes(updatedToken.status)) return;
+          
+          const currentNumber = updatedToken.token_number;
+          const tokensRemaining = myTokenNumber - currentNumber;
+          
+          // Alert when 10 or fewer tokens away and not yet alerted
+          if (tokensRemaining > 0 && tokensRemaining <= 10 && !proximityAlertSentRef.current) {
+            proximityAlertSentRef.current = true;
+            setProximityAlertSent(true);
+            
+            // 1. Show in-app alert
+            toast(`🏥 Your token #${myTokenNumber} is near! Only ${tokensRemaining} token(s) ahead. Please head to the clinic now.`, {
+              duration: 10000,
+              icon: '🔔',
+            });
+
+            // 2. Send push notification
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+              fetch(
+                'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    user_id: userId,
+                    title: '🏥 Your token is almost ready!',
+                    body: `Token #${myTokenNumber} — Only ${tokensRemaining} patient(s) ahead. Please head to the clinic now.`,
+                  }),
+                }
+              ).catch(console.error);
+            }
+          }
+          
+          // Alert when it's exactly their turn
+          if (currentNumber === myTokenNumber && !proximityAlertSentRef.current) {
+            proximityAlertSentRef.current = true;
+            setProximityAlertSent(true);
+            toast(`🔔 It's your turn! Token #${myTokenNumber} is now being served.`, {
+              duration: 15000,
+              icon: '✅',
+            });
+            
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+              fetch(
+                'https://swyyktpdjftxzazqedyx.supabase.co/functions/v1/send-push-notification',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    user_id: userId,
+                    title: "✅ It's your turn!",
+                    body: `Token #${myTokenNumber} is now being served. Please proceed to the doctor immediately.`,
+                  }),
+                }
+              ).catch(console.error);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Store channel reference for cleanup
+    proximityChannelRef.current = channel;
+  };
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,6 +349,11 @@ const OnlineToken = () => {
         setHasTokenToday(true); // Update state so the form hides!
         setShowTokenModal(true);
         toast.success("Online token issued!");
+
+        // Start proximity watcher
+        if (session?.user?.id) {
+          setupTokenProximityAlert(selectedDoctor, nextTokenNumber, session.user.id);
+        }
       }
     } catch (err: any) {
       toast.error("An error occurred: " + err.message);
@@ -398,19 +512,28 @@ const OnlineToken = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="doctor">Select Doctor *</Label>
-              <select 
-                id="doctor"
-                value={selectedDoctor} 
-                onChange={(e) => setSelectedDoctor(e.target.value)} 
-                required
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Select Doctor</option>
-                {activeDoctors.map(doc => (
-                  <option key={doc.id} value={doc.id}>Dr. {doc.name} — {doc.specialization}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Doctor <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedDoctor}
+                  onChange={(e) => setSelectedDoctor(e.target.value)}
+                  required
+                  className="w-full appearance-none bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-400 focus:border-blue-500 rounded-xl px-4 py-3 pr-10 text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <option value="">👨‍⚕️ Choose a Doctor...</option>
+                  {activeDoctors.map(doc => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.name} — {doc.specialization?.trim()}
+                    </option>
+                  ))}
+                </select>
+                {/* Dropdown arrow icon */}
+                <div className="absolute right-3 top-[42px] pointer-events-none text-gray-400">
+                  <ChevronDown size={18} />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -490,6 +613,14 @@ const OnlineToken = () => {
                       {clinic.online_token_popup_second_lang}
                     </p>
                   )}
+                  
+                  {/* Notification reminder inside modal */}
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-3 mt-2">
+                    <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-2">
+                      <Bell size={14} />
+                      You will receive a notification when your token is near. Keep this page open or enable notifications.
+                    </p>
+                  </div>
                 </div>
 
                 <Button 
