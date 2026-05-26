@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Activity, Heart } from "lucide-react";
+import { Activity, Heart, Cross, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
+import { motion } from "framer-motion";
 
 const PublicFooter = () => {
   const { clinic, clinicId } = useClinicContext();
@@ -36,74 +37,155 @@ const PublicFooter = () => {
   ].filter((s) => s.url);
 
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="container py-12">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {shortName && (
-                <span className="font-display text-sm font-bold text-primary">{shortName}</span>
+    <footer className="relative overflow-hidden border-t border-border bg-card/80 backdrop-blur-xl">
+      {/* Animated Health Sign Background Element */}
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none overflow-hidden">
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} 
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="text-primary h-[30rem] w-[30rem] -mr-32"
+        >
+          <Activity className="w-full h-full" strokeWidth={0.5} />
+        </motion.div>
+      </div>
+
+      <div className="container relative z-10 py-16">
+        <div className="grid gap-12 md:grid-cols-12">
+          <div className="md:col-span-4 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="relative group cursor-pointer">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-full opacity-0 group-hover:opacity-20 blur transition-opacity duration-500"></div>
+                {logo ? (
+                  <img src={logo} alt={name} className="h-10 w-10 rounded-xl object-cover relative shadow-sm" />
+                ) : (
+                  <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-md">
+                    <Activity className="h-6 w-6 text-primary-foreground animate-pulse" />
+                  </div>
+                )}
+              </div>
+              <div>
+                {shortName && (
+                  <span className="block font-display text-xs font-bold text-primary uppercase tracking-wider mb-0.5">{shortName}</span>
+                )}
+                <span className="font-display text-xl font-bold text-foreground tracking-tight">{name}</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+              {f.description || "Modern health management platform designed for clinics and hospitals to deliver exceptional care and streamline operations."}
+            </p>
+            
+            {/* The Animated Health Sign */}
+            <div className="flex items-center gap-4 mt-6 p-4 rounded-2xl bg-secondary/30 border border-border/50 max-w-xs shadow-inner">
+              <div className="relative flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
+                <motion.div 
+                  className="absolute inset-0 rounded-full border-2 border-primary/40 border-t-primary"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div 
+                  animate={{ scale: [1, 1.2, 1] }} 
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Activity className="h-6 w-6 text-primary" />
+                </motion.div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Health Status</p>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-sm font-medium text-foreground">Systems Operational</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="md:col-span-2">
+            <h4 className="mb-6 font-display font-bold text-foreground text-lg">Quick Links</h4>
+            <div className="flex flex-col gap-4">
+              <ClinicLink to="/" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary/50"></div> Home
+              </ClinicLink>
+              {clinic?.live_tokens_enabled !== false && (
+                <ClinicLink to="/tokens" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                   <div className="h-1 w-1 rounded-full bg-primary/50"></div> Live Tokens
+                </ClinicLink>
               )}
-              {logo ? (
-                <img src={logo} alt={name} className="h-8 w-8 rounded-lg object-cover" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-                  <Activity className="h-4 w-4 text-primary-foreground" />
+              <ClinicLink to="/notifications" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                 <div className="h-1 w-1 rounded-full bg-primary/50"></div> Notifications
+              </ClinicLink>
+            </div>
+          </div>
+          
+          <div className="md:col-span-3">
+            <h4 className="mb-6 font-display font-bold text-foreground text-lg">Patient Services</h4>
+            <div className="flex flex-col gap-4">
+              <ClinicLink to="/contact" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                 <div className="h-1 w-1 rounded-full bg-primary/50"></div> Contact Support
+              </ClinicLink>
+              <ClinicLink to="/location" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                 <div className="h-1 w-1 rounded-full bg-primary/50"></div> Find Locations
+              </ClinicLink>
+              <ClinicLink to="/register" className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-300 flex items-center gap-2">
+                 <div className="h-1 w-1 rounded-full bg-primary/50"></div> New Patient Registration
+              </ClinicLink>
+            </div>
+          </div>
+          
+          <div className="md:col-span-3">
+            <h4 className="mb-6 font-display font-bold text-foreground text-lg">Get in Touch</h4>
+            <div className="flex flex-col gap-4 text-sm text-muted-foreground">
+              {phone && (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground">📞</div>
+                  <span className="font-medium hover:text-primary transition-colors cursor-pointer">{phone}</span>
                 </div>
               )}
-              <span className="font-display text-lg font-bold text-foreground">{name}</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {f.description || "Modern health management platform for clinics and hospitals."}
-            </p>
-          </div>
-          <div>
-            <h4 className="mb-3 font-display font-semibold text-foreground">Quick Links</h4>
-            <div className="flex flex-col gap-2">
-              <ClinicLink to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">Home</ClinicLink>
-              {clinic?.live_tokens_enabled !== false && (
-                <ClinicLink to="/tokens" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Tokens</ClinicLink>
+              {email && (
+                 <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground">✉️</div>
+                  <span className="font-medium hover:text-primary transition-colors cursor-pointer">{email}</span>
+                </div>
               )}
-              <ClinicLink to="/notifications" className="text-sm text-muted-foreground hover:text-primary transition-colors">Notifications</ClinicLink>
+              {f.address && (
+                 <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground flex-shrink-0 mt-0.5">📍</div>
+                  <span className="leading-relaxed">{f.address}</span>
+                </div>
+              )}
             </div>
-          </div>
-          <div>
-            <h4 className="mb-3 font-display font-semibold text-foreground">Services</h4>
-            <div className="flex flex-col gap-2">
-              <ClinicLink to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</ClinicLink>
-              <ClinicLink to="/location" className="text-sm text-muted-foreground hover:text-primary transition-colors">Location</ClinicLink>
-              <ClinicLink to="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors">Patient Registration</ClinicLink>
-            </div>
-          </div>
-          <div>
-            <h4 className="mb-3 font-display font-semibold text-foreground">Contact</h4>
-            <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              {phone && <span>{phone}</span>}
-              {email && <span>{email}</span>}
-              {f.address && <span>{f.address}</span>}
-            </div>
+            
             {socials.length > 0 && (
-              <div className="mt-3 flex gap-3">
+              <div className="mt-8 flex gap-3">
                 {socials.map((s) => (
-                  <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                    {s.label}
+                  <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/50 text-foreground hover:bg-primary hover:text-primary-foreground hover:-translate-y-1 transition-all duration-300 shadow-sm" title={s.label}>
+                    {s.label.charAt(0)}
                   </a>
                 ))}
               </div>
             )}
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-border">
-          <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-muted-foreground">
-            <span className="text-sm text-center whitespace-nowrap flex items-center gap-1">
-              Made with <Heart className="h-3.5 w-3.5 text-accent fill-accent" /> by {name}
-            </span>
-            <span className="hidden sm:inline">•</span>
-            <span className="text-sm text-center whitespace-nowrap">Developed by Abdul Samad</span>
+        
+        <div className="mt-16 pt-8 border-t border-border/60">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground font-medium">
+              &copy; {new Date().getFullYear()} {name}. All rights reserved.
+            </p>
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-muted-foreground bg-secondary/30 px-6 py-2.5 rounded-full border border-border/50 shadow-sm">
+              <span className="text-sm text-center whitespace-nowrap flex items-center gap-1.5 font-medium">
+                Made with 
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Heart className="h-4 w-4 text-rose-500 fill-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
+                </motion.div>
+                by {name}
+              </span>
+              <span className="hidden sm:inline text-border font-bold">•</span>
+              <span className="text-sm text-center whitespace-nowrap font-medium tracking-wide">Developed by Abdul Samad</span>
+            </div>
           </div>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            &copy; {name} 2026 All rights reserved.
-          </p>
         </div>
       </div>
     </footer>
@@ -111,3 +193,4 @@ const PublicFooter = () => {
 };
 
 export default PublicFooter;
+
