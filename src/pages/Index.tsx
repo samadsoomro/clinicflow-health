@@ -234,7 +234,7 @@ const Index = () => {
 
       {/* Certifications */}
       {certsSection && certs.length > 0 && (
-        <section className="py-24 bg-background/60 backdrop-blur-md relative overflow-hidden">
+        <section className="py-24 bg-card/80 backdrop-blur-xl border-y border-border/50 relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none"></div>
           <div className="container relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
@@ -334,7 +334,7 @@ const Index = () => {
 
       {/* Contact */}
       {contactSection && clinic && (
-        <section className="py-24 bg-background/60 backdrop-blur-md relative">
+        <section className="py-24 bg-card/80 backdrop-blur-xl border-y border-border/50 relative">
           <div className="container">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">

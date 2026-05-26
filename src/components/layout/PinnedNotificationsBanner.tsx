@@ -46,27 +46,27 @@ const PinnedNotificationsBanner = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className={`border-b ${
+              className={`border-b bg-white ${
                 isUrgent
-                  ? "bg-destructive/10 border-destructive/20"
-                  : "bg-primary/5 border-primary/10"
+                  ? "border-destructive/20"
+                  : "border-neutral-200"
               }`}
             >
               <div className="container flex items-center gap-3 py-2.5 px-4">
-                <div className={`flex-shrink-0 ${isUrgent ? "text-destructive" : "text-primary"}`}>
+                <div className={`flex-shrink-0 ${isUrgent ? "text-destructive" : "text-neutral-500"}`}>
                   {isUrgent ? <AlertTriangle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isUrgent ? "text-destructive" : "text-foreground"}`}>
+                  <p className={`text-sm font-semibold ${isUrgent ? "text-destructive" : "text-neutral-900"}`}>
                     {n.title}
-                    <span className={`ml-2 font-normal ${isUrgent ? "text-destructive/70" : "text-muted-foreground"}`}>
+                    <span className={`ml-2 font-normal ${isUrgent ? "text-destructive/80" : "text-neutral-600"}`}>
                       {n.message}
                     </span>
                   </p>
                 </div>
                 <button
                   onClick={() => setDismissed((prev) => new Set(prev).add(n.id))}
-                  className="flex-shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex-shrink-0 rounded-md p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
