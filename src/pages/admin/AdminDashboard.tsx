@@ -135,8 +135,8 @@ const AdminDashboard = () => {
           </h2>
           <div className="ml-auto flex items-center gap-3">
             {clinicName && (
-              <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5">
-                <Building2 className="h-3.5 w-3.5 text-primary" />
+              <div className="hidden sm:flex items-center gap-1.5 rounded-lg border border-border bg-background/50 backdrop-blur-sm px-3 py-1.5">
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium text-foreground">{clinicName}</span>
               </div>
             )}

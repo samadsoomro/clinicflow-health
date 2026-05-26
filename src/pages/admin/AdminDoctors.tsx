@@ -156,7 +156,7 @@ const AdminDoctors = () => {
               <TableRow key={doctor.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm">
                       <Stethoscope className="h-4 w-4" />
                     </div>
                     {doctor.name}

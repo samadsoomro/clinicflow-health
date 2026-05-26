@@ -19,6 +19,7 @@ const AdminSettings = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [liveTokensEnabled, setLiveTokensEnabled] = useState(true);
   const [onlineTokensEnabled, setOnlineTokensEnabled] = useState(false);
+  const [systemOperational, setSystemOperational] = useState(true);
   const [form, setForm] = useState({
 
     clinicName: "",
@@ -34,26 +35,37 @@ const AdminSettings = () => {
 
   useEffect(() => {
     const fetchClinic = async () => {
-      const { data } = await supabase
-        .from("clinics")
-        .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled, online_tokens_enabled")
-        .eq("id", clinicId)
-        .single();
+      const [{ data: clinicData }, { data: footerData }] = await Promise.all([
+        supabase
+          .from("clinics")
+          .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled, online_tokens_enabled")
+          .eq("id", clinicId)
+          .single(),
+        supabase
+          .from("homepage_sections")
+          .select("content_json")
+          .eq("clinic_id", clinicId)
+          .eq("section_name", "footer")
+          .maybeSingle()
+      ]);
 
-      if (data) {
+      if (clinicData) {
         setForm({
-          clinicName: data.clinic_name || "",
-          shortName: (data as any).short_name || "",
-          subdomain: data.subdomain || "",
-          logoUrl: data.logo_url || "",
-          qrBaseUrl: data.qr_base_url || "",
-          themeColor: data.theme_color || "#0ea5e9",
-          secondaryThemeColor: (data as any).secondary_theme_color || "#1e293b",
-          termsConditions: data.terms_conditions || "",
-          mapsEmbedUrl: (data as any).maps_embed_url || "",
+          clinicName: clinicData.clinic_name || "",
+          shortName: (clinicData as any).short_name || "",
+          subdomain: clinicData.subdomain || "",
+          logoUrl: clinicData.logo_url || "",
+          qrBaseUrl: clinicData.qr_base_url || "",
+          themeColor: clinicData.theme_color || "#0ea5e9",
+          secondaryThemeColor: (clinicData as any).secondary_theme_color || "#1e293b",
+          termsConditions: clinicData.terms_conditions || "",
+          mapsEmbedUrl: (clinicData as any).maps_embed_url || "",
         });
-        setLiveTokensEnabled(data.live_tokens_enabled ?? true);
-        setOnlineTokensEnabled(data.online_tokens_enabled ?? false);
+        setLiveTokensEnabled(clinicData.live_tokens_enabled ?? true);
+        setOnlineTokensEnabled(clinicData.online_tokens_enabled ?? false);
+      }
+      if (footerData) {
+        setSystemOperational((footerData.content_json as any)?.system_operational !== false);
       }
       setLoading(false);
     };
@@ -432,6 +444,52 @@ const AdminSettings = () => {
                   toast.success('Online tokens feature ' + (checked ? 'enabled' : 'disabled'));
                   await refreshClinic();
                 }
+              }}
+              className="w-5 h-5 accent-primary cursor-pointer"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-muted/30">
+            <div>
+              <h3 className="font-semibold text-sm">System Health Status</h3>
+              <p className="text-xs text-muted-foreground">Toggle clinic systems status shown in the public footer (Operational vs Under Maintenance)</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={systemOperational}
+              onChange={async (e) => {
+                const checked = e.target.checked;
+                setSystemOperational(checked);
+                
+                // Fetch current footer content_json
+                const { data: currentFooter } = await supabase
+                  .from("homepage_sections")
+                  .select("id, content_json")
+                  .eq("clinic_id", clinicId)
+                  .eq("section_name", "footer")
+                  .maybeSingle();
+                
+                if (currentFooter) {
+                  const updatedContent = {
+                    ...(currentFooter.content_json as any),
+                    system_operational: checked
+                  };
+                  await supabase
+                    .from("homepage_sections")
+                    .update({ content_json: updatedContent } as any)
+                    .eq("id", currentFooter.id);
+                } else {
+                  await supabase
+                    .from("homepage_sections")
+                    .insert({
+                      clinic_id: clinicId,
+                      section_name: "footer",
+                      content_json: { system_operational: checked },
+                      is_enabled: true,
+                      display_order: 6
+                    } as any);
+                }
+                toast.success(checked ? "Systems marked as Operational" : "Systems marked as Under Maintenance");
               }}
               className="w-5 h-5 accent-primary cursor-pointer"
             />

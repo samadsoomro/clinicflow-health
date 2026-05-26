@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, Heart, Cross, Stethoscope } from "lucide-react";
+import { Activity, Heart, Cross, Stethoscope, Phone, Mail, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
@@ -39,13 +39,13 @@ const PublicFooter = () => {
   return (
     <footer className="relative overflow-hidden border-t border-border bg-card/80 backdrop-blur-xl">
       {/* Animated Health Sign Background Element */}
-      <div className="absolute -right-32 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+      <div className="absolute -right-32 top-1/2 -translate-y-1/2 opacity-15 pointer-events-none">
         <motion.div 
           animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} 
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="text-primary h-[30rem] w-[30rem]"
+          className="text-red-600 dark:text-red-500 h-[30rem] w-[30rem]"
         >
-          <Activity className="w-full h-full" strokeWidth={0.5} />
+          <Activity className="w-full h-full" strokeWidth={1.2} />
         </motion.div>
       </div>
 
@@ -75,28 +75,37 @@ const PublicFooter = () => {
             </p>
             
             {/* The Animated Health Sign */}
-            <div className="flex items-center gap-4 mt-6 p-4 rounded-2xl bg-secondary/30 border border-border/50 max-w-xs shadow-inner">
-              <div className="relative flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-                <motion.div 
-                  className="absolute inset-0 rounded-full border-2 border-primary/40 border-t-primary"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                />
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1] }} 
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <Activity className="h-6 w-6 text-primary" />
-                </motion.div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Health Status</p>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-sm font-medium text-foreground">Systems Operational</span>
+            {(() => {
+              const isOperational = f.system_operational !== false;
+              return (
+                <div className="flex items-center gap-4 mt-6 p-4 rounded-2xl bg-neutral-100/50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/40 max-w-xs shadow-sm backdrop-blur-md">
+                  <div className={`relative flex items-center justify-center h-12 w-12 rounded-full ${isOperational ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                    {isOperational && (
+                      <motion.div 
+                        className="absolute inset-0 rounded-full border-2 border-primary/40 border-t-primary"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      />
+                    )}
+                    <motion.div 
+                      animate={isOperational ? { scale: [1, 1.2, 1] } : {}} 
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <Activity className={`h-6 w-6 ${isOperational ? 'text-primary' : 'text-destructive'}`} />
+                    </motion.div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Health Status</p>
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2.5 w-2.5 rounded-full animate-pulse ${isOperational ? 'bg-green-500' : 'bg-destructive'}`}></div>
+                      <span className="text-sm font-bold text-foreground">
+                        {isOperational ? 'Systems Operational' : 'Under Maintenance'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
           
           <div className="md:col-span-2">
@@ -135,21 +144,27 @@ const PublicFooter = () => {
             <h4 className="mb-6 font-display font-bold text-foreground text-lg">Get in Touch</h4>
             <div className="flex flex-col gap-4 text-sm text-muted-foreground">
               {phone && (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground">📞</div>
-                  <span className="font-medium hover:text-primary transition-colors cursor-pointer">{phone}</span>
+                <div className="flex items-center gap-3 group">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shadow-sm shrink-0">
+                    <Phone className="h-4 w-4" />
+                  </div>
+                  <span className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer">{phone}</span>
                 </div>
               )}
               {email && (
-                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground">✉️</div>
-                  <span className="font-medium hover:text-primary transition-colors cursor-pointer">{email}</span>
+                <div className="flex items-center gap-3 group">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shadow-sm shrink-0">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <span className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer break-all">{email}</span>
                 </div>
               )}
               {f.address && (
-                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-foreground flex-shrink-0 mt-0.5">📍</div>
-                  <span className="leading-relaxed">{f.address}</span>
+                <div className="flex items-start gap-3 group">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shadow-sm shrink-0 mt-0.5">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <span className="leading-relaxed text-foreground font-semibold">{f.address}</span>
                 </div>
               )}
             </div>

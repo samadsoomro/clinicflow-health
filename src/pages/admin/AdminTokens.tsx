@@ -660,11 +660,12 @@ const AdminTokens = () => {
                             .map(token => (
                               <tr key={`${token.isOnline ? 'online' : 'walkin'}-${token.id}`} className={`hover:bg-muted/30 transition-colors ${token.status === 'serving' ? 'bg-primary/5' : ''}`}>
                                 <td className="px-4 py-3">
-                                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${token.status === "serving" ? "bg-primary text-white" :
+                                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg font-display font-bold ${
+                                    token.status === "serving" ? "bg-primary text-white" :
                                     token.status === "waiting" ? "bg-yellow-500 text-white" :
-                                      token.status === "unavailable" ? "bg-destructive/20 text-destructive" :
-                                        "bg-secondary text-muted-foreground"
-                                    }`}>
+                                    token.status === "unavailable" ? "bg-destructive/20 text-destructive" :
+                                    "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700"
+                                  }`}>
                                     {token.token_number}
                                   </span>
                                 </td>

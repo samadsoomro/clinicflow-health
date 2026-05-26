@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Loader2, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ interface FooterContent {
   social_instagram: string;
   social_whatsapp: string;
   social_linkedin: string;
+  system_operational?: boolean;
 }
 
 interface FooterEditorProps {
@@ -103,6 +105,29 @@ export const FooterEditor = ({ content, onChange, clinicId }: FooterEditorProps)
             <Label>LinkedIn</Label>
             <Input value={content.social_linkedin || ""} onChange={(e) => update("social_linkedin", e.target.value)} placeholder="https://linkedin.com/..." />
           </div>
+        </div>
+      </div>
+
+      {/* System Status Control */}
+      <div className="space-y-4 rounded-2xl border border-border p-5 bg-muted/20">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary animate-pulse" />
+              Health Status Widget
+            </Label>
+            <p className="text-xs text-muted-foreground">Toggle clinic systems status displayed in the public footer.</p>
+          </div>
+          <Switch 
+            checked={content.system_operational !== false} 
+            onCheckedChange={(checked) => onChange({ ...content, system_operational: checked })} 
+          />
+        </div>
+        <div className="flex items-center gap-2 mt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-background/50 p-2.5 rounded-xl border border-border/50 w-fit">
+          Status: 
+          <span className={content.system_operational !== false ? "text-green-500 font-bold" : "text-destructive font-bold"}>
+            {content.system_operational !== false ? "● Systems Operational" : "● Under Maintenance / Offline"}
+          </span>
         </div>
       </div>
 

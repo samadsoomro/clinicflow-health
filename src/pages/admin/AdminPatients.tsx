@@ -164,13 +164,13 @@ const AdminPatients = () => {
             {filtered.map((patient) => (
               <TableRow key={patient.id}>
                 <TableCell>
-                  <span className="inline-flex items-center rounded-lg bg-secondary px-2.5 py-1 font-display font-bold text-primary text-sm">
+                  <span className="inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-1 font-display font-bold text-foreground text-sm">
                     {patient.formatted_patient_id}
                   </span>
                 </TableCell>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary text-xs font-bold">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-foreground text-xs font-bold shadow-sm">
                       {patient.full_name.split(" ").map((n) => n[0]).join("")}
                     </div>
                     {patient.full_name}
