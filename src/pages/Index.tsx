@@ -110,7 +110,7 @@ const Index = () => {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-x-hidden py-24 md:py-32 flex items-center min-h-[90vh]" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}>
+      <section className="relative overflow-hidden py-24 md:py-32 flex items-center min-h-[90vh]" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}>
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background z-0" />
         <div className="absolute inset-0 opacity-20 z-0 mix-blend-screen pointer-events-none">
           <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute right-[-10%] top-[-10%] h-[40rem] w-[40rem] rounded-full bg-primary/40 blur-[120px]" />
