@@ -109,9 +109,10 @@ const Index = () => {
 
   return (
     <>
+      <div className="fixed inset-0 z-[-1]" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }} />
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-32 flex items-center min-h-[90vh]" style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background z-0" />
+      <section className="relative overflow-hidden py-24 md:py-32 flex items-center min-h-[90vh]">
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/50 to-transparent z-0" />
         <div className="absolute inset-0 opacity-20 z-0 mix-blend-screen pointer-events-none">
           <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute right-[-10%] top-[-10%] h-[40rem] w-[40rem] rounded-full bg-primary/40 blur-[120px]" />
           <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute bottom-[-20%] left-[-10%] h-[35rem] w-[35rem] rounded-full bg-accent/40 blur-[100px]" />
@@ -176,7 +177,7 @@ const Index = () => {
 
       {/* Doctors */}
       {(doctorsSection || !hasCustomSections) && featuredDoctors.length > 0 && (
-        <section className="py-24 overflow-hidden bg-secondary/10 relative">
+        <section className="py-24 overflow-hidden bg-background relative z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none"></div>
           <div className="container relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
@@ -233,7 +234,7 @@ const Index = () => {
 
       {/* Certifications */}
       {certsSection && certs.length > 0 && (
-        <section className="py-24 bg-background relative overflow-hidden">
+        <section className="py-24 bg-background/60 backdrop-blur-md relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none"></div>
           <div className="container relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
@@ -284,7 +285,7 @@ const Index = () => {
 
       {/* Notifications */}
       {notifsSection && notifs.length > 0 && (
-        <section className="py-24 bg-secondary/5">
+        <section className="py-24 bg-background border-y border-border/50 relative z-10">
           <div className="container">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
@@ -333,7 +334,7 @@ const Index = () => {
 
       {/* Contact */}
       {contactSection && clinic && (
-        <section className="py-24 bg-background relative">
+        <section className="py-24 bg-background/60 backdrop-blur-md relative">
           <div className="container">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
@@ -503,7 +504,7 @@ const Index = () => {
       )}
 
       {/* CTA */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-24 bg-background relative overflow-hidden z-10">
         <div className="absolute inset-0 bg-primary/5"></div>
         <div className="container relative z-10">
           <motion.div 
