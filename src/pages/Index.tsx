@@ -146,7 +146,7 @@ const Index = () => {
               )}
               {clinic?.online_tokens_enabled && (
                 <ClinicLink to="/online-token" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full bg-purple-600 text-white font-semibold border-2 border-purple-600 hover:bg-purple-700 hover:border-purple-700 hover:-translate-y-1 hover:shadow-purple-600/30 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
+                  <Button size="lg" className="w-full bg-secondary text-secondary-foreground font-semibold border-2 border-secondary hover:bg-secondary/90 hover:border-secondary/90 hover:-translate-y-1 hover:shadow-secondary/30 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
                     <Ticket className="mr-2 h-5 w-5" /> Get Online Token
                   </Button>
                 </ClinicLink>
@@ -437,7 +437,7 @@ const Index = () => {
                           <Bell className="h-6 w-6" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-destructive uppercase tracking-wider text-xs mb-1">Emergency 24/7</h4>
+                          <h4 className="font-bold text-destructive uppercase tracking-wider text-xs mb-1">Emergency</h4>
                           <p className="text-foreground font-display text-xl font-bold">{clinic.emergency_contact}</p>
                         </div>
                       </div>

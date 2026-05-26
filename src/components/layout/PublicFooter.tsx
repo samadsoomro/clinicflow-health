@@ -39,11 +39,11 @@ const PublicFooter = () => {
   return (
     <footer className="relative overflow-hidden border-t border-border bg-card/80 backdrop-blur-xl">
       {/* Animated Health Sign Background Element */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none overflow-hidden">
+      <div className="absolute -right-32 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
         <motion.div 
           animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} 
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="text-primary h-[30rem] w-[30rem] -mr-32"
+          className="text-primary h-[30rem] w-[30rem]"
         >
           <Activity className="w-full h-full" strokeWidth={0.5} />
         </motion.div>
