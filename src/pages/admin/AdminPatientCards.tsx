@@ -78,6 +78,7 @@ const AdminPatientCards = () => {
     setSaving(true);
     const { error } = await supabase.from("clinics").update({
       card_background_color: layout.backgroundColor,
+      theme_color: layout.accentColor,
     } as any).eq("id", clinicId);
 
     if (error) toast.error(error.message);
@@ -90,6 +91,7 @@ const AdminPatientCards = () => {
     setSaving(true);
     const { error } = await supabase.from("clinics").update({
       card_background_color: DEFAULT_LAYOUT.backgroundColor,
+      theme_color: DEFAULT_LAYOUT.accentColor,
     } as any).eq("id", clinicId);
 
     if (error) {
