@@ -186,19 +186,19 @@ const PublicFooter = () => {
             <p className="text-sm text-muted-foreground font-medium">
               &copy; {new Date().getFullYear()} {name}. All rights reserved.
             </p>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-muted-foreground bg-secondary/30 px-6 py-2.5 rounded-full border border-border/50 shadow-sm">
-              <span className="text-sm text-center whitespace-nowrap flex items-center gap-1.5 font-medium">
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-slate-800 dark:text-slate-200 bg-secondary/80 dark:bg-secondary/20 px-6 py-2.5 rounded-full border border-border/60 shadow-sm font-semibold">
+              <span className="text-sm text-center whitespace-nowrap flex items-center gap-1.5 font-semibold">
                 Made with 
                 <motion.div
                   animate={{ scale: [1, 1.3, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  <Heart className="h-4 w-4 text-rose-500 fill-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
+                  <Heart className="h-4 w-4 text-rose-600 fill-rose-600 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
                 </motion.div>
                 by {name}
               </span>
-              <span className="hidden sm:inline text-border font-bold">•</span>
-              <span className="text-sm text-center whitespace-nowrap font-medium tracking-wide">Developed by Abdul Samad</span>
+              <span className="hidden sm:inline text-slate-400 dark:text-slate-600 font-bold">•</span>
+              <span className="text-sm text-center whitespace-nowrap font-semibold tracking-wide">Developed by Abdul Samad</span>
             </div>
           </div>
         </div>

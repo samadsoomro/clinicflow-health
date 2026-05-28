@@ -129,7 +129,7 @@ const Index = () => {
               {heroTitle}
             </h1>
             {heroDesc && (
-              <p className="mb-10 text-lg leading-relaxed text-muted-foreground md:text-2xl max-w-2xl mx-auto font-light">{heroDesc}</p>
+              <p className="mb-10 text-lg leading-relaxed text-slate-800 dark:text-slate-200 md:text-2xl max-w-2xl mx-auto font-normal drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)] dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">{heroDesc}</p>
             )}
             <div className="flex flex-wrap items-center gap-4 justify-center sm:flex-row sm:justify-center">
               <ClinicLink to={heroBtnLink} className="w-full sm:w-auto">
@@ -161,12 +161,12 @@ const Index = () => {
               {statsItems.map((stat: any, i: number) => {
                 const IconComp = ICON_MAP[stat.icon] || Activity;
                 return (
-                  <motion.div whileHover={{ y: -5, scale: 1.02 }} key={i} className="group flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-xl transition-all duration-300 hover:bg-white/10 dark:border-primary/10 dark:bg-primary/5 dark:hover:bg-primary/10">
+                  <motion.div whileHover={{ y: -5, scale: 1.02 }} key={i} className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 p-6 backdrop-blur-xl shadow-xl transition-all duration-300 hover:bg-white dark:border-primary/10 dark:bg-primary/5 dark:hover:bg-primary/10">
                     <div className="p-3 rounded-full bg-primary/10 text-primary mb-2 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                       <IconComp className="h-6 w-6" />
                     </div>
-                    <span className="font-display text-4xl font-bold text-foreground drop-shadow-sm">{stat.value}</span>
-                    <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{stat.title}</span>
+                    <span className="font-display text-4xl font-bold text-slate-900 dark:text-white drop-shadow-sm">{stat.value}</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{stat.title}</span>
                   </motion.div>
                 );
               })}
@@ -223,7 +223,7 @@ const Index = () => {
                       </div>
                     )}
                     <h3 className="font-display text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{doc.name}</h3>
-                    <Badge variant="secondary" className="px-3 py-1 font-medium bg-secondary text-secondary-foreground">{doc.specialization}</Badge>
+                    <Badge variant="outline" className="px-3 py-1 font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-teal-300 dark:border-primary/30 transition-colors">{doc.specialization}</Badge>
                   </motion.div>
                 ))
               )}
