@@ -186,7 +186,7 @@ const PublicFooter = () => {
             <p className="text-sm text-muted-foreground font-medium">
               &copy; {new Date().getFullYear()} {name}. All rights reserved.
             </p>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-slate-800 dark:text-slate-200 bg-secondary/80 dark:bg-secondary/20 px-6 py-2.5 rounded-full border border-border/60 shadow-sm font-semibold">
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2 text-slate-900 dark:text-slate-50 bg-slate-100/90 dark:bg-slate-900/60 px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-800/80 shadow-sm font-semibold">
               <span className="text-sm text-center whitespace-nowrap flex items-center gap-1.5 font-semibold">
                 Made with 
                 <motion.div
