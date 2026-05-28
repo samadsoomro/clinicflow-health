@@ -100,184 +100,214 @@ const Contact = () => {
 
 
   return (
-    <>
-      <section className="py-16 md:py-20">
+    <div className="relative min-h-[85vh] overflow-hidden bg-background">
+      {/* Decorative Background Glow Orbs */}
+      <div className="absolute inset-0 opacity-30 z-0 mix-blend-screen pointer-events-none">
+        <motion.div 
+          animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.35, 0.15] }} 
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} 
+          className="absolute right-[-10%] top-[5%] h-[35rem] w-[35rem] rounded-full bg-primary/20 blur-[120px]" 
+        />
+        <motion.div 
+          animate={{ scale: [1, 1.25, 1], opacity: [0.1, 0.25, 0.1] }} 
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} 
+          className="absolute bottom-[10%] left-[-10%] h-[30rem] w-[30rem] rounded-full bg-accent/20 blur-[100px]" 
+        />
+      </div>
 
-      <div className="container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-sm font-medium text-secondary-foreground">
-            <Mail className="h-4 w-4" />
-            Get In Touch
-          </div>
-          <h1 className="mb-3 font-display text-3xl font-bold text-foreground md:text-4xl">Contact Us</h1>
-          <p className="text-muted-foreground">Have a question? We'd love to hear from you.</p>
-        </motion.div>
-
-        <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-5">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-6 lg:col-span-2"
+      <section className="relative z-10 py-16 md:py-24">
+        <div className="container max-w-5xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.6 }}
+            className="mb-12 text-center"
           >
-            {contactItems.map((item) => (
-              <div key={item.label} className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-primary">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-sm text-muted-foreground">{item.value}</p>
-                </div>
-              </div>
-            ))}
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-5 py-2 text-sm font-semibold text-primary shadow-[0_0_15px_rgba(var(--primary),0.1)] backdrop-blur-md hover:bg-primary/20 transition-all duration-300 cursor-pointer">
+              <Mail className="h-4 w-4 animate-pulse text-primary" />
+              Get In Touch
+            </div>
+            <h1 className="mb-4 font-display text-4xl font-extrabold text-foreground md:text-5xl drop-shadow-sm tracking-tight">
+              Contact Us
+            </h1>
+            <p className="text-lg text-slate-700 dark:text-slate-300 max-w-md mx-auto font-medium">
+              Have a question or feedback? We would love to hear from you.
+            </p>
           </motion.div>
 
-          <motion.form
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card lg:col-span-3"
-            onSubmit={handleSubmit}
-          >
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-500 text-xl flex-shrink-0">ℹ️</span>
-                <div className="w-full space-y-2">
-                  {!isLoggedIn ? (
-                    // NON-LOGGED-IN: show full note + login/register buttons
-                    <>
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
-                        {clinic?.contact_note_english || defaultGuestEnglish}
-                      </p>
-                      {urduEnabled && (
-                        <p
-                          className="text-sm text-amber-800 dark:text-amber-200 border-t border-amber-200 dark:border-amber-600 pt-2 mt-2"
-                          dir="rtl"
-                          style={{ fontFamily: 'serif' }}
-                        >
-                          {clinic?.contact_note_urdu || defaultGuestUrdu}
+          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-5 items-start">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, duration: 0.6 }}
+              className="space-y-6 lg:col-span-2"
+            >
+              {contactItems.map((item) => (
+                <div 
+                  key={item.label} 
+                  className="group flex items-center gap-4 rounded-3xl border border-border/85 bg-card/95 p-6 backdrop-blur-xl shadow-md hover:shadow-2xl hover:border-primary/30 transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shadow-sm">
+                    <item.icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold text-xs text-foreground/50 uppercase tracking-wider mb-0.5">{item.label}</h4>
+                    <p className="text-sm text-slate-800 dark:text-slate-200 font-semibold leading-snug break-all">{item.value}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.form
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="space-y-6 rounded-[2.5rem] border border-border/80 bg-card/95 p-8 md:p-10 backdrop-blur-xl shadow-2xl lg:col-span-3 hover:border-primary/20 transition-all duration-300"
+              onSubmit={handleSubmit}
+            >
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <span className="text-amber-500 text-2xl flex-shrink-0">⚠️</span>
+                  <div className="w-full space-y-3">
+                    {!isLoggedIn ? (
+                      <>
+                        <p className="text-sm text-amber-900 dark:text-amber-200 font-medium leading-relaxed">
+                          {clinic?.contact_note_english || defaultGuestEnglish}
                         </p>
-                      )}
-                      <div className="flex gap-2 mt-3 flex-wrap">
-                        <ClinicLink
-                          to="/login"
-                          className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                        >
-                          Login
-                        </ClinicLink>
-                        <ClinicLink
-                          to="/register"
-                          className="text-xs border border-amber-400 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 px-4 py-2 rounded-lg font-semibold transition-colors"
-                        >
-                          Register
-                        </ClinicLink>
-                      </div>
-                    </>
-                  ) : (
-                    // LOGGED-IN: show short reminder note only
-                    <>
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
-                        {clinic?.contact_note_loggedin_english || defaultLoggedInEnglish}
-                      </p>
-                      {urduEnabled && (
-                        <p
-                          className="text-sm text-amber-800 dark:text-amber-200 border-t border-amber-200 dark:border-amber-600 pt-2 mt-2"
-                          dir="rtl"
-                          style={{ fontFamily: 'serif' }}
-                        >
-                          {clinic?.contact_note_loggedin_urdu || defaultLoggedInUrdu}
+                        {urduEnabled && (
+                          <p
+                            className="text-sm text-amber-900 dark:text-amber-200 border-t border-amber-200/50 dark:border-amber-900/40 pt-3 mt-3 font-medium leading-relaxed"
+                            dir="rtl"
+                            style={{ fontFamily: 'serif' }}
+                          >
+                            {clinic?.contact_note_urdu || defaultGuestUrdu}
+                          </p>
+                        )}
+                        <div className="flex gap-3 mt-4 flex-wrap">
+                          <ClinicLink
+                            to="/login"
+                            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md hover:shadow-amber-600/25 hover:-translate-y-0.5"
+                          >
+                            Login
+                          </ClinicLink>
+                          <ClinicLink
+                            to="/register"
+                            className="text-xs border-2 border-amber-400/80 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/20 px-5 py-2 rounded-xl font-bold transition-all hover:-translate-y-0.5"
+                          >
+                            Register
+                          </ClinicLink>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-amber-900 dark:text-amber-200 font-medium leading-relaxed">
+                          {clinic?.contact_note_loggedin_english || defaultLoggedInEnglish}
                         </p>
-                      )}
-                    </>
+                        {urduEnabled && (
+                          <p
+                            className="text-sm text-amber-900 dark:text-amber-200 border-t border-amber-200/50 dark:border-amber-900/40 pt-3 mt-3 font-medium leading-relaxed"
+                            dir="rtl"
+                            style={{ fontFamily: 'serif' }}
+                          >
+                            {clinic?.contact_note_loggedin_urdu || defaultLoggedInUrdu}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {submitted && (
+                <div className="flex flex-col gap-2 rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-905/30 p-5 text-sm text-green-800 dark:text-green-300 shadow-sm animate-pulse-token">
+                  <div className="flex items-center gap-2.5 font-bold">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    Your message has been sent successfully!
+                  </div>
+                  {user && (
+                    <div className="flex items-center gap-2 pl-7">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>
+                        Track replies in your{" "}
+                        <ClinicLink to="/messages" className="font-bold underline hover:text-green-700 dark:hover:text-green-100 transition-colors">
+                          message history
+                        </ClinicLink>
+                      </span>
+                    </div>
+                  )}
+                  {!user && (
+                     <div className="pl-7 text-xs opacity-80 italic">
+                      Log in to track your message history and receive direct replies.
+                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              )}
 
-
-            {submitted && (
-              <div className="flex flex-col gap-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 text-sm text-green-700 dark:text-green-300">
-                <div className="flex items-center gap-2 font-semibold">
-                  <CheckCircle className="h-4 w-4" />
-                  Your message has been sent successfully!
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="font-semibold text-foreground/80">Name</Label>
+                  <Input id="name" placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="text-base rounded-2xl border-border/80 focus:ring-primary/50" />
                 </div>
-                {user && (
-                  <div className="flex items-center gap-2 pl-6">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    <span>
-                      Track replies in your{" "}
-                      <ClinicLink to="/messages" className="font-bold underline hover:text-green-800 dark:hover:text-green-100 transition-colors">
-                        message history
-                      </ClinicLink>
-                    </span>
-                  </div>
-                )}
-                {!user && (
-                   <div className="pl-6 text-xs opacity-80 italic">
-                    Log in to track your message history and receive direct replies.
-                   </div>
-                )}
-              </div>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="text-base" />
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="font-semibold text-foreground/80">Email</Label>
+                  <Input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="text-base rounded-2xl border-border/80 focus:ring-primary/50" />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="text-base" />
+                <Label htmlFor="subject" className="font-semibold text-foreground/80">Subject</Label>
+                <Input id="subject" placeholder="How can we help?" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required className="text-base rounded-2xl border-border/80 focus:ring-primary/50" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input id="subject" placeholder="How can we help?" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required className="text-base" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea id="message" placeholder="Your message..." rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required className="text-base" />
-            </div>
-            <Button variant="hero" className="w-full" disabled={submitting}>
-              <Send className="mr-2 h-4 w-4" />
-              {submitting ? "Sending..." : "Send Message"}
-            </Button>
-          </motion.form>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="message" className="font-semibold text-foreground/80">Message</Label>
+                <Textarea id="message" placeholder="Your message..." rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required className="text-base rounded-2xl border-border/80 focus:ring-primary/50" />
+              </div>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5" disabled={submitting}>
+                <Send className="mr-2 h-4 w-4" />
+                {submitting ? "Sending..." : "Send Message"}
+              </Button>
+            </motion.form>
+          </div>
 
-        {mapsUrl && mapsUrl.startsWith("https://www.google.com/maps/embed") && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-2xl border border-border shadow-card"
-          >
-            <iframe src={mapsUrl} width="100%" height="350" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Clinic Location" />
-          </motion.div>
-        )}
-      </div>
+          {mapsUrl && mapsUrl.startsWith("https://www.google.com/maps/embed") && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+              className="mx-auto mt-12 max-w-5xl overflow-hidden rounded-[2.5rem] border border-border/80 shadow-2xl bg-muted group"
+            >
+              <iframe 
+                src={mapsUrl} 
+                width="100%" 
+                height="380" 
+                style={{ border: 0 }} 
+                allowFullScreen 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade" 
+                title="Clinic Location" 
+                className="grayscale group-hover:grayscale-0 transition-all duration-700 ease-in-out"
+              />
+            </motion.div>
+          )}
+        </div>
       </section>
 
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in">
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in border border-border/60">
             {/* Success icon */}
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-5">
               <CheckCircle size={36} className="text-green-500" />
             </div>
 
-            <h2 className="text-2xl font-bold mb-3">Message Sent!</h2>
+            <h2 className="text-2xl font-bold mb-3 tracking-tight">Message Sent!</h2>
 
-            {/* English text */}
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4">
               {clinic?.contact_popup_english || defaultPopupEnglish}
             </p>
 
-            {/* Second language text — only if enabled */}
             {urduEnabled && (
               <p
-                className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-t border-gray-200 dark:border-gray-600 pt-3 mb-3"
+                className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed border-t border-gray-200 dark:border-gray-700 pt-4 mb-4 font-medium"
                 dir="rtl"
                 style={{ fontFamily: 'serif' }}
               >
@@ -285,18 +315,17 @@ const Contact = () => {
               </p>
             )}
 
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-5">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <ClinicLink
                 to="/messages"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition text-sm shadow-md hover:shadow-blue-600/25"
                 onClick={() => setShowSuccessModal(false)}
               >
                 📩 View Messages
               </ClinicLink>
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
+                className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm"
               >
                 ✕ Close
               </button>
@@ -304,7 +333,7 @@ const Contact = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
 };
