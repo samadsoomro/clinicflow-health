@@ -24,12 +24,15 @@ const AdminOnlineTokens = () => {
   const [loggedinNoteSecondLang, setLoggedinNoteSecondLang] = useState("");
   const [onlineTokens, setOnlineTokens] = useState<any[]>([]);
   const [doctorsList, setDoctorsList] = useState<any[]>([]);
+  const [underDevMode, setUnderDevMode] = useState(false);
+  const [underDevEnglish, setUnderDevEnglish] = useState('');
+  const [underDevUrdu, setUnderDevUrdu] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data } = await supabase.from('clinics').select('online_tokens_enabled, online_tokens_daily_limit, online_token_popup_english, online_token_popup_second_lang, online_token_popup_second_lang_enabled, online_token_guest_note_english, online_token_guest_note_second_lang, online_token_guest_note_second_lang_enabled, online_token_loggedin_note_english, online_token_loggedin_note_second_lang').eq('id', clinicId).single();
+      const { data } = await supabase.from('clinics').select('online_tokens_enabled, online_tokens_daily_limit, online_token_popup_english, online_token_popup_second_lang, online_token_popup_second_lang_enabled, online_token_guest_note_english, online_token_guest_note_second_lang, online_token_guest_note_second_lang_enabled, online_token_loggedin_note_english, online_token_loggedin_note_second_lang, online_token_under_dev, online_token_under_dev_english, online_token_under_dev_urdu').eq('id', clinicId).single();
       if (data) {
         setOnlineEnabled(data.online_tokens_enabled || false);
         setDailyLimit(data.online_tokens_daily_limit || 10);
@@ -41,6 +44,9 @@ const AdminOnlineTokens = () => {
         setGuestNoteSecondLangEnabled(data.online_token_guest_note_second_lang_enabled || false);
         setLoggedinNoteEnglish(data.online_token_loggedin_note_english || "");
         setLoggedinNoteSecondLang(data.online_token_loggedin_note_second_lang || "");
+        setUnderDevMode(data.online_token_under_dev || false);
+        setUnderDevEnglish(data.online_token_under_dev_english || '');
+        setUnderDevUrdu(data.online_token_under_dev_urdu || '');
       }
     };
 
@@ -79,6 +85,21 @@ const AdminOnlineTokens = () => {
       return () => { supabase.removeChannel(channel); };
     }
   }, [clinicId, today]);
+
+  const handleToggleUnderDev = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.checked;
+    await supabase.from('clinics').update({ online_token_under_dev: val }).eq('id', clinicId);
+    setUnderDevMode(val);
+    toast.success(val ? '🚧 Under Development mode enabled' : '✅ Under Development mode disabled');
+  };
+
+  const handleSaveUnderDevText = async () => {
+    await supabase.from('clinics').update({
+      online_token_under_dev_english: underDevEnglish || null,
+      online_token_under_dev_urdu: underDevUrdu || null,
+    }).eq('id', clinicId);
+    toast.success('Messages saved');
+  };
 
   const handleToggleOnline = async (checked: boolean) => {
     const { error } = await supabase.from('clinics').update({ online_tokens_enabled: checked }).eq('id', clinicId);
@@ -133,6 +154,60 @@ const AdminOnlineTokens = () => {
       </div>
 
       <div className="space-y-4">
+        {/* Under Development Mode */}
+        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-orange-700 dark:text-orange-300">
+                🚧 Under Development Mode
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When enabled, the online token page shows a poster/banner instead of the token form or alerts patients of the maintenance
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={underDevMode}
+              onChange={handleToggleUnderDev}
+              className="w-5 h-5 accent-orange-500 cursor-pointer"
+            />
+          </div>
+
+          {/* Text fields — only show when under dev mode is ON */}
+          {underDevMode && (
+            <div className="space-y-3 mt-3 border-t border-orange-200 dark:border-orange-800 pt-3">
+              <div>
+                <label className="text-sm font-medium block mb-1 text-gray-700 dark:text-gray-300">English Message</label>
+                <textarea
+                  value={underDevEnglish}
+                  onChange={(e) => setUnderDevEnglish(e.target.value)}
+                  rows={3}
+                  placeholder="Default: This feature is currently under development. Please visit us physically for token issuance."
+                  className="w-full border border-gray-200 dark:border-gray-700 bg-background rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1 text-gray-700 dark:text-gray-300">Urdu / Second Language Message</label>
+                <textarea
+                  value={underDevUrdu}
+                  onChange={(e) => setUnderDevUrdu(e.target.value)}
+                  rows={3}
+                  dir="rtl"
+                  placeholder="یہ فیچر ابھی زیر تعمیر ہے۔ براہِ کرم ٹوکن کے لیے کلینک میں تشریف لائیں۔"
+                  className="w-full border border-gray-200 dark:border-gray-700 bg-background rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  style={{ fontFamily: 'serif' }}
+                />
+              </div>
+              <button
+                onClick={handleSaveUnderDevText}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+              >
+                Save Messages
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Enable Toggle */}
         <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-card shadow-soft">
           <div>

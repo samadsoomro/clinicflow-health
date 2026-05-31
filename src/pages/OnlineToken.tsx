@@ -69,7 +69,10 @@ const OnlineToken = () => {
           online_token_guest_note_second_lang_enabled,
           online_token_loggedin_note_english,
           online_token_loggedin_note_second_lang,
-          online_token_popup_second_lang_enabled
+          online_token_popup_second_lang_enabled,
+          online_token_under_dev,
+          online_token_under_dev_english,
+          online_token_under_dev_urdu
         `)
         .eq('id', clinicId)
         .single();
@@ -171,6 +174,10 @@ const OnlineToken = () => {
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (clinic?.online_token_under_dev) {
+      toast.error(clinic?.online_token_under_dev_english || 'This feature is currently under development. Please visit us physically for token issuance.');
+      return;
+    }
     if (!selectedDoctor || !name) {
       toast.error("Please fill in all required fields");
       return;
@@ -338,6 +345,25 @@ const OnlineToken = () => {
           </div>
         </div>
 
+        {clinic?.online_token_under_dev && (
+          <div className="bg-orange-500 text-white rounded-xl p-4 mb-5 flex items-start gap-3 shadow-md text-left">
+            <span className="text-2xl flex-shrink-0">🚧</span>
+            <div>
+              <p className="font-bold text-sm">Under Development</p>
+              <p className="text-sm opacity-90 mt-0.5">
+                {clinic?.online_token_under_dev_english ||
+                  'This feature is currently under development. Please visit us physically for token issuance.'}
+              </p>
+              {clinic?.online_token_under_dev_urdu && (
+                <p className="text-sm opacity-90 mt-1 pt-1 border-t border-orange-400"
+                  dir="rtl" style={{ fontFamily: 'serif' }}>
+                  {clinic.online_token_under_dev_urdu}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {!isLoggedIn && (
           <div className="max-w-md mx-auto mt-4">
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-5 shadow-sm">
@@ -498,11 +524,14 @@ const OnlineToken = () => {
             </div>
 
             <Button 
-              type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl mt-4 shadow-lg shadow-purple-200 dark:shadow-none transition-all"
-              disabled={submitting || !selectedDoctor || !name}
+              type={clinic?.online_token_under_dev ? "button" : "submit"}
+              onClick={clinic?.online_token_under_dev ? () => toast.error(clinic?.online_token_under_dev_english || 'This feature is currently under development. Please visit us physically for token issuance.') : undefined}
+              className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl mt-4 shadow-lg shadow-purple-200 dark:shadow-none transition-all ${
+                clinic?.online_token_under_dev ? 'opacity-60 cursor-not-allowed hover:bg-purple-600' : ''
+              }`}
+              disabled={!clinic?.online_token_under_dev && (submitting || !selectedDoctor || !name)}
             >
-              {submitting ? (
+              {clinic?.online_token_under_dev ? '🚧 Coming Soon' : submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...

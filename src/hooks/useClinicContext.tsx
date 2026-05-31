@@ -39,6 +39,9 @@ interface ClinicData {
   online_token_popup_english?: string | null;
   online_token_popup_second_lang?: string | null;
   online_token_popup_second_lang_enabled?: boolean | null;
+  online_token_under_dev?: boolean | null;
+  online_token_under_dev_english?: string | null;
+  online_token_under_dev_urdu?: string | null;
 }
 
 
