@@ -37,10 +37,18 @@ interface HomepageDoctor {
   id: string;
   name: string;
   specialization: string;
-  image_url: string | null;
+  image_url?: string | null;
   display_order: number;
-  bio?: string | null;
   bio_enabled?: boolean | null;
+  bio?: string | null;
+  qualification?: string | null;
+  degree?: string | null;
+  university?: string | null;
+  years_experience?: string | null;
+  languages?: string | null;
+  available_days?: string | null;
+  fee?: string | null;
+  extra_info?: string | null;
 }
 
 const Index = () => {
@@ -58,7 +66,7 @@ const Index = () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled").eq("id", clinicId).single(),
-        (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order, bio, bio_enabled").eq("clinic_id", clinicId).order("display_order"),
+        (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order, bio_enabled, bio, qualification, degree, university, years_experience, languages, available_days, fee, extra_info").eq("clinic_id", clinicId).order("display_order"),
 
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
@@ -204,54 +212,63 @@ const Index = () => {
               {featuredDoctors.length === 0 ? (
                 <div className="text-muted-foreground italic">Coming soon</div>
               ) : (
-                featuredDoctors.map((doc, i) => (
-                  <motion.div
-                    key={doc.id}
-                    custom={i}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-50px" }}
-                    variants={fadeUp}
-                    whileHover={doc.bio_enabled && doc.bio ? { y: -10, scale: 1.05 } : { y: -10 }}
-                    onClick={() => {
-                      if (doc.bio_enabled && doc.bio) {
-                        setSelectedDoctor(doc);
-                      }
-                    }}
-                    className={`group flex flex-col items-center text-center rounded-3xl border border-border/50 bg-card p-8 shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/30 w-full relative overflow-hidden ${
-                      doc.bio_enabled && doc.bio ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-transform' : 'cursor-default'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary">
-                      <Stethoscope className="h-6 w-6" />
-                    </div>
-                    {doc.image_url ? (
-                      <div className="relative mb-6">
-                        <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse scale-110 group-hover:scale-125 transition-transform duration-500"></div>
-                        <img 
-                          src={doc.image_url} 
-                          alt={doc.name} 
-                          className="relative h-32 w-32 rounded-full object-cover border-4 border-background shadow-md z-10 group-hover:scale-105 transition-transform duration-300" 
-                          loading="lazy"
-                        />
+                featuredDoctors.map((doc, i) => {
+                  const hasProfile = !!(
+                    doc.qualification || doc.degree || doc.university ||
+                    doc.years_experience || doc.languages || doc.available_days ||
+                    doc.fee || doc.extra_info || doc.bio
+                  );
+                  const isClickable = !!(doc.bio_enabled && hasProfile);
+
+                  return (
+                    <motion.div
+                      key={doc.id}
+                      custom={i}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, margin: "-50px" }}
+                      variants={fadeUp}
+                      whileHover={isClickable ? { y: -10, scale: 1.05 } : { y: -10 }}
+                      onClick={() => {
+                        if (isClickable) {
+                          setSelectedDoctor(doc);
+                        }
+                      }}
+                      className={`group flex flex-col items-center text-center rounded-3xl border border-border/50 bg-card p-8 shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/30 w-full relative overflow-hidden ${
+                        isClickable ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-transform' : 'cursor-default'
+                      }`}
+                    >
+                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary">
+                        <Stethoscope className="h-6 w-6" />
                       </div>
-                    ) : (
-                      <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-secondary/50 text-primary/40 group-hover:bg-primary/10 transition-colors duration-300">
-                        <User className="h-16 w-16" />
-                      </div>
-                    )}
-                    <h3 className="font-display text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{doc.name}</h3>
-                    <Badge variant="outline" className="px-3 py-1 font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-teal-300 dark:border-primary/30 transition-colors">{doc.specialization}</Badge>
-                    
-                    {/* Small "View Bio" hint badge — only if bio enabled */}
-                    {doc.bio_enabled && doc.bio && (
-                      <div className="mt-4 text-xs text-blue-500 font-semibold flex items-center gap-1">
-                        <Info size={12} />
-                        View Profile
-                      </div>
-                    )}
-                  </motion.div>
-                ))
+                      {doc.image_url ? (
+                        <div className="relative mb-6">
+                          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse scale-110 group-hover:scale-125 transition-transform duration-500"></div>
+                          <img 
+                            src={doc.image_url} 
+                            alt={doc.name} 
+                            className="relative h-32 w-32 rounded-full object-cover border-4 border-background shadow-md z-10 group-hover:scale-105 transition-transform duration-300" 
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-secondary/50 text-primary/40 group-hover:bg-primary/10 transition-colors duration-300">
+                          <User className="h-16 w-16" />
+                        </div>
+                      )}
+                      <h3 className="font-display text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{doc.name}</h3>
+                      <Badge variant="outline" className="px-3 py-1 font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-teal-300 dark:border-primary/30 transition-colors">{doc.specialization}</Badge>
+                      
+                      {/* Small "View Bio" hint badge — only if bio enabled */}
+                      {isClickable && (
+                        <div className="mt-4 text-xs text-blue-500 font-semibold flex items-center gap-1">
+                          <Info size={12} />
+                          View Profile
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -265,11 +282,11 @@ const Index = () => {
           onClick={() => setSelectedDoctor(null)}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[85vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[85vh] overflow-y-auto text-left"
             onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
           >
             {/* Header */}
-            <div className="flex items-start gap-4 mb-4">
+            <div className="flex items-start gap-4 mb-5">
               {selectedDoctor.image_url ? (
                 <img
                   src={selectedDoctor.image_url}
@@ -297,11 +314,51 @@ const Index = () => {
             {/* Divider */}
             <div className="border-t border-gray-100 dark:border-gray-700 mb-4" />
 
-            {/* Bio text */}
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm text-left">
-                {selectedDoctor.bio}
-              </p>
+            {/* Structured profile fields — only render if value exists */}
+            <div className="space-y-3">
+              {[
+                { key: 'qualification', label: 'Qualification', icon: '🎓' },
+                { key: 'degree', label: 'Degree', icon: '📜' },
+                { key: 'university', label: 'University', icon: '🏫' },
+                { key: 'years_experience', label: 'Experience', icon: '⏳' },
+                { key: 'languages', label: 'Languages', icon: '🗣️' },
+                { key: 'available_days', label: 'Available', icon: '📅' },
+                { key: 'fee', label: 'Consultation Fee', icon: '💊' },
+              ].map(field => {
+                const val = selectedDoctor[field.key as keyof HomepageDoctor];
+                return val ? (
+                  <div key={field.key} className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0 mt-0.5">{field.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">
+                        {field.label}
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mt-0.5">
+                        {val}
+                      </p>
+                    </div>
+                  </div>
+                ) : null;
+              })}
+
+              {/* Extra info */}
+              {selectedDoctor.extra_info && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mt-2">
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">📝 About</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {selectedDoctor.extra_info}
+                  </p>
+                </div>
+              )}
+
+              {/* Fallback — if bio exists (old single text field) and no structured data */}
+              {!selectedDoctor.qualification && !selectedDoctor.degree && !selectedDoctor.university
+                && !selectedDoctor.years_experience && !selectedDoctor.extra_info
+                && selectedDoctor.bio && (
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {selectedDoctor.bio}
+                </p>
+              )}
             </div>
 
             {/* Close button at bottom */}

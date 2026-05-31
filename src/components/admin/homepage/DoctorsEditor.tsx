@@ -28,6 +28,14 @@ interface DoctorRow {
   display_order: number;
   bio?: string | null;
   bio_enabled?: boolean | null;
+  qualification?: string | null;
+  degree?: string | null;
+  university?: string | null;
+  years_experience?: string | null;
+  languages?: string | null;
+  available_days?: string | null;
+  fee?: string | null;
+  extra_info?: string | null;
 }
 
 export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProps) => {
@@ -39,7 +47,7 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
   const fetchDoctors = async () => {
     const { data } = await (supabase as any)
       .from("homepage_doctors")
-      .select("id, name, specialization, image_url, display_order, bio, bio_enabled")
+      .select("id, name, specialization, image_url, display_order, bio_enabled, bio, qualification, degree, university, years_experience, languages, available_days, fee, extra_info")
       .eq("clinic_id", clinicId)
       .order("display_order");
     setDoctors((data as DoctorRow[]) || []);
@@ -234,23 +242,56 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
 
               {/* Bio textarea — only show when bio_enabled is true */}
               {d.bio_enabled && (
-                <div className="mt-1">
-                  <label className="text-xs font-semibold block mb-1 text-foreground">Doctor Biography</label>
-                  <textarea
-                    defaultValue={d.bio || ''}
-                    onBlur={async (e) => {
-                      await supabase
-                        .from('homepage_doctors')
-                        .update({ bio: e.target.value || null })
-                        .eq('id', d.id);
-                      fetchDoctors(); // refresh list to sync state
-                    }}
-                    rows={3}
-                    placeholder="e.g. Dr. Syed Zahid Raza has over 15 years of experience in General Medicine. He completed his MBBS from Dow University and specializes in homeopathic treatment..."
-                    className="w-full border border-border bg-background rounded-lg p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Leave blank to disable popup even if toggle is on. Save by clicking outside the text box.
+                <div className="mt-3 space-y-3 border-t pt-3">
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
+                    Doctor Profile Fields — leave any blank to hide it from the popup
+                  </p>
+
+                  {[
+                    { key: 'qualification', label: '🎓 Qualification', placeholder: 'e.g. MBBS, FCPS, MD' },
+                    { key: 'degree', label: '📜 Degree / Specialization', placeholder: 'e.g. F.C.P.S (General Medicine)' },
+                    { key: 'university', label: '🏫 University / Institute', placeholder: 'e.g. Dow University of Health Sciences' },
+                    { key: 'years_experience', label: '⏳ Years of Experience', placeholder: 'e.g. 15+ years' },
+                    { key: 'languages', label: '🗣️ Languages Spoken', placeholder: 'e.g. Urdu, English, Sindhi' },
+                    { key: 'available_days', label: '📅 Available Days', placeholder: 'e.g. Mon, Wed, Fri — 9AM to 5PM' },
+                    { key: 'fee', label: '💊 Consultation Fee', placeholder: 'e.g. Rs. 500' },
+                  ].map(field => (
+                    <div key={field.key} className="space-y-1">
+                      <label className="text-xs font-semibold block text-foreground">{field.label}</label>
+                      <input
+                        type="text"
+                        defaultValue={d[field.key as keyof DoctorRow] || ''}
+                        onBlur={async (e) => {
+                          await supabase
+                            .from('homepage_doctors')
+                            .update({ [field.key]: e.target.value || null })
+                            .eq('id', d.id);
+                        }}
+                        placeholder={field.placeholder}
+                        className="w-full border border-border bg-background rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
+                  ))}
+
+                  {/* Extra info — textarea for anything else */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold block text-foreground">📝 Additional Info (Optional)</label>
+                    <textarea
+                      defaultValue={d.extra_info || ''}
+                      onBlur={async (e) => {
+                        await supabase
+                          .from('homepage_doctors')
+                          .update({ extra_info: e.target.value || null })
+                          .eq('id', d.id);
+                      }}
+                      rows={2}
+                      placeholder="e.g. Specializes in pediatric homeopathy. Previously worked at Aga Khan Hospital."
+                      className="w-full border border-border bg-background rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                    />
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground">
+                    💡 Fields left blank will not appear in the popup. Save by clicking outside each field.
                   </p>
                 </div>
               )}
