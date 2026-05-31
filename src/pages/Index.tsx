@@ -33,11 +33,22 @@ const fadeUp = {
   }),
 };
 
+interface HomepageDoctor {
+  id: string;
+  name: string;
+  specialization: string;
+  image_url: string | null;
+  display_order: number;
+  bio?: string | null;
+  bio_enabled?: boolean | null;
+}
+
 const Index = () => {
   const clinicId = usePublicClinicId();
   const [sections, setSections] = useState<SectionData[]>([]);
   const [clinic, setClinic] = useState<any>(null);
-  const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<HomepageDoctor[]>([]);
+  const [selectedDoctor, setSelectedDoctor] = useState<HomepageDoctor | null>(null);
   const [certs, setCerts] = useState<any[]>([]);
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +58,7 @@ const Index = () => {
       const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
         supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled").eq("id", clinicId).single(),
-        (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order").eq("clinic_id", clinicId).order("display_order"),
+        (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order, bio, bio_enabled").eq("clinic_id", clinicId).order("display_order"),
 
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
@@ -55,7 +66,7 @@ const Index = () => {
 
       setSections((secRes.data as SectionData[]) || []);
       setClinic(clinicRes.data);
-      setDoctors((docRes.data as any[]) || []);
+      setDoctors((docRes.data as HomepageDoctor[]) || []);
       setCerts((certRes.data as any[]) || []);
       setNotifs((notifRes.data as any[]) || []);
       setLoading(false);
@@ -201,8 +212,15 @@ const Index = () => {
                     whileInView="visible"
                     viewport={{ once: true, margin: "-50px" }}
                     variants={fadeUp}
-                    whileHover={{ y: -10 }}
-                    className="group flex flex-col items-center text-center rounded-3xl border border-border/50 bg-card p-8 shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/30 w-full relative overflow-hidden"
+                    whileHover={doc.bio_enabled && doc.bio ? { y: -10, scale: 1.05 } : { y: -10 }}
+                    onClick={() => {
+                      if (doc.bio_enabled && doc.bio) {
+                        setSelectedDoctor(doc);
+                      }
+                    }}
+                    className={`group flex flex-col items-center text-center rounded-3xl border border-border/50 bg-card p-8 shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/30 w-full relative overflow-hidden ${
+                      doc.bio_enabled && doc.bio ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-transform' : 'cursor-default'
+                    }`}
                   >
                     <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary">
                       <Stethoscope className="h-6 w-6" />
@@ -224,12 +242,77 @@ const Index = () => {
                     )}
                     <h3 className="font-display text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{doc.name}</h3>
                     <Badge variant="outline" className="px-3 py-1 font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-teal-300 dark:border-primary/30 transition-colors">{doc.specialization}</Badge>
+                    
+                    {/* Small "View Bio" hint badge — only if bio enabled */}
+                    {doc.bio_enabled && doc.bio && (
+                      <div className="mt-4 text-xs text-blue-500 font-semibold flex items-center gap-1">
+                        <Info size={12} />
+                        View Profile
+                      </div>
+                    )}
                   </motion.div>
                 ))
               )}
             </div>
           </div>
         </section>
+      )}
+
+      {/* Bio popup modal */}
+      {selectedDoctor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={() => setSelectedDoctor(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+          >
+            {/* Header */}
+            <div className="flex items-start gap-4 mb-4">
+              {selectedDoctor.image_url ? (
+                <img
+                  src={selectedDoctor.image_url}
+                  alt={selectedDoctor.name}
+                  className="w-20 h-20 rounded-full object-cover flex-shrink-0 border-2 border-blue-100"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <User size={32} className="text-blue-500" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold text-foreground">{selectedDoctor.name}</h3>
+                <p className="text-blue-500 font-medium text-sm mt-0.5">{selectedDoctor.specialization}</p>
+              </div>
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedDoctor(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-gray-100 dark:border-gray-700 mb-4" />
+
+            {/* Bio text */}
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm text-left">
+                {selectedDoctor.bio}
+              </p>
+            </div>
+
+            {/* Close button at bottom */}
+            <button
+              onClick={() => setSelectedDoctor(null)}
+              className="mt-5 w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 py-2.5 rounded-xl text-sm font-medium transition text-foreground"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Certifications */}
