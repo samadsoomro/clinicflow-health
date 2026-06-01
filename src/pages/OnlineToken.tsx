@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Ticket, User, Phone, Download, CheckCircle, AlertCircle, Loader2, Globe, ChevronDown, Bell } from "lucide-react";
+import { Ticket, User, Phone, Download, CheckCircle, AlertCircle, Loader2, Globe, ChevronDown, Bell, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -522,89 +522,149 @@ const OnlineToken = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Patient Name</Label>
-              {!isForOther ? (
-                // Own name — read only (existing behavior)
-                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-sm border border-gray-100 dark:border-gray-600">
-                  <span className="text-gray-400 text-xs block mb-1">Patient Name</span>
-                  <span className="font-semibold text-foreground">{name || 'Loading...'}</span>
-                  {formattedPatientId && (
-                    <span className="ml-2 text-xs text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded">({formattedPatientId})</span>
-                  )}
-                </div>
-              ) : (
-                // Other person fields
-                <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-xl">
-                  <p className="text-xs text-purple-500 font-medium">
-                    Token will be issued in this person's name. Your account's daily limit is used.
-                  </p>
-
-                  {/* Name */}
-                  <div>
-                    <label className="text-sm font-medium block mb-1">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={otherName}
-                      onChange={(e) => setOtherName(e.target.value)}
-                      placeholder="Enter their full name"
-                      className="w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-gray-800 dark:border-gray-700"
-                    />
+            <div className="space-y-4">
+              <div>
+                <Label className="mb-2 block">Patient Name</Label>
+                {!isForOther ? (
+                  // Own name — read only (existing behavior)
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-sm border border-gray-100 dark:border-gray-600">
+                    <span className="text-gray-400 text-xs block mb-1">Patient Name</span>
+                    <span className="font-semibold text-foreground">{name || 'Loading...'}</span>
+                    {formattedPatientId && (
+                      <span className="ml-2 text-xs text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded">({formattedPatientId})</span>
+                    )}
                   </div>
+                ) : (
+                  // Other person fields
+                  <div className="border-2 border-purple-200 dark:border-purple-700 rounded-xl overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-purple-500 px-4 py-3 flex items-center gap-2">
+                      <UserPlus size={16} className="text-white" />
+                      <p className="text-white text-sm font-semibold">Other Person's Details</p>
+                    </div>
 
-                  {/* Gender */}
-                  <div>
-                    <label className="text-sm font-medium block mb-2">Gender</label>
-                    <div className="flex gap-4">
-                      {(['male', 'female'] as const).map(g => (
-                        <label key={g} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            value={g}
-                            checked={otherGender === g}
-                            onChange={() => setOtherGender(g)}
-                            className="accent-purple-500 w-4 h-4"
-                          />
-                          <span className="text-sm capitalize">{g}</span>
+                    <div className="p-4 space-y-4 bg-white dark:bg-gray-800">
+                      <p className="text-xs text-gray-400">
+                        Your account's daily token limit will be used. Token will be issued in this person's name.
+                      </p>
+
+                      {/* Full Name */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
+                          Full Name <span className="text-red-500">*</span>
                         </label>
-                      ))}
+                        <input
+                          type="text"
+                          value={otherName}
+                          onChange={(e) => setOtherName(e.target.value)}
+                          placeholder="Enter their full name"
+                          className="w-full border-2 border-gray-200 dark:border-gray-600 focus:border-purple-400 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-700 outline-none transition-colors"
+                        />
+                      </div>
+
+                      {/* Gender */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
+                          Gender
+                        </label>
+                        <div className="flex gap-3">
+                          {[
+                            { value: 'male', label: 'Male', icon: <User size={14} /> },
+                            { value: 'female', label: 'Female', icon: <User size={14} /> },
+                          ].map(opt => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setOtherGender(opt.value as 'male' | 'female')}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                                otherGender === opt.value
+                                  ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-400 text-purple-700 dark:text-purple-300'
+                                  : 'border-gray-200 dark:border-gray-600 text-gray-500 hover:border-purple-200'
+                              }`}
+                            >
+                              {opt.icon}
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Child toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setOtherIsChild(!otherIsChild)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${
+                          otherIsChild
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-blue-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm ${
+                            otherIsChild ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                            👶
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            otherIsChild ? 'text-blue-600 dark:text-blue-300' : 'text-gray-500'
+                          }`}>
+                            This person is a child
+                          </span>
+                        </div>
+                        <div className={`w-9 h-5 rounded-full transition-colors relative ${
+                          otherIsChild ? 'bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}>
+                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                            otherIsChild ? 'translate-x-4' : 'translate-x-0.5'
+                          }`} />
+                        </div>
+                      </button>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Child checkbox */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={otherIsChild}
-                      onChange={(e) => setOtherIsChild(e.target.checked)}
-                      className="w-4 h-4 accent-purple-500"
-                    />
-                    <span className="text-sm">👶 This person is a child</span>
-                  </label>
+              {/* "For another person" toggle — replace plain checkbox with styled card */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForOther(!isForOther);
+                  if (isForOther) {
+                    setOtherName('');
+                    setOtherGender('male');
+                    setOtherIsChild(false);
+                  }
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                  isForOther
+                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-400 dark:border-purple-500'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                    isForOther ? 'bg-purple-100 dark:bg-purple-800' : 'bg-gray-200 dark:bg-gray-700'
+                  }`}>
+                    <Users size={18} className={isForOther ? 'text-purple-600 dark:text-purple-300' : 'text-gray-400'} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`text-sm font-semibold ${isForOther ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                      Get token for another person
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Family member, child, or someone else
+                    </p>
+                  </div>
                 </div>
-              )}
-
-              {/* "For another person" toggle — always visible below name section */}
-              <label className="flex items-center gap-2 cursor-pointer select-none mt-2">
-                <input
-                  type="checkbox"
-                  checked={isForOther}
-                  onChange={(e) => {
-                    setIsForOther(e.target.checked);
-                    if (!e.target.checked) {
-                      setOtherName('');
-                      setOtherGender('male');
-                      setOtherIsChild(false);
-                    }
-                  }}
-                  className="w-4 h-4 accent-purple-500"
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  🧑🤝🧑 Get this token for another person
-                </span>
-              </label>
+                {/* Toggle pill */}
+                <div className={`w-11 h-6 rounded-full transition-colors relative ${
+                  isForOther ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    isForOther ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
+                </div>
+              </button>
             </div>
 
             <Button 
