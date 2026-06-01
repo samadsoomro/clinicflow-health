@@ -26,6 +26,10 @@ const OnlineToken = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isForOther, setIsForOther] = useState(false);
+  const [otherName, setOtherName] = useState('');
+  const [otherGender, setOtherGender] = useState<'male' | 'female'>('male');
+  const [otherIsChild, setOtherIsChild] = useState(false);
   
   const [issuedToken, setIssuedToken] = useState<any>(null);
   const [showTokenModal, setShowTokenModal] = useState(false);
@@ -256,12 +260,16 @@ const OnlineToken = () => {
         clinic_id: clinicId,
         doctor_id: selectedDoctor,
         token_number: nextTokenNumber,
-        patient_name: name,
+        patient_name: isForOther ? otherName.trim() : name,
         patient_phone: phone || null,
         patient_id: session.user.id,
-        formatted_patient_id: formattedPatientId || null,
+        formatted_patient_id: isForOther ? null : (formattedPatientId || null),
         token_date: today,
         status: 'waiting',
+        is_for_other: isForOther,
+        other_person_name: isForOther ? otherName.trim() : null,
+        other_person_gender: isForOther ? otherGender : null,
+        other_is_child: isForOther ? otherIsChild : false,
       }).select().single();
 
       if (error) {
@@ -516,11 +524,87 @@ const OnlineToken = () => {
 
             <div className="space-y-2">
               <Label>Patient Name</Label>
-              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm border border-gray-100 dark:border-gray-600">
-                <span className="text-gray-400 text-xs block mb-1">Patient Name</span>
-                <span className="font-semibold text-foreground">{name || 'Loading...'}</span>
-                {formattedPatientId && <span className="ml-2 text-xs text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded">({formattedPatientId})</span>}
-              </div>
+              {!isForOther ? (
+                // Own name — read only (existing behavior)
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-sm border border-gray-100 dark:border-gray-600">
+                  <span className="text-gray-400 text-xs block mb-1">Patient Name</span>
+                  <span className="font-semibold text-foreground">{name || 'Loading...'}</span>
+                  {formattedPatientId && (
+                    <span className="ml-2 text-xs text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded">({formattedPatientId})</span>
+                  )}
+                </div>
+              ) : (
+                // Other person fields
+                <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-xl">
+                  <p className="text-xs text-purple-500 font-medium">
+                    Token will be issued in this person's name. Your account's daily limit is used.
+                  </p>
+
+                  {/* Name */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={otherName}
+                      onChange={(e) => setOtherName(e.target.value)}
+                      placeholder="Enter their full name"
+                      className="w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 dark:bg-gray-800 dark:border-gray-700"
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="text-sm font-medium block mb-2">Gender</label>
+                    <div className="flex gap-4">
+                      {(['male', 'female'] as const).map(g => (
+                        <label key={g} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            value={g}
+                            checked={otherGender === g}
+                            onChange={() => setOtherGender(g)}
+                            className="accent-purple-500 w-4 h-4"
+                          />
+                          <span className="text-sm capitalize">{g}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Child checkbox */}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={otherIsChild}
+                      onChange={(e) => setOtherIsChild(e.target.checked)}
+                      className="w-4 h-4 accent-purple-500"
+                    />
+                    <span className="text-sm">👶 This person is a child</span>
+                  </label>
+                </div>
+              )}
+
+              {/* "For another person" toggle — always visible below name section */}
+              <label className="flex items-center gap-2 cursor-pointer select-none mt-2">
+                <input
+                  type="checkbox"
+                  checked={isForOther}
+                  onChange={(e) => {
+                    setIsForOther(e.target.checked);
+                    if (!e.target.checked) {
+                      setOtherName('');
+                      setOtherGender('male');
+                      setOtherIsChild(false);
+                    }
+                  }}
+                  className="w-4 h-4 accent-purple-500"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  🧑🤝🧑 Get this token for another person
+                </span>
+              </label>
             </div>
 
             <Button 
@@ -529,7 +613,7 @@ const OnlineToken = () => {
               className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl mt-4 shadow-lg shadow-purple-200 dark:shadow-none transition-all ${
                 clinic?.online_token_under_dev ? 'opacity-60 cursor-not-allowed hover:bg-purple-600' : ''
               }`}
-              disabled={!clinic?.online_token_under_dev && (submitting || !selectedDoctor || !name)}
+              disabled={!clinic?.online_token_under_dev && (submitting || !selectedDoctor || !name || (isForOther && !otherName.trim()))}
             >
               {clinic?.online_token_under_dev ? '🚧 Coming Soon' : submitting ? (
                 <>

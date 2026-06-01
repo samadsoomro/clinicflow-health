@@ -246,7 +246,15 @@ const AdminOnlineTokens = () => {
                         <td className="p-3">
                           {doctorsList.find(d => d.id === token.doctor_id)?.name || 'Dr. —'}
                         </td>
-                        <td className="p-3 font-medium">{token.patient_name}</td>
+                        <td className="p-3">
+                          <div className="font-medium">{token.patient_name}</div>
+                          {token.is_for_other && (
+                            <div className="text-xs text-purple-500 mt-0.5 flex items-center gap-1">
+                              {token.other_is_child && <span>👶</span>}
+                              <span>Via: {token.formatted_patient_id || 'Patient account'}</span>
+                            </div>
+                          )}
+                        </td>
                         <td className="p-3 text-xs text-purple-500 font-mono">{token.formatted_patient_id || '—'}</td>
                         <td className="p-3 text-muted-foreground">{token.patient_phone || '—'}</td>
                         <td className="p-3 text-muted-foreground">
