@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, Trash2, Plus, User } from "lucide-react";
+import { Upload, Loader2, Trash2, Plus, User, GraduationCap, BookOpen, Building2, Clock, Languages, CalendarDays, Stethoscope, FileText, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
@@ -248,16 +248,19 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
                   </p>
 
                   {[
-                    { key: 'qualification', label: '🎓 Qualification', placeholder: 'e.g. MBBS, FCPS, MD' },
-                    { key: 'degree', label: '📜 Degree / Specialization', placeholder: 'e.g. F.C.P.S (General Medicine)' },
-                    { key: 'university', label: '🏫 University / Institute', placeholder: 'e.g. Dow University of Health Sciences' },
-                    { key: 'years_experience', label: '⏳ Years of Experience', placeholder: 'e.g. 15+ years' },
-                    { key: 'languages', label: '🗣️ Languages Spoken', placeholder: 'e.g. Urdu, English, Sindhi' },
-                    { key: 'available_days', label: '📅 Available Days', placeholder: 'e.g. Mon, Wed, Fri — 9AM to 5PM' },
-                    { key: 'fee', label: '💊 Consultation Fee', placeholder: 'e.g. Rs. 500' },
+                    { key: 'qualification', label: 'Qualification', icon: <GraduationCap size={14} className="text-blue-500" />, placeholder: 'e.g. MBBS, FCPS, MD' },
+                    { key: 'degree', label: 'Degree / Specialization', icon: <BookOpen size={14} className="text-purple-500" />, placeholder: 'e.g. F.C.P.S (General Medicine)' },
+                    { key: 'university', label: 'University / Institute', icon: <Building2 size={14} className="text-green-500" />, placeholder: 'e.g. Dow University of Health Sciences' },
+                    { key: 'years_experience', label: 'Years of Experience', icon: <Clock size={14} className="text-orange-500" />, placeholder: 'e.g. 15+ years' },
+                    { key: 'languages', label: 'Languages Spoken', icon: <Languages size={14} className="text-teal-500" />, placeholder: 'e.g. Urdu, English, Sindhi' },
+                    { key: 'available_days', label: 'Available Days', icon: <CalendarDays size={14} className="text-indigo-500" />, placeholder: 'e.g. Mon, Wed, Fri — 9AM to 5PM' },
+                    { key: 'fee', label: 'Consultation Fee', icon: <Stethoscope size={14} className="text-red-500" />, placeholder: 'e.g. Rs. 500' },
                   ].map(field => (
                     <div key={field.key} className="space-y-1">
-                      <label className="text-xs font-semibold block text-foreground">{field.label}</label>
+                      <label className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                        {field.icon}
+                        {field.label}
+                      </label>
                       <input
                         type="text"
                         defaultValue={d[field.key as keyof DoctorRow] || ''}
@@ -275,7 +278,10 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
 
                   {/* Extra info — textarea for anything else */}
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold block text-foreground">📝 Additional Info (Optional)</label>
+                    <label className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                      <FileText size={14} className="text-gray-400" />
+                      Additional Info (Optional)
+                    </label>
                     <textarea
                       defaultValue={d.extra_info || ''}
                       onBlur={async (e) => {
@@ -290,8 +296,9 @@ export const DoctorsEditor = ({ content, onChange, clinicId }: DoctorsEditorProp
                     />
                   </div>
 
-                  <p className="text-[10px] text-muted-foreground">
-                    💡 Fields left blank will not appear in the popup. Save by clicking outside each field.
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Info size={12} />
+                    Fields left blank will not appear in the popup. Save by clicking outside each field.
                   </p>
                 </div>
               )}

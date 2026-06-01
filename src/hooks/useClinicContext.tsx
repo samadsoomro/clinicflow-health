@@ -126,6 +126,9 @@ function getClinicParam(): string | null {
 
 const DEFAULT_CLINIC_ID = "a0000000-0000-0000-0000-000000000001";
 
+import ClinicLoadingScreen from "@/components/layout/ClinicLoadingScreen";
+import { Heart } from "lucide-react";
+
 export function ClinicProvider({ children }: { children: ReactNode }) {
   const [clinic, setClinic] = useState<ClinicData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -290,6 +293,22 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
     if (!appleLink.parentNode) document.head.appendChild(appleLink);
 
   }, [clinic, location.pathname]);
+
+  if (loading) {
+    return <ClinicLoadingScreen />;
+  }
+
+  if (!clinic && !loading) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white dark:bg-gray-900 text-center px-4">
+        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+          <Heart size={28} className="text-gray-300" />
+        </div>
+        <h2 className="text-lg font-semibold text-gray-600 dark:text-gray-300">Clinic not found</h2>
+        <p className="text-sm text-gray-400 mt-1">Please check the URL and try again.</p>
+      </div>
+    );
+  }
 
   return (
     <ClinicContext.Provider value={{ clinic, clinicId, loading, error, refreshClinic, clearClinicCache }}>

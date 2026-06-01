@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ClinicLink from "@/components/ClinicLink";
-import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info, X, Ticket, Globe, Pin } from "lucide-react";
+import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info, X, Ticket, Globe, Pin, GraduationCap, BookOpen, Languages, CalendarDays, FileText } from "lucide-react";
 
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -317,23 +317,25 @@ const Index = () => {
             {/* Structured profile fields — only render if value exists */}
             <div className="space-y-3">
               {[
-                { key: 'qualification', label: 'Qualification', icon: '🎓' },
-                { key: 'degree', label: 'Degree', icon: '📜' },
-                { key: 'university', label: 'University', icon: '🏫' },
-                { key: 'years_experience', label: 'Experience', icon: '⏳' },
-                { key: 'languages', label: 'Languages', icon: '🗣️' },
-                { key: 'available_days', label: 'Available', icon: '📅' },
-                { key: 'fee', label: 'Consultation Fee', icon: '💊' },
+                { key: 'qualification', label: 'Qualification', icon: <GraduationCap size={16} className="text-blue-500" /> },
+                { key: 'degree', label: 'Degree', icon: <BookOpen size={16} className="text-purple-500" /> },
+                { key: 'university', label: 'University / Institute', icon: <Building2 size={16} className="text-green-500" /> },
+                { key: 'years_experience', label: 'Experience', icon: <Clock size={16} className="text-orange-500" /> },
+                { key: 'languages', label: 'Languages', icon: <Languages size={16} className="text-teal-500" /> },
+                { key: 'available_days', label: 'Available Days', icon: <CalendarDays size={16} className="text-indigo-500" /> },
+                { key: 'fee', label: 'Consultation Fee', icon: <Stethoscope size={16} className="text-red-500" /> },
               ].map(field => {
                 const val = selectedDoctor[field.key as keyof HomepageDoctor];
                 return val ? (
-                  <div key={field.key} className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0 mt-0.5">{field.icon}</span>
+                  <div key={field.key} className="flex items-start gap-3 py-2.5 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                    <div className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {field.icon}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
                         {field.label}
                       </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mt-0.5">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 font-medium mt-0.5">
                         {val}
                       </p>
                     </div>
@@ -343,8 +345,11 @@ const Index = () => {
 
               {/* Extra info */}
               {selectedDoctor.extra_info && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mt-2">
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">📝 About</p>
+                <div className="mt-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText size={14} className="text-gray-400" />
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">About</p>
+                  </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                     {selectedDoctor.extra_info}
                   </p>
