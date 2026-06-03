@@ -219,15 +219,15 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any, cl
   // Time part: 12-hour format like 0230PM or 1145AM
   const hours24 = now.getHours();
   const minutes = now.getMinutes().toString().padStart(2, '0');
-  const ampm = hours24 >= 12 ? 'PM' : 'AM';
+  const fileAmpm = hours24 >= 12 ? 'PM' : 'AM';
   const hours12 = (hours24 % 12 || 12).toString().padStart(2, '0');
-  const timePart = `${hours12}${minutes}${ampm}`;
+  const fileTimePart = `${hours12}${minutes}${fileAmpm}`;
 
   const shortName = ((clinicShortName || clinicData?.short_name || clinicData?.clinic_name || 'CLN')
     .replace(/\s+/g, '')
     .toUpperCase()
     .slice(0, 10));
 
-  const filename = `online-token-${tokenData.token_number}-${shortName}-${datePart}-${timePart}.pdf`;
+  const filename = `online-token-${tokenData.token_number}-${shortName}-${datePart}-${fileTimePart}.pdf`;
   doc.save(filename);
 }
