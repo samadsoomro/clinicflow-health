@@ -33,6 +33,15 @@ const getHeaderIcon = async (): Promise<string> => {
   });
 };
 
+export interface OnlineTokenPdfParams {
+  tokenNumber: number;
+  patientName: string;
+  doctorName: string;
+  clinicName: string;
+  clinicShortName?: string;
+  [key: string]: any;
+}
+
 export async function generateOnlineTokenPDF(tokenData: any, clinicData: any, clinicShortName?: string) {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -203,9 +212,21 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any, cl
 
   // Build dynamic filename
   const now = new Date();
-  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');        // 20260603
-  const timePart = now.toTimeString().slice(0, 5).replace(':', '');          // 1432
-  const shortName = (clinicShortName || clinicData?.short_name || 'CLN').replace(/\s+/g, '').toUpperCase();
+
+  // Date part: YYYYMMDD
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+  // Time part: 12-hour format like 0230PM or 1145AM
+  const hours24 = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  const ampm = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = (hours24 % 12 || 12).toString().padStart(2, '0');
+  const timePart = `${hours12}${minutes}${ampm}`;
+
+  const shortName = ((clinicShortName || clinicData?.short_name || clinicData?.clinic_name || 'CLN')
+    .replace(/\s+/g, '')
+    .toUpperCase()
+    .slice(0, 10));
 
   const filename = `online-token-${tokenData.token_number}-${shortName}-${datePart}-${timePart}.pdf`;
   doc.save(filename);
