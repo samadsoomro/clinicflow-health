@@ -76,7 +76,8 @@ const OnlineToken = () => {
           online_token_popup_second_lang_enabled,
           online_token_under_dev,
           online_token_under_dev_english,
-          online_token_under_dev_urdu
+          online_token_under_dev_urdu,
+          short_name
         `)
         .eq('id', clinicId)
         .single();
@@ -294,7 +295,11 @@ const OnlineToken = () => {
   const handleDownloadTokenPDF = async () => {
     if (!issuedToken || !clinic) return;
     try {
-      await generateOnlineTokenPDF(issuedToken, clinic);
+      await generateOnlineTokenPDF(
+        issuedToken, 
+        clinic,
+        clinic?.short_name || clinic?.clinic_name?.slice(0, 5) || 'CLN'
+      );
       toast.success("Token receipt downloaded!");
     } catch (err) {
       toast.error("Failed to generate PDF");

@@ -33,7 +33,7 @@ const getHeaderIcon = async (): Promise<string> => {
   });
 };
 
-export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
+export async function generateOnlineTokenPDF(tokenData: any, clinicData: any, clinicShortName?: string) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -201,5 +201,12 @@ export async function generateOnlineTokenPDF(tokenData: any, clinicData: any) {
   doc.setTextColor(234, 88, 12); // Orange / Dim Red for the bottom part
   doc.text('Powered by ClinicToken CMS', W / 2, y, { align: 'center' });
 
-  doc.save(`online-token-${tokenData.token_number}.pdf`);
+  // Build dynamic filename
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');        // 20260603
+  const timePart = now.toTimeString().slice(0, 5).replace(':', '');          // 1432
+  const shortName = (clinicShortName || clinicData?.short_name || 'CLN').replace(/\s+/g, '').toUpperCase();
+
+  const filename = `online-token-${tokenData.token_number}-${shortName}-${datePart}-${timePart}.pdf`;
+  doc.save(filename);
 }
