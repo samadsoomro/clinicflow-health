@@ -20,6 +20,7 @@ const AdminSettings = () => {
   const [liveTokensEnabled, setLiveTokensEnabled] = useState(true);
   const [onlineTokensEnabled, setOnlineTokensEnabled] = useState(false);
   const [systemOperational, setSystemOperational] = useState(true);
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [form, setForm] = useState({
 
     clinicName: "",
@@ -38,7 +39,7 @@ const AdminSettings = () => {
       const [{ data: clinicData }, { data: footerData }] = await Promise.all([
         supabase
           .from("clinics")
-          .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled, online_tokens_enabled")
+          .select("clinic_name, short_name, subdomain, logo_url, qr_base_url, theme_color, secondary_theme_color, terms_conditions, maps_embed_url, live_tokens_enabled, online_tokens_enabled, google_review_url")
           .eq("id", clinicId)
           .single(),
         supabase
@@ -63,6 +64,7 @@ const AdminSettings = () => {
         });
         setLiveTokensEnabled(clinicData.live_tokens_enabled ?? true);
         setOnlineTokensEnabled(clinicData.online_tokens_enabled ?? false);
+        setGoogleReviewUrl((clinicData as any).google_review_url || '');
       }
       if (footerData) {
         setSystemOperational((footerData.content_json as any)?.system_operational !== false);
@@ -131,6 +133,7 @@ const AdminSettings = () => {
         secondary_theme_color: form.secondaryThemeColor,
         terms_conditions: form.termsConditions,
         maps_embed_url: form.mapsEmbedUrl,
+        google_review_url: googleReviewUrl || null,
         live_tokens_enabled: liveTokensEnabled,
       } as any)
       .eq("id", clinicId);
@@ -375,6 +378,23 @@ const AdminSettings = () => {
               <iframe src={form.mapsEmbedUrl} width="100%" height="200" style={{ border: 0 }} allowFullScreen loading="lazy" title="Map Preview" />
             </div>
           )}
+
+          <div className="pt-4 border-t border-border mt-4">
+            <label className="text-sm font-medium block mb-1">
+              Google Maps Review Link (Optional)
+            </label>
+            <input
+              type="url"
+              value={googleReviewUrl}
+              onChange={(e) => setGoogleReviewUrl(e.target.value)}
+              placeholder="https://g.page/r/your-clinic-id/review"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Paste your Google Maps review link here. Patients will be redirected to leave a review.
+              To get this link: Google Maps → Your clinic → Share → Copy link (or use the "Write a review" button link).
+            </p>
+          </div>
         </div>
 
         {/* Section 5 — Legal */}

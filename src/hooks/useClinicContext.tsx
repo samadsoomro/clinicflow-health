@@ -42,6 +42,7 @@ interface ClinicData {
   online_token_under_dev?: boolean | null;
   online_token_under_dev_english?: string | null;
   online_token_under_dev_urdu?: string | null;
+  google_review_url?: string | null;
 }
 
 
