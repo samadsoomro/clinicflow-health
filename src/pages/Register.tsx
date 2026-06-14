@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Activity, UserPlus, ArrowLeft, Check, X, Loader2 } from "lucide-react";
+import { Activity, UserPlus, ArrowLeft, Check, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -372,23 +372,11 @@ const Register = () => {
                 className={`rounded-xl bg-background/50 border-border/80 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 py-4.5 ${errors.email ? "border-destructive focus:ring-destructive/20 focus:border-destructive" : ""}`}
               />
               {errors.email && <p className="text-[10px] font-semibold text-destructive mt-0.5">{errors.email}</p>}
-              {emailStatus === 'checking' && (
-                <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span className="text-[10px] font-semibold">Checking availability...</span>
-                </div>
-              )}
-              {emailStatus === 'available' && (
-                <div className="flex items-center gap-1.5 mt-1 text-emerald-600">
-                  <Check className="h-3 w-3" />
-                  <span className="text-[10px] font-bold">Email is available</span>
-                </div>
-              )}
               {emailStatus === 'taken' && (
-                <div className="flex items-center gap-1.5 mt-1 text-destructive">
-                  <X className="h-3 w-3" />
-                  <span className="text-[10px] font-bold">This email is already taken.</span>
-                </div>
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  This email is already registered. Please use a different email or login instead.
+                </p>
               )}
             </div>
 
