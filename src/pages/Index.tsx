@@ -144,7 +144,8 @@ const Index = () => {
                 {heroSubtitle}
               </motion.div>
             )}
-            <h1 className="mb-6 font-display text-5xl font-extrabold leading-tight tracking-tight text-foreground md:text-7xl drop-shadow-sm">
+            {/* Hero title — allow natural wrapping on all screen sizes */}
+            <h1 className="mb-6 font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-foreground text-center drop-shadow-sm break-words hyphens-auto px-2">
               {heroTitle}
             </h1>
             {heroDesc && (

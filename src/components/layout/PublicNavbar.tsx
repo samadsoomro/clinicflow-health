@@ -208,7 +208,8 @@ const PublicNavbar = () => {
               <Activity className="h-5 w-5 text-white" />
             </div>
           )}
-          <span className="font-display text-lg md:text-xl font-bold text-foreground truncate max-w-[140px] md:max-w-none">
+          {/* Clinic name — truncate with ellipsis if too long */}
+          <span className="font-display font-bold text-sm sm:text-base truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[280px] block text-foreground">
             {clinicName}
           </span>
         </ClinicLink>

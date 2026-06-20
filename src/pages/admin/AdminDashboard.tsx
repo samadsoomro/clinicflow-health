@@ -140,7 +140,21 @@ const AdminDashboard = () => {
                 <span className="text-xs font-medium text-foreground">{clinicName}</span>
               </div>
             )}
-            {profile && <span className="text-sm text-muted-foreground hidden sm:inline">{profile.full_name}</span>}
+            {profile && (
+              <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                <span className="truncate max-w-[80px] sm:max-w-[140px] text-sm hidden sm:block text-muted-foreground">
+                  {profile.full_name}
+                </span>
+                {/* Logout button — always visible, never hidden */}
+                <button
+                  onClick={signOut}
+                  className="flex-shrink-0 flex items-center gap-1 text-sm px-2 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap"
+                >
+                  <LogOut size={14} />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
+            )}
             <ThemeToggle />
           </div>
         </header>
