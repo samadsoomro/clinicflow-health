@@ -18,9 +18,8 @@ const OnlineToken = () => {
   const [loading, setLoading] = useState(true);
   const [activeDoctors, setActiveDoctors] = useState<any[]>([]);
   const [onlineIssuanceEnabled, setOnlineIssuanceEnabled] = useState(false);
-  const [dailyLimitReached, setDailyLimitReached] = useState(false);
-  const [dailyLimit, setDailyLimit] = useState(0);
-  const [reservedCount, setReservedCount] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(10);
+  const [todayCount, setTodayCount] = useState(0);
   
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [name, setName] = useState("");
@@ -86,18 +85,7 @@ const OnlineToken = () => {
         setOnlineIssuanceEnabled(clinicData.online_tokens_issuance_enabled || false);
         
         // 2. Check daily limit
-        const { count } = await supabase
-          .from('online_tokens')
-          .select('id', { count: 'exact', head: true })
-          .eq('clinic_id', clinicId)
-          .eq('token_date', today);
-          
-        setReservedCount(count || 0);
         setDailyLimit(clinicData.online_tokens_daily_limit || 10);
-          
-        if ((count || 0) >= (clinicData.online_tokens_daily_limit || 10)) {
-          setDailyLimitReached(true);
-        }
       }
 
       // 3. Fetch active doctors
@@ -126,6 +114,57 @@ const OnlineToken = () => {
       navigate("/");
     }
   }, [clinic?.online_tokens_enabled, navigate]);
+
+  const fetchTodayCount = async () => {
+    if (!clinicId) return;
+    const { count } = await supabase
+      .from('online_tokens')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .eq('token_date', today);
+    setTodayCount(count ?? 0);
+  };
+
+  useEffect(() => {
+    if (!clinicId) return;
+
+    // Initial fetch
+    fetchTodayCount();
+
+    // Realtime subscription — fires on every INSERT to online_tokens
+    const channel = supabase
+      .channel(`online-tokens-count-${clinicId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'online_tokens',
+          filter: `clinic_id=eq.${clinicId}`,
+        },
+        () => {
+          fetchTodayCount();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'online_tokens',
+          filter: `clinic_id=eq.${clinicId}`,
+        },
+        () => {
+          fetchTodayCount();
+        }
+      )
+      .subscribe();
+
+    // Cleanup on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clinicId, today]);
 
   const [hasTokenToday, setHasTokenToday] = useState(false);
 
@@ -191,6 +230,21 @@ const OnlineToken = () => {
     setSubmitting(true);
     
     try {
+      // Re-fetch count right before submitting — prevents race condition
+      const { count: latestCount } = await supabase
+        .from('online_tokens')
+        .select('id', { count: 'exact', head: true })
+        .eq('clinic_id', clinicId)
+        .eq('token_date', today);
+
+      // Check limit with latest real count
+      if ((latestCount ?? 0) >= dailyLimit) {
+        toast.error("Today's online token limit has been reached. Please visit the clinic physically.");
+        setTodayCount(latestCount ?? 0); // update UI immediately
+        setSubmitting(false);
+        return;
+      }
+
       // Check if push subscription exists — warn if not
       const { data: subExists } = await supabase
         .from('push_subscriptions')
@@ -349,12 +403,33 @@ const OnlineToken = () => {
           <h1 className="text-2xl font-bold text-foreground">Get Online Token</h1>
           <p className="text-sm text-muted-foreground mt-2">Skip the queue by requesting your token online</p>
 
-          <div className="mt-6 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-800/30 inline-block text-left">
-            <h3 className="font-semibold text-purple-800 dark:text-purple-300 text-sm">Daily Online Token Limit</h3>
-            <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mb-1">Maximum online tokens that can be issued per day</p>
-            <p className="text-sm font-bold text-purple-700 dark:text-purple-400">
-              Today's Reserved: {reservedCount} / {dailyLimit} limit
-            </p>
+          <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800/30 w-full max-w-sm mx-auto text-left">
+            <h3 className="font-semibold text-purple-800 dark:text-purple-300 text-sm mb-3">Daily Online Token Limit</h3>
+            {/* Daily limit display — updates in real-time */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Today's Reserved:</span>
+              <span className={`font-bold ${
+                todayCount >= dailyLimit
+                  ? 'text-red-500'
+                  : todayCount >= dailyLimit * 0.8
+                  ? 'text-orange-500'
+                  : 'text-green-600'
+              }`}>
+                {todayCount} / {dailyLimit}
+                {todayCount >= dailyLimit && ' — Full'}
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
+              <div
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  todayCount >= dailyLimit ? 'bg-red-500' :
+                  todayCount >= dailyLimit * 0.8 ? 'bg-orange-400' : 'bg-green-500'
+                }`}
+                style={{ width: `${Math.min((todayCount / (dailyLimit || 1)) * 100, 100)}%` }}
+              />
+            </div>
           </div>
         </div>
 
@@ -433,17 +508,17 @@ const OnlineToken = () => {
           </div>
         )}
 
-        {isLoggedIn && !hasTokenToday && dailyLimitReached && (
+        {isLoggedIn && !hasTokenToday && (todayCount >= dailyLimit) && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center space-y-3 mt-4">
             <Ticket className="h-8 w-8 text-red-500 mx-auto" />
             <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Token Limit Reached</h3>
             <p className="text-sm text-red-800 dark:text-red-200">
-              Today's daily online token limit is {reservedCount} by {dailyLimit} limit. You are now not able to get a token today. Please visit physically our hospital or clinic.
+              Today's daily online token limit is {todayCount} by {dailyLimit} limit. You are now not able to get a token today. Please visit physically our hospital or clinic.
             </p>
           </div>
         )}
 
-        {isLoggedIn && !hasTokenToday && !dailyLimitReached && (
+        {isLoggedIn && !hasTokenToday && (todayCount < dailyLimit) && (
           <form onSubmit={handleRequestToken} className="space-y-5">
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-5 mt-4">
                 <div className="flex items-start gap-3">
