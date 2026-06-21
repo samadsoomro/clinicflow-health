@@ -14,6 +14,7 @@ import { CertificationsEditor } from "@/components/admin/homepage/Certifications
 import { NotificationsPreview } from "@/components/admin/homepage/NotificationsPreview";
 import { ContactPreview } from "@/components/admin/homepage/ContactPreview";
 import { FooterEditor } from "@/components/admin/homepage/FooterEditor";
+import { PatientStoriesEditor } from "@/components/admin/homepage/PatientStoriesEditor";
 
 export interface SectionData {
   id?: string;
@@ -169,11 +170,25 @@ const AdminHomepage = () => {
               </div>
             </button>
           ))}
+          
+          <div className="my-2 border-t border-border"></div>
+          <button
+            onClick={() => setActiveSection("patient_stories")}
+            className={`w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              activeSection === "patient_stories"
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground hover:bg-secondary"
+            }`}
+          >
+            <span className="truncate">Patient Stories</span>
+          </button>
         </div>
 
         {/* Section Editor */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-          {currentSection && (
+          {activeSection === "patient_stories" ? (
+            <PatientStoriesEditor clinicId={clinicId} />
+          ) : currentSection && (
             <>
               <div className="mb-6 flex items-center justify-between">
                 <div>

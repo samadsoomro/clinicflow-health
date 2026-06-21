@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ClinicLink from "@/components/ClinicLink";
-import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info, X, Ticket, Globe, Pin, GraduationCap, BookOpen, Languages, CalendarDays, FileText } from "lucide-react";
+import { Activity, Users, User, Clock, Bell, Shield, Building2, Stethoscope, Heart, Star, Award, Zap, MapPin, Phone, Mail, AlertTriangle, Info, X, Ticket, Globe, Pin, GraduationCap, BookOpen, Languages, CalendarDays, FileText, ExternalLink } from "lucide-react";
 
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,17 +59,19 @@ const Index = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<HomepageDoctor | null>(null);
   const [certs, setCerts] = useState<any[]>([]);
   const [notifs, setNotifs] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [secRes, clinicRes, docRes, certRes, notifRes] = await Promise.all([
+      const [secRes, clinicRes, docRes, certRes, notifRes, reviewsRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled, google_review_url").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled, google_review_url, reviews_section_enabled, reviews_section_title, reviews_section_subtitle").eq("id", clinicId).single(),
         (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order, bio_enabled, bio, qualification, degree, university, years_experience, languages, available_days, fee, extra_info").eq("clinic_id", clinicId).order("display_order"),
 
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
         supabase.from("notifications").select("id, title, message, priority, is_pinned, created_at").eq("clinic_id", clinicId).eq("is_active", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
+        supabase.from("clinic_reviews").select("id, reviewer_name, review_text, rating, time_ago, tags").eq("clinic_id", clinicId).eq("is_active", true).order("display_order", { ascending: true }),
       ]);
 
       setSections((secRes.data as SectionData[]) || []);
@@ -77,6 +79,7 @@ const Index = () => {
       setDoctors((docRes.data as HomepageDoctor[]) || []);
       setCerts((certRes.data as any[]) || []);
       setNotifs((notifRes.data as any[]) || []);
+      setReviews((reviewsRes.data as any[]) || []);
       setLoading(false);
     };
     fetchAll();
@@ -272,6 +275,122 @@ const Index = () => {
                 })
               )}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Patient Stories / Reviews */}
+      {clinic?.reviews_section_enabled && reviews.length > 0 && (
+        <section className="py-24 bg-card/50 relative overflow-hidden border-y border-border/50">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500/5 via-transparent to-transparent pointer-events-none"></div>
+          <div className="container relative z-10">
+            {/* Section header */}
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-full px-4 py-1.5 mb-6 shadow-sm">
+                <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                <span className="text-sm font-bold text-yellow-700 dark:text-yellow-400 tracking-wide">Google Reviews</span>
+              </div>
+              <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
+                {clinic?.reviews_section_title || 'Patient Stories'}
+              </h2>
+              <div className="h-1 w-20 bg-yellow-400 mx-auto rounded-full mb-6"></div>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {clinic?.reviews_section_subtitle || 'Verified 5-Star Feedback'}
+              </p>
+              <p className="text-sm text-muted-foreground/80 mt-2">
+                Real experiences from patients who found health with us.
+              </p>
+            </motion.div>
+
+            {/* Reviews grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {reviews.map((review, i) => (
+                <motion.div
+                  key={review.id}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-50px" }}
+                  variants={fadeUp}
+                  whileHover={{ y: -5 }}
+                  className="bg-card rounded-3xl shadow-lg border border-border/60 p-8 flex flex-col transition-all duration-300 hover:shadow-xl hover:border-yellow-400/30 group"
+                >
+                  {/* Header */}
+                  <div className="flex items-start gap-4 mb-6">
+                    {/* Avatar circle with initials */}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                      <span className="text-white text-lg font-bold">
+                        {review.reviewer_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <p className="font-bold text-base text-foreground truncate">{review.reviewer_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {/* Google G icon */}
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        <span className="text-xs font-medium text-muted-foreground">{review.time_ago}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={16}
+                        className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted/30'}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Review text */}
+                  <p className="text-base text-foreground/80 leading-relaxed line-clamp-4 flex-1 italic">
+                    "{review.review_text}"
+                  </p>
+
+                  {/* Tags */}
+                  {review.tags?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-6">
+                      {review.tags.map((tag: string) => (
+                        <span
+                          key={tag}
+                          className="text-xs font-medium bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full border border-border"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {/* View all on Google button */}
+            {clinic?.google_review_url && (
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mt-12">
+                <a
+                  href={clinic.google_review_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border-2 border-border hover:border-yellow-400 dark:hover:border-yellow-500 bg-card hover:bg-yellow-50 dark:hover:bg-yellow-900/10 rounded-full px-6 py-3.5 text-sm font-bold text-foreground transition-all duration-300 shadow-sm hover:shadow-md group"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 group-hover:scale-110 transition-transform">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  See All Reviews on Google
+                  <ExternalLink size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                </a>
+              </motion.div>
+            )}
           </div>
         </section>
       )}
