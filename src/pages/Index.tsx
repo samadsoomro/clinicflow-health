@@ -365,7 +365,7 @@ const Index = () => {
                         </div>
 
                         {/* Review text */}
-                        <p className="text-base text-foreground/80 leading-relaxed line-clamp-4 flex-1 italic">
+                        <p className="text-base text-foreground/80 leading-relaxed flex-1 italic whitespace-pre-wrap">
                           "{review.review_text}"
                         </p>
 
@@ -386,15 +386,8 @@ const Index = () => {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <div className="hidden sm:block">
-                  <CarouselPrevious className="-left-4 md:-left-12" />
-                  <CarouselNext className="-right-4 md:-right-12" />
-                </div>
-                {/* Mobile arrows under the carousel if preferred, or keep them overlapping */}
-                <div className="flex sm:hidden justify-center gap-4 mt-6">
-                  <CarouselPrevious className="static transform-none translate-x-0 translate-y-0" />
-                  <CarouselNext className="static transform-none translate-x-0 translate-y-0" />
-                </div>
+                <CarouselPrevious className="left-0 md:-left-12 z-10 bg-background/90 backdrop-blur-sm shadow-md border-border hover:bg-background h-10 w-10" />
+                <CarouselNext className="right-0 md:-right-12 z-10 bg-background/90 backdrop-blur-sm shadow-md border-border hover:bg-background h-10 w-10" />
               </Carousel>
             </div>
 
