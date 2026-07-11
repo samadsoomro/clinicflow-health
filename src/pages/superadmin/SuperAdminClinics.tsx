@@ -26,6 +26,7 @@ const SuperAdminClinics = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClinicRow | null>(null);
   const [form, setForm] = useState({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
+  const [clinicMode, setClinicMode] = useState<'token' | 'appointment'>('token');
   const [saving, setSaving] = useState(false);
 
   const fetchClinics = async () => {
@@ -46,6 +47,7 @@ const SuperAdminClinics = () => {
   const openAdd = () => {
     setEditing(null);
     setForm({ clinic_name: "", subdomain: "", domain_name: "", contact_email: "", address: "", contact_phone: "" });
+    setClinicMode('token');
     setDialogOpen(true);
   };
 
@@ -80,6 +82,7 @@ const SuperAdminClinics = () => {
         contact_email: form.contact_email || null,
         address: form.address || null,
         contact_phone: form.contact_phone || null,
+        clinic_mode: clinicMode,
       });
       if (error) toast.error(error.message);
       else toast.success(`Clinic created! URL: ${form.subdomain}.health.vercel.app`);
@@ -123,6 +126,39 @@ const SuperAdminClinics = () => {
                 <DialogTitle className="font-display">{editing ? "Edit Clinic" : "Create Clinic"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                {!editing && (
+                  <div className="mb-4">
+                    <label className="text-sm font-medium block mb-2">Clinic System Mode</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setClinicMode('token')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          clinicMode === 'token'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">🎫</div>
+                        <p className="font-semibold text-sm">Token System</p>
+                        <p className="text-xs text-gray-400 mt-0.5">South Asia — Walk-in queue tokens</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClinicMode('appointment')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          clinicMode === 'appointment'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                            : 'border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">📅</div>
+                        <p className="font-semibold text-sm">Appointment System</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Western — Pre-booked time slots</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Clinic Name</Label>
                   <Input value={form.clinic_name} onChange={(e) => setForm({ ...form, clinic_name: e.target.value })} placeholder="My Clinic" />

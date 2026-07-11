@@ -73,7 +73,7 @@ const Index = () => {
     const fetchAll = async () => {
       const [secRes, clinicRes, docRes, certRes, notifRes, reviewsRes] = await Promise.all([
         supabase.from("homepage_sections").select("*").eq("clinic_id", clinicId).order("display_order"),
-        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled, google_review_url, reviews_section_enabled, reviews_section_title, reviews_section_subtitle").eq("id", clinicId).single(),
+        supabase.from("clinics").select("id, clinic_name, short_name, logo_url, theme_color, secondary_theme_color, address, contact_phone, contact_email, working_hours, qr_base_url, maps_embed_url, subdomain, hero_title, hero_subtitle, emergency_contact, second_branch_address, second_branch_working_hours, second_branch_maps_embed_url, location_heading, live_tokens_enabled, online_tokens_enabled, google_review_url, reviews_section_enabled, reviews_section_title, reviews_section_subtitle, clinic_mode").eq("id", clinicId).single(),
         (supabase as any).from("homepage_doctors").select("id, name, specialization, image_url, display_order, bio_enabled, bio, qualification, degree, university, years_experience, languages, available_days, fee, extra_info").eq("clinic_id", clinicId).order("display_order"),
 
         supabase.from("certifications").select("id, title, image_url").eq("clinic_id", clinicId).order("sort_order"),
@@ -168,19 +168,29 @@ const Index = () => {
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
                 </Button>
               </ClinicLink>
-              {clinic?.live_tokens_enabled !== false && (
-                <ClinicLink to="/tokens" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full bg-background/50 backdrop-blur-sm text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 hover:-translate-y-1 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
-                    <Activity className="mr-2 h-5 w-5" /> See Live Tokens
-                  </Button>
-                </ClinicLink>
-              )}
-              {clinic?.online_tokens_enabled && (
-                <ClinicLink to="/online-token" className="w-full sm:w-auto">
+              {clinic?.clinic_mode === 'appointment' ? (
+                <ClinicLink to="/book-appointment" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full bg-secondary text-secondary-foreground font-semibold border-2 border-secondary hover:bg-secondary/90 hover:border-secondary/90 hover:-translate-y-1 hover:shadow-secondary/30 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
-                    <Ticket className="mr-2 h-5 w-5" /> Get Online Token
+                    📅 Book Appointment
                   </Button>
                 </ClinicLink>
+              ) : (
+                <>
+                  {clinic?.live_tokens_enabled !== false && (
+                    <ClinicLink to="/tokens" className="w-full sm:w-auto">
+                      <Button size="lg" variant="outline" className="w-full bg-background/50 backdrop-blur-sm text-foreground font-semibold border-2 border-border hover:bg-green-500 hover:text-white hover:border-green-500 hover:-translate-y-1 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
+                        <Activity className="mr-2 h-5 w-5" /> See Live Tokens
+                      </Button>
+                    </ClinicLink>
+                  )}
+                  {clinic?.online_tokens_enabled && (
+                    <ClinicLink to="/online-token" className="w-full sm:w-auto">
+                      <Button size="lg" className="w-full bg-secondary text-secondary-foreground font-semibold border-2 border-secondary hover:bg-secondary/90 hover:border-secondary/90 hover:-translate-y-1 hover:shadow-secondary/30 shadow-lg transition-all duration-300 px-8 py-6 text-lg rounded-full">
+                        <Ticket className="mr-2 h-5 w-5" /> Get Online Token
+                      </Button>
+                    </ClinicLink>
+                  )}
+                </>
               )}
             </div>
           </motion.div>

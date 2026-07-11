@@ -18,7 +18,6 @@ import { toast } from "sonner";
 
 const navLinks = [
   { label: "Home", path: "/" },
-  { label: "Live Tokens", path: "/tokens" },
   { label: "Notifications", path: "/notifications" },
   { label: "Location", path: "/location" },
   { label: "Contact", path: "/contact" },
@@ -216,7 +215,6 @@ const PublicNavbar = () => {
 
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => {
-            if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
             const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
             return (
               <ClinicLink key={link.path} to={link.path}>
@@ -233,19 +231,36 @@ const PublicNavbar = () => {
               </ClinicLink>
             );
           })}
-          {clinic?.online_tokens_enabled && (
-            <ClinicLink to="/online-token">
-              <Button
-                variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  "font-medium",
-                  location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70"
-                )}
-              >
-                Online Token
-              </Button>
-            </ClinicLink>
+          {clinic?.clinic_mode === 'appointment' ? (
+            <>
+              <ClinicLink to="/book-appointment">
+                <Button variant={location.pathname === "/book-appointment" ? "secondary" : "ghost"} size="sm" className={cn("font-medium", location.pathname === "/book-appointment" ? "text-purple-500 font-bold" : "text-foreground/70")}>
+                  📅 Book Appointment
+                </Button>
+              </ClinicLink>
+              <ClinicLink to="/my-appointments">
+                <Button variant={location.pathname === "/my-appointments" ? "secondary" : "ghost"} size="sm" className={cn("font-medium", location.pathname === "/my-appointments" ? "text-purple-500 font-bold" : "text-foreground/70")}>
+                  🗓 My Appointments
+                </Button>
+              </ClinicLink>
+            </>
+          ) : (
+            <>
+              {clinic?.live_tokens_enabled !== false && (
+                <ClinicLink to="/tokens">
+                  <Button variant={location.pathname === "/tokens" ? "secondary" : "ghost"} size="sm" className={cn("font-medium", location.pathname === "/tokens" ? "text-orange-500 font-bold" : "text-foreground/70")}>
+                    Live Tokens
+                  </Button>
+                </ClinicLink>
+              )}
+              {clinic?.online_tokens_enabled && (
+                <ClinicLink to="/online-token">
+                  <Button variant={location.pathname === "/online-token" ? "secondary" : "ghost"} size="sm" className={cn("font-medium", location.pathname === "/online-token" ? "text-purple-500 font-bold" : "text-foreground/70")}>
+                    Online Token
+                  </Button>
+                </ClinicLink>
+              )}
+            </>
           )}
         </nav>
 
@@ -367,9 +382,6 @@ const PublicNavbar = () => {
               className="container flex flex-col gap-2 py-4"
             >
               {navLinks.map((link) => {
-                if (link.path === "/tokens" && clinic?.live_tokens_enabled === false) return null;
-                
-                // Absolute equality for Home to avoid partial matches
                 const isActive = link.path === "/" 
                   ? location.pathname === "/" 
                   : location.pathname.startsWith(link.path);
@@ -388,17 +400,44 @@ const PublicNavbar = () => {
                   </Button>
                 );
               })}
-              {clinic?.online_tokens_enabled && (
-                <Button
-                  variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start h-12 px-4",
-                    location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70"
+              {clinic?.clinic_mode === 'appointment' ? (
+                <>
+                  <Button
+                    variant={location.pathname === "/book-appointment" ? "secondary" : "ghost"}
+                    className={cn("w-full justify-start h-12 px-4", location.pathname === "/book-appointment" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70")}
+                    onClick={() => handleMobileNav("/book-appointment")}
+                  >
+                    📅 Book Appointment
+                  </Button>
+                  <Button
+                    variant={location.pathname === "/my-appointments" ? "secondary" : "ghost"}
+                    className={cn("w-full justify-start h-12 px-4", location.pathname === "/my-appointments" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70")}
+                    onClick={() => handleMobileNav("/my-appointments")}
+                  >
+                    🗓 My Appointments
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {clinic?.live_tokens_enabled !== false && (
+                    <Button
+                      variant={location.pathname === "/tokens" ? "secondary" : "ghost"}
+                      className={cn("w-full justify-start h-12 px-4", location.pathname === "/tokens" ? "text-orange-500 font-bold bg-orange-500/10" : "text-foreground/70")}
+                      onClick={() => handleMobileNav("/tokens")}
+                    >
+                      Live Tokens
+                    </Button>
                   )}
-                  onClick={() => handleMobileNav("/online-token")}
-                >
-                  Online Token
-                </Button>
+                  {clinic?.online_tokens_enabled && (
+                    <Button
+                      variant={location.pathname === "/online-token" ? "secondary" : "ghost"}
+                      className={cn("w-full justify-start h-12 px-4", location.pathname === "/online-token" ? "text-purple-500 font-bold bg-purple-500/10" : "text-foreground/70")}
+                      onClick={() => handleMobileNav("/online-token")}
+                    >
+                      Online Token
+                    </Button>
+                  )}
+                </>
               )}
 
               <div className="flex flex-col gap-2 pt-2 border-t border-border">

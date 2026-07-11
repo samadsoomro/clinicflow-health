@@ -46,6 +46,7 @@ interface ClinicData {
   reviews_section_enabled?: boolean | null;
   reviews_section_title?: string | null;
   reviews_section_subtitle?: string | null;
+  clinic_mode?: 'token' | 'appointment' | null;
 }
 
 

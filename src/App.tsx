@@ -15,6 +15,8 @@ const Index = lazy(() => import("./pages/Index"));
 const LiveTokens = lazy(() => import("./pages/LiveTokens"));
 const OnlineToken = lazy(() => import("./pages/OnlineToken"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const BookAppointment = lazy(() => import("./pages/BookAppointment"));
+const MyAppointments = lazy(() => import("./pages/MyAppointments"));
 
 const Location = lazy(() => import("./pages/Location"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -69,6 +71,8 @@ const App = () => (
                       <Route path="/tokens" element={<LiveTokens />} />
                       <Route path="/online-token" element={<OnlineToken />} />
                       <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/book-appointment" element={<BookAppointment />} />
+                      <Route path="/my-appointments" element={<MyAppointments />} />
 
                       <Route path="/location" element={<Location />} />
                       <Route path="/contact" element={<Contact />} />

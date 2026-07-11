@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-  Activity, LayoutDashboard, Users, Stethoscope, Clock,
+  Activity, LayoutDashboard, Users, Stethoscope, Clock, Calendar,
   Bell, Settings, MapPin, LogOut, Menu, X, CreditCard, Building2, Layout, Mail, Ticket
 } from "lucide-react";
 
@@ -12,20 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClinicId } from "@/hooks/useClinic";
 import { supabase } from "@/integrations/supabase/client";
 
-const sidebarLinks = [
-  { label: "Overview", path: "/admin", icon: LayoutDashboard },
-  { label: "Homepage", path: "/admin/homepage", icon: Layout },
-  { label: "Doctors", path: "/admin/doctors", icon: Stethoscope },
-  { label: "Tokens", path: "/admin/tokens", icon: Clock },
-  { label: "Online Tokens", path: "/admin/online-tokens", icon: Ticket },
-  { label: "Patients", path: "/admin/patients", icon: Users },
 
-  { label: "Notifications", path: "/admin/notifications", icon: Bell },
-  { label: "Patient Cards", path: "/admin/cards", icon: CreditCard },
-  { label: "Location", path: "/admin/location", icon: MapPin },
-  { label: "Contact Us", path: "/admin/contact-messages", icon: Mail },
-  { label: "Settings", path: "/admin/settings", icon: Settings },
-];
 
 const AdminDashboard = () => {
   const location = useLocation();
@@ -34,6 +21,8 @@ const AdminDashboard = () => {
   const { clinicId } = useClinicId();
   const [clinicName, setClinicName] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const [clinicData, setClinicData] = useState<any>(null);
 
   const fetchUnread = useCallback(async () => {
     const { count } = await supabase
@@ -46,8 +35,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from("clinics").select("clinic_name").eq("id", clinicId).single();
-      if (data) setClinicName(data.clinic_name);
+      const { data } = await supabase.from("clinics").select("clinic_name, clinic_mode, online_tokens_enabled").eq("id", clinicId).single();
+      if (data) {
+        setClinicName(data.clinic_name);
+        setClinicData(data);
+      }
     };
     if (clinicId) {
       fetch();
@@ -62,6 +54,30 @@ const AdminDashboard = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [clinicId, fetchUnread]);
+
+  const sidebarLinks = [
+    { label: "Overview", path: "/admin", icon: LayoutDashboard },
+    { label: "Homepage", path: "/admin/homepage", icon: Layout },
+    { label: "Doctors", path: "/admin/doctors", icon: Stethoscope },
+    
+    ...(clinicData?.clinic_mode === 'appointment' 
+      ? [
+          { label: "Appointments", path: "/admin/appointments", icon: Calendar },
+          { label: "Schedule Settings", path: "/admin/schedule-settings", icon: Clock },
+        ]
+      : [
+          { label: "Tokens", path: "/admin/tokens", icon: Clock },
+          ...(clinicData?.online_tokens_enabled ? [{ label: "Online Tokens", path: "/admin/online-tokens", icon: Ticket }] : []),
+        ]
+    ),
+
+    { label: "Patients", path: "/admin/patients", icon: Users },
+    { label: "Notifications", path: "/admin/notifications", icon: Bell },
+    { label: "Patient Cards", path: "/admin/cards", icon: CreditCard },
+    { label: "Location", path: "/admin/location", icon: MapPin },
+    { label: "Contact Us", path: "/admin/contact-messages", icon: Mail },
+    { label: "Settings", path: "/admin/settings", icon: Settings },
+  ];
 
   return (
     <div className="flex min-h-screen bg-background">
