@@ -34,6 +34,8 @@ const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
 
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminPatientCards = lazy(() => import("./pages/admin/AdminPatientCards"));
+const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
+const ScheduleSettings = lazy(() => import("./pages/admin/ScheduleSettings"));
 const AdminLocation = lazy(() => import("./pages/admin/AdminLocation"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminHomepage = lazy(() => import("./pages/admin/AdminHomepage"));
@@ -97,6 +99,8 @@ const App = () => (
                       <Route path="location" element={<AdminLocation />} />
                       <Route path="contact-messages" element={<AdminContactMessages />} />
                       <Route path="settings" element={<AdminSettings />} />
+                      <Route path="appointments" element={<AdminAppointments />} />
+                      <Route path="schedule-settings" element={<ScheduleSettings />} />
                     </Route>
 
                     <Route path="/superadmin" element={<SuperAdminLayout />}>
