@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, Heart, Cross, Stethoscope, Phone, Mail, MapPin } from "lucide-react";
+import { Activity, Cross, Stethoscope, Phone, Mail, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClinicContext } from "@/hooks/useClinicContext";
 import ClinicLink from "@/components/ClinicLink";
@@ -223,16 +223,8 @@ const PublicFooter = () => {
               &copy; {new Date().getFullYear()} {name}. All rights reserved.
             </p>
             {/* Footer credit line */}
-            <div className="flex flex-col items-center gap-1 text-center px-4 w-full md:w-auto">
-              <p className="text-xs text-gray-400 dark:text-gray-500 break-words text-center w-full">
-                Made with{' '}
-                <Heart size={10} className="inline text-red-400 fill-red-400 mx-0.5" />{' '}
-                by{' '}
-                <span className="font-medium break-words">
-                  {name}
-                </span>
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+            <div className="flex items-center justify-center text-center px-4 w-full md:w-auto">
+              <p className="text-sm sm:text-base font-medium text-muted-foreground">
                 Developed by Abdul Samad
               </p>
             </div>
